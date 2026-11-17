@@ -242,6 +242,12 @@ func renderArgs(req RenderRequest) []string {
 	if req.Output.PipePixFmt != "" {
 		args = append(args, "--pipe-pixfmt", req.Output.PipePixFmt)
 	}
+	if req.Output.EncoderProfile != "" {
+		// Certified encoder recipe (e.g. canonical_x264). The profile is an
+		// exact byte identity: Chronon applies the whole recipe, verifies the
+		// emitted avcC before opening the mux and fails closed on any drift.
+		args = append(args, "--encoder-profile", req.Output.EncoderProfile)
+	}
 	if req.Output.FragmentedMP4 {
 		// Fragmented MP4 (moof/mdat fragments, no start-of-file backpatch):
 		// the artifact bytes are final when appended, so the upload lane can

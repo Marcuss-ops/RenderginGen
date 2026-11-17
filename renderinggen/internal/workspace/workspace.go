@@ -391,6 +391,14 @@ func (w *Workspace) materializeOne(ctx context.Context, resolve PathResolver, a 
 	if resolved.LocalPath == dst {
 		return nil
 	}
+	// Same-filesystem materialization is a hard link: the bytes are immutable
+	// under their content address, so every job (and every chunk of one video)
+	// can share ONE inode instead of copying the file into each tmpfs
+	// workspace. The copy path below remains for the production split (cache on
+	// NVMe, workspace on /dev/shm), where link fails with EXDEV.
+	if err := os.Link(resolved.LocalPath, dst); err == nil {
+		return nil
+	}
 	// Rooted temp creation and rename prevent a swapped assets directory or
 	// destination symlink from redirecting materialization outside the job.
 	if err := copyFileRooted(ctx, w.fsRoot, resolved.LocalPath, rel); err != nil {
@@ -427,11 +435,12 @@ func copyFileRooted(ctx context.Context, root *os.Root, source, dst string) erro
 		_ = tmp.Close()
 		return fmt.Errorf("workspace: copy %s: %w", dst, copyErr)
 	}
-	// Flush before rename so the installed file is durable, not just page-cache.
-	if err := tmp.Sync(); err != nil {
-		_ = tmp.Close()
-		return fmt.Errorf("workspace: sync temp: %w", err)
-	}
+	// No fsync: a workspace is scratch, not a durable store. Its files are
+	// inputs for the render that owns them, and a crash re-runs the job from
+	// the content-addressed cache; paying a durability flush per asset bought
+	// nothing but latency (and on the production /dev/shm workspace it cannot
+	// even buy durability). The rename below is for VISIBILITY — no reader can
+	// observe a half-written asset — not for crash consistency.
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("workspace: close temp: %w", err)
 	}

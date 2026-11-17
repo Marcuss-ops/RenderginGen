@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"fmt"
+	"math"
 	"strings"
 )
 
@@ -95,7 +96,13 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 			if value, present := params["seed"].(int); present {
 				seed = value
 			}
-			out = append(out, LayerEffect{Type: typ, Params: map[string]any{"intensity": params["intensity"], "speed": speed, "seed": seed}})
+			intensity, _ := params["intensity"].(float64)
+			// Chronon has no banded_grain decoder. Lower this visual preset to
+			// its native monochrome Noise effect so the request is renderable.
+			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{
+				"amount": math.Min(1, intensity/4), "size": 1.0, "seed": seed,
+				"animated": speed > 0, "color_mode": "monochrome",
+			}})
 		case "sharpen":
 			out = append(out, LayerEffect{Type: typ, Params: map[string]any{"amount": params["amount"]}})
 		default:
@@ -159,9 +166,16 @@ func clipEffectParams(spec semanticClipEffect) map[string]any {
 // every shape item uses. The block is just a full-frame, screen-space grid;
 // keeping a second bounds/fill/stroke implementation here let the two contracts
 // drift (spacing, line width and dot radius each had duplicated limits).
-func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64) (Layer, error) {
+func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64, foregroundScale int) (Layer, error) {
 	if grid == nil {
 		return Layer{}, fmt.Errorf("overlay: clip_grid is required")
+	}
+	if grid.Scope != "" && grid.Scope != "full_canvas" && grid.Scope != "foreground" {
+		return Layer{}, fmt.Errorf("overlay: clip_grid scope must be full_canvas or foreground")
+	}
+	if grid.Scope == "foreground" && foregroundScale > 0 && foregroundScale < 100 {
+		width = width * foregroundScale / 100
+		height = height * foregroundScale / 100
 	}
 	isDots := grid.Style == "dots" || grid.Style == "dot_grid"
 	shapeType := "grid"
@@ -307,6 +321,51 @@ func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 		}
 		if err := validateEffectParams(definition, effType, params, subject); err != nil {
 			return nil, err
+		}
+		// Clip/image parity: pseudo-types lower to the same renderer-native
+		// stack on both surfaces so a clip preset replays 1:1 on an image.
+		switch effType {
+		case "glitch":
+			amount, _ := toFloat(params["amount"])
+			seed := 0
+			if value, present := params["seed"]; present {
+				if n, err := toInt(value); err == nil {
+					seed = n
+				}
+			}
+			out = append(out, LayerEffect{Type: "wave_warp", Params: map[string]any{"amplitude": 0.025 * amount, "wavelength": 0.035, "speed": 0.0, "direction": []float64{0, 1}, "wave_type": "square"}})
+			out = append(out, LayerEffect{Type: "chromatic_aberration", Params: map[string]any{"red_offset": 8 * amount, "blue_offset": -8 * amount}})
+			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": 0.12 * amount, "seed": seed, "animated": true, "color_mode": "monochrome", "size": 1.0}})
+			continue
+		case "scanlines":
+			amount, _ := toFloat(params["amount"])
+			wavelength, _ := toFloat(params["wavelength"])
+			out = append(out, LayerEffect{Type: "wave_warp", Params: map[string]any{"amplitude": amount, "wavelength": wavelength, "speed": 0.0, "direction": []float64{0, 1}, "wave_type": "square"}})
+			continue
+		case "banded_grain":
+			intensity, _ := toFloat(params["intensity"])
+			speed := 0.0
+			if value, present := params["speed"]; present {
+				if f, err := toFloat(value); err == nil {
+					speed = f
+				}
+			}
+			seed := 0
+			if value, present := params["seed"]; present {
+				if n, err := toInt(value); err == nil {
+					seed = n
+				}
+			}
+			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": math.Min(1, intensity/4), "size": 1.0, "seed": seed, "animated": speed > 0, "color_mode": "monochrome"}})
+			continue
+		case "chromatic_aberration":
+			if _, has := params["red_offset"]; !has {
+				if amount, ok := params["amount"]; ok {
+					if f, err := toFloat(amount); err == nil {
+						params = map[string]any{"red_offset": f, "blue_offset": -f}
+					}
+				}
+			}
 		}
 		out = append(out, LayerEffect{Type: effType, Params: params})
 	}

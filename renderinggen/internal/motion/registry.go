@@ -184,6 +184,7 @@ var previewGatedCategories = map[string]string{}
 // pool bytes are unchanged, and a future family cannot slip into this state
 // silently.
 var phrasePoolExcludedCategories = map[string]string{
+	"typewriter_phrase_v1": "selected through phrase_motion_pool and the short/long phrase use cases, not the seeded legacy pool",
 	"short_phrase_style":   "selected through the short-phrase style catalog, not the legacy phrase pool",
 	"generic_motion_v1":    "generic primitive motions (fade, slide, bounce) are not phrase-planning families",
 	"trump_entity_text_v1": "entity-text family selected through entity surfaces, not the legacy phrase pool",

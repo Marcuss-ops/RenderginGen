@@ -2,6 +2,7 @@ package processor
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -357,4 +358,71 @@ func TestCanonicalizeOutputPathsRunsSegmentsInParallel(t *testing.T) {
 	t.Logf("canonicalized %d clips: sequential=%s parallel=%s speedup=%.2fx",
 		count, sequential.Round(time.Millisecond), parallel.Round(time.Millisecond),
 		float64(sequential)/float64(parallel))
+}
+
+// TestCanonicalizePreparedOutputsSkipsProbeAndEncodeWhenReceiptCertifies pins
+// gate 4 at the job boundary. The payload is deliberately not an MP4, so a
+// probe or an encode would fail loudly; a passing receipt that certifies the
+// V3 avcC for exactly these bytes must make the whole pass a no-op.
+func TestCanonicalizePreparedOutputsSkipsProbeAndEncodeWhenReceiptCertifies(t *testing.T) {
+	ctx := context.Background()
+	proc, _, _ := newProcessor(t)
+	profile, err := media.ResolveProfile(media.ProfileVeloxOverlayVideoOnlyV3)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if profile.CodecConfigSHA256 == "" {
+		t.Fatal("V3 must pin the canonical avcC")
+	}
+
+	output := filepath.Join(t.TempDir(), "overlay.mp4")
+	payload := []byte("not an mp4: a probe or an encode would fail here")
+	if err := os.WriteFile(output, payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	receipt := chronon.MediaReceipt{Schema: "chronon3d.render-receipt.v1"}
+	receipt.Verification.Status = "pass"
+	receipt.Output.SHA256 = strings.Repeat("a", 64)
+	receipt.Output.Bytes = int64(len(payload))
+	receipt.Media.CodecConfigSHA256 = profile.CodecConfigSHA256
+	data, err := json.Marshal(receipt)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(output+chronon.MediaReceiptSuffix, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	prepared := &PreparedJob{
+		Job: &queue.Job{ID: "receipt-certified-canonical", JobType: queue.JobTypeOverlayRender},
+		Plan: &overlay.Plan{
+			Canvas: overlay.Canvas{Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1, DurationFrames: 49},
+			Output: overlay.Output{ProfileID: media.ProfileVeloxOverlayVideoOnlyV3},
+			Layers: []overlay.Layer{{ID: "caption", Type: "text", Text: "certified"}},
+		},
+		OutputPath: output,
+		Metrics:    map[string]float64{},
+		totalStart: time.Now(),
+	}
+
+	changed, err := proc.canonicalizePreparedOutputs(ctx, prepared)
+	if err != nil {
+		t.Fatalf("canonicalizePreparedOutputs: %v", err)
+	}
+	if changed {
+		t.Fatal("a receipt-certified canonical artifact was reported as changed")
+	}
+	if _, recorded := prepared.Metrics[metricnames.CanonicalizeOverlayUS]; recorded {
+		t.Fatalf("the canonical pass recorded work: %v", prepared.Metrics)
+	}
+	got, err := os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(payload) {
+		t.Fatal("the artifact bytes changed on the receipt-certified path")
+	}
+	if _, err := os.Stat(output + ".canonical.tmp.mp4"); !os.IsNotExist(err) {
+		t.Fatalf("a canonical temp file exists: %v", err)
+	}
 }

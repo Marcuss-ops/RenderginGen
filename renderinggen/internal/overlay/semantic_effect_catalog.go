@@ -160,7 +160,7 @@ var effectDefinitions = map[string]effectDefinition{
 		clipRequired: []string{"amount"},
 	},
 	"lens_distortion": {
-		clip: true,
+		layer: true, clip: true,
 		params: map[string]effectParamSpec{
 			"curvature": effectBounded(-1, 1),
 			"scale":     effectBounded(0.1, 4),
@@ -168,7 +168,7 @@ var effectDefinitions = map[string]effectDefinition{
 		clipRequired: []string{"curvature"},
 	},
 	"banded_grain": {
-		clip: true,
+		layer: true, clip: true,
 		params: map[string]effectParamSpec{
 			"intensity": effectBounded(0, 4),
 			"speed":     effectBounded(-1000, 1000),
@@ -177,7 +177,7 @@ var effectDefinitions = map[string]effectDefinition{
 		clipRequired: []string{"intensity"},
 	},
 	"glitch": {
-		clip: true,
+		layer: true, clip: true,
 		params: map[string]effectParamSpec{
 			"amount": effectBounded(0, 1),
 			"seed":   effectSeed(),
@@ -185,7 +185,7 @@ var effectDefinitions = map[string]effectDefinition{
 		clipRequired: []string{"amount"},
 	},
 	"scanlines": {
-		clip: true,
+		layer: true, clip: true,
 		params: map[string]effectParamSpec{
 			"amount":     effectBounded(0, 0.25),
 			"wavelength": effectBounded(0.002, 1),

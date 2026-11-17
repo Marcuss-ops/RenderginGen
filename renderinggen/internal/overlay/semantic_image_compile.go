@@ -277,6 +277,12 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 				return nil, err
 			}
 		}
+		if _, hasChildGrid := params["grid"]; hasChildGrid {
+			decorated, err = addStandaloneImageGrid(childResolved, src, decorated)
+			if err != nil {
+				return nil, err
+			}
+		}
 		layers = append(layers, decorated...)
 		if caption := strings.TrimSpace(child.Caption); caption != "" {
 			imageIndex := premiumImageLayerIndex(decorated)

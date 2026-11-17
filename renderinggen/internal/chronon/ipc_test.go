@@ -268,6 +268,43 @@ func TestIPCClientRenderCarriesStrictNativeSelectionInOutputSpec(t *testing.T) {
 	}
 }
 
+// TestIPCClientRenderCarriesEncoderProfileInOutputSpec pins the IPC half of
+// the canonical single-session lane: the profile rides in output_spec (the
+// daemon's closed vocabulary reads it there with spec_or_root fallback) and
+// never leaks to the payload root, so a transport cannot silently drop it.
+func TestIPCClientRenderCarriesEncoderProfileInOutputSpec(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:   writeStrictNativeTestPlan(t),
+		AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+		Output: OutputSpec{
+			Codec: "h264", Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1,
+			PipePixFmt: "yuv420p", EncoderProfile: "canonical_x264",
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	outputSpec, ok := payload["output_spec"].(map[string]any)
+	if !ok {
+		t.Fatalf("output_spec missing or not an object: %v", payload["output_spec"])
+	}
+	if got := outputSpec["encoder_profile"]; got != "canonical_x264" {
+		t.Fatalf("output_spec[encoder_profile] = %v, want canonical_x264", got)
+	}
+	if _, leaked := payload["encoder_profile"]; leaked {
+		t.Fatalf("encoder_profile leaked as a top-level key: %v", payload)
+	}
+}
+
 // TestIPCClientRenderOmitsSelectionWithoutGPURecord proves the selection is not
 // stamped unconditionally: a request with no GPU/composition requirement keeps
 // the historical payload (no encoder keys at all), so Chronon's own default

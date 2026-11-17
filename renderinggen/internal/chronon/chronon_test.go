@@ -92,6 +92,30 @@ func TestRenderArgsReport(t *testing.T) {
 	}
 }
 
+// TestRenderArgsForwardsEncoderProfile pins the CLI half of the canonical
+// single-session lane: the profile must reach the renderer as an argument, not
+// only the IPC payload, or the CLI transport silently keeps the generic lane
+// and the worker re-encodes the artifact afterwards.
+func TestRenderArgsForwardsEncoderProfile(t *testing.T) {
+	got := renderArgs(RenderRequest{
+		PlanPath:   "/jobs/1/plan.json",
+		AssetsRoot: "/jobs/1/assets",
+		OutputPath: "/jobs/1/output/result.mp4",
+		Output:     OutputSpec{EncoderProfile: "canonical_x264"},
+	})
+	want := []string{
+		"render",
+		"--plan", "/jobs/1/plan.json",
+		"--assets-root", "/jobs/1/assets",
+		"--backend", "auto",
+		"-o", "/jobs/1/output/result.mp4",
+		"--encoder-profile", "canonical_x264",
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("renderArgs (encoder profile) = %#v, want %#v", got, want)
+	}
+}
+
 func TestRenderArgsResolvesGPURequirementAtAdapterBoundary(t *testing.T) {
 	got := renderArgs(RenderRequest{
 		PlanPath:   "/jobs/1/plan.json",

@@ -114,6 +114,39 @@ func TestResolveArtifactIdentityProvesTheDigestUnderProofPolicies(t *testing.T) 
 	}
 }
 
+// TestResolveArtifactIdentityTrustsTheWorkerCanonicalPassWithoutRereading pins
+// the removed second SHA-256. The canonical pass hashed the exact bytes it then
+// renamed into place, so re-reading the artifact under sample/normal cannot
+// learn anything new. The artifact is made unreadable to prove the gate does
+// not read it: a stat still succeeds, while a re-hash would fail.
+func TestResolveArtifactIdentityTrustsTheWorkerCanonicalPassWithoutRereading(t *testing.T) {
+	if os.Geteuid() == 0 {
+		t.Skip("root ignores file permissions, so an unreadable file proves nothing")
+	}
+	path, real := writeOutput(t, "canonical worker bytes")
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	receipt := chronon.MediaReceipt{Schema: canonicalOverlayReceiptSchema}
+	receipt.Output.Bytes = info.Size()
+	receipt.Output.SHA256 = real
+
+	if err := os.Chmod(path, 0o000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(path, 0o644) })
+
+	p := &Processor{receiptVerify: renderVerifyLevel("sample")}
+	identity, err := p.resolveArtifactIdentity(path, receipt, nil, map[string]float64{})
+	if err != nil {
+		t.Fatalf("the worker's own hash must be accepted without a re-read: %v", err)
+	}
+	if identity.SHA256 != real || !identity.Proven || identity.Source != "worker-canonical-pass" {
+		t.Fatalf("identity = %+v, want the worker's digest marked proven by the canonical pass", identity)
+	}
+}
+
 // TestResolveArtifactIdentityAcceptsUnverifiedUnderFast pins fast's documented
 // bargain and, crucially, that it is RECORDED: one read instead of two, at the
 // price of an address that was accepted rather than recomputed.

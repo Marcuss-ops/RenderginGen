@@ -360,6 +360,85 @@ func TestMaterializeWritesLogicalPaths(t *testing.T) {
 	}
 }
 
+// TestMaterializeHardLinksWhenSourceSharesTheFilesystem pins the memory saving:
+// content-addressed bytes are immutable, so a workspace on the same filesystem
+// as the cache must share the inode instead of copying the video into every
+// job directory (and into every chunk of the same video).
+func TestMaterializeHardLinksWhenSourceSharesTheFilesystem(t *testing.T) {
+	root := t.TempDir()
+	sources := filepath.Join(root, "sources")
+	if err := os.MkdirAll(sources, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	w, err := New(root, "job-link")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Cleanup() })
+
+	assets := []queue.AssetRef{{Hash: "h-video", LogicalPath: "videos/base.mp4"}}
+	if err := w.MaterializePaths(context.Background(), pathResolverFor(t, sources), assets); err != nil {
+		t.Fatalf("materialize: %v", err)
+	}
+	srcInfo, err := os.Stat(filepath.Join(sources, "h-video"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dstInfo, err := os.Stat(filepath.Join(w.assetsRoot(), "videos", "base.mp4"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !os.SameFile(srcInfo, dstInfo) {
+		t.Fatal("materialization copied the asset instead of hard-linking it on a shared filesystem")
+	}
+}
+
+// TestMaterializeCopiesWhenTheSourceIsOnAnotherFilesystem pins the fallback the
+// production split needs (cache on NVMe, workspace on /dev/shm): the link fails
+// with EXDEV, so the bytes are copied and their content is preserved.
+func TestMaterializeCopiesWhenTheSourceIsOnAnotherFilesystem(t *testing.T) {
+	const shm = "/dev/shm"
+	if _, err := os.Stat(shm); err != nil {
+		t.Skipf("%s is unavailable: %v", shm, err)
+	}
+	sources, err := os.MkdirTemp(shm, "materialize-crossfs-")
+	if err != nil {
+		t.Skipf("cannot create a source directory on %s: %v", shm, err)
+	}
+	t.Cleanup(func() { _ = os.RemoveAll(sources) })
+
+	root := t.TempDir()
+	w, err := New(root, "job-copy")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Cleanup() })
+
+	assets := []queue.AssetRef{{Hash: "h-video", LogicalPath: "videos/base.mp4"}}
+	if err := w.MaterializePaths(context.Background(), pathResolverFor(t, sources), assets); err != nil {
+		t.Fatalf("materialize: %v", err)
+	}
+	srcInfo, err := os.Stat(filepath.Join(sources, "h-video"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	dst := filepath.Join(w.assetsRoot(), "videos", "base.mp4")
+	dstInfo, err := os.Stat(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if os.SameFile(srcInfo, dstInfo) {
+		t.Skip("the source and the workspace share a filesystem; the EXDEV path was not exercised")
+	}
+	data, err := os.ReadFile(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(data) != "bytes:h-video" {
+		t.Fatalf("copied asset = %q, want the resolved bytes", data)
+	}
+}
+
 func TestMaterializeResolveError(t *testing.T) {
 	w := newWorkspace(t)
 

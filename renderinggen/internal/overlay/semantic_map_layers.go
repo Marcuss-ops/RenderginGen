@@ -81,6 +81,11 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 		if err != nil {
 			return nil, err
 		}
+		timing, err := resolvePinTiming(ri.Params, pin.ID, int64(src.FPSNum), int64(src.FPSDen), duration)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: map item %q pin %q: %w", ri.Item.ID, pin.ID, err)
+		}
+		applyPinTiming(&marker, &label, timing)
 		pinAnimation := resolvedPin.Motion
 		if pinAnimation == nil {
 			pinAnimation = mapAnimation
@@ -167,6 +172,27 @@ func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolved
 		roleOverrides.Shadow = cloneLayerStyleShadow(labelStyle.Shadow)
 		roleOverrides.Glow = cloneLayerStyleGlow(labelStyle.Glow)
 		roleOverrides.Background = cloneLayerBackground(labelStyle.Background)
+	}
+	// A place name usually sits ON the accent territory, which is a saturated
+	// fill the ink was never chosen against; a raster basemap already provides
+	// its own contrast. The halo is worker-owned drawing policy, like the pin
+	// ring: a light keyline around the contract ink keeps the label readable on
+	// the vector plate without inventing a second fill. An explicit stroke
+	// (contract label_style or runtime stroke_size) still wins.
+	if isModernMap1(ri.Item) {
+		if roleOverrides.Stroke == nil {
+			if _, chosen := ri.Params["stroke_size"]; !chosen {
+				roleOverrides.Stroke = &LayerStroke{Color: mapPinLabelHaloColor, Width: fontSize * mapPinLabelHaloRatio}
+			}
+		}
+		// The satellite-plate shadow is too heavy on paper: a tight, soft drop
+		// keeps the ink off the territory without smudging every glyph.
+		if roleOverrides.Shadow == nil && !hasRuntimeShadowKey(ri.Params) {
+			roleOverrides.Shadow = &LayerShadow{
+				Color: mapPinLabelShadowColor, Opacity: mapPinLabelShadowOpacity,
+				Blur: mapPinLabelShadowBlur, Offset: []float64{0, mapPinLabelShadowOffsetY},
+			}
+		}
 	}
 	spec := resolvedTextSpec{
 		Text: pin.Label, Size: []float64{width, height}, OmitBox: true,
@@ -272,26 +298,49 @@ func mapWorldPoint(latitude, longitude float64, zoom int, origin SemanticMapPoin
 // mapPinLayer draws one grounded place as a native ellipse shape centred on
 // its projected raster pixel. The plan's shape primitive is supported on the
 // native Vulkan path (and is what the certified map canary pins), so pins no
-// longer borrow the text glyph "O"; the white ring is the shape's stroke.
+// longer borrow the text glyph "O".
+//
+// The dot is a light core inside the contract colour, not the reverse: a dark
+// fill with a white ring reads as a hole punched through a filled territory,
+// while paper-white inside a coloured ring reads as a marker both on the
+// accent land and on the paper sea.
 func mapPinLayer(ri resolvedItem, src *semanticPlan, pin SemanticMapPin, x, y float64, duration int64) (Layer, error) {
 	size := 2 * pin.RadiusPX
-	// The pin fill honors the contract color (validated #RRGGBB upstream); the
-	// luminous halo stays renderer-owned so dark fills remain legible on the
-	// dark basemap without silently replacing the producer's color.
-	const mapPinAccent = "#FFD166"
-	rgb, err := parseHexColor(pin.Color)
-	if err != nil {
+	// The ring honors the contract color (validated #RRGGBB upstream); the core
+	// is worker-owned so a marker stays a marker instead of a dot of the same
+	// ink as the land it points at.
+	if _, err := parseHexColor(pin.Color); err != nil {
 		return Layer{}, fmt.Errorf("overlay: map item %q pin %q color: %w", ri.Item.ID, pin.ID, err)
 	}
+	core, err := parseHexColor(mapPinCoreColor)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: map pin core color: %w", err)
+	}
+	ring := pin.Color
+	if mapPinColorIsLight(pin.Color) {
+		// A near-white contract colour would vanish into the light core.
+		ring = mapPinRingFallbackColor
+	}
+	width := math.Max(mapPinStrokeWidthPX, pin.RadiusPX*mapPinStrokeRadiusRatio)
 	return Layer{
 		ID: mapPinLayerID(ri.Item.ID, pin.ID), Type: "shape",
 		Size:       []float64{size, size},
 		Position:   canvasBoxPosition("shape", x-pin.RadiusPX, y-pin.RadiusPX, size, size, src.Width, src.Height),
 		StartFrame: ri.Start, DurationFrames: duration,
-		Style: &LayerStyle{Glow: &LayerGlow{Color: mapPinAccent, Radius: 18, Intensity: 0.72}},
-		Shape: &LayerShape{Type: "ellipse", Fill: rgb,
-			Stroke: &LayerStroke{Color: mapPinStrokeColor, Width: mapPinStrokeWidthPX}},
+		Shape: &LayerShape{Type: "ellipse", Fill: core,
+			Stroke: &LayerStroke{Color: ring, Width: width}},
 	}, nil
+}
+
+// mapPinColorIsLight reports whether a contract colour is too close to the pin
+// core to read as its ring.
+func mapPinColorIsLight(hex string) bool {
+	rgb, err := parseHexColor(hex)
+	if err != nil || len(rgb) < 3 {
+		return false
+	}
+	luminance := 0.2126*rgb[0] + 0.7152*rgb[1] + 0.0722*rgb[2]
+	return luminance > 0.82
 }
 
 func mapBasemapLayerID(itemID string) string         { return itemID + ":map_basemap" }

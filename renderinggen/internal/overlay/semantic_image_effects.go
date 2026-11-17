@@ -30,7 +30,11 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if err != nil {
 		return nil, err
 	}
-	return applyImageItemEffects(ri, layers)
+	layers, err = applyImageItemEffects(ri, layers)
+	if err != nil {
+		return nil, err
+	}
+	return addStandaloneImageGrid(ri, src, layers)
 }
 
 // decorateImageLayerWithItemEffects applies the item's runtime effect stack to

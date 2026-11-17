@@ -203,6 +203,7 @@ func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T)
 		"fps_num": 30,
 		"fps_den": 1,
 		"duration_ms": 3000,
+		"foreground_scale_percent": 75,
 		"source": {"asset_id": "clip", "sha256": "` + clipTestSHA + `"},
 		"clip_effects": [
 			{"type": "glow", "radius": 24, "intensity": 1.2},
@@ -212,6 +213,7 @@ func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T)
 			{"type": "banded_grain", "intensity": 0.5, "speed": 2.0, "seed": 99}
 		],
 		"clip_grid": {
+			"scope": "foreground",
 			"style": "dots",
 			"spacing_px": 48,
 			"dot_radius_px": 2.5,
@@ -236,14 +238,20 @@ func TestClipSemanticContractModernEffectsAndDotGridLowerToChronon(t *testing.T)
 	if source.Type != "video" || len(source.Effects) != 5 {
 		t.Fatalf("expected 5 source effects, got: %+v", source)
 	}
-	if source.Effects[0].Type != "glow" || source.Effects[1].Type != "bloom" || source.Effects[2].Type != "lens_distortion" || source.Effects[3].Type != "sharpen" || source.Effects[4].Type != "banded_grain" {
+	if source.Effects[0].Type != "glow" || source.Effects[1].Type != "bloom" || source.Effects[2].Type != "lens_distortion" || source.Effects[3].Type != "sharpen" || source.Effects[4].Type != "noise" {
 		t.Fatalf("unexpected source effect sequence: %+v", source.Effects)
+	}
+	if source.Effects[4].Params["amount"] != 0.125 || source.Effects[4].Params["color_mode"] != "monochrome" {
+		t.Fatalf("banded_grain was not lowered to native Chronon noise: %+v", source.Effects[4])
 	}
 	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "dot_grid" {
 		t.Fatalf("expected dot_grid shape, got: %+v", grid)
 	}
 	if grid.Shape.GridSpacing != 48 || grid.Shape.DotRadius != 2.5 {
 		t.Fatalf("dot_grid params mismatch: spacing=%v dot_radius=%v", grid.Shape.GridSpacing, grid.Shape.DotRadius)
+	}
+	if len(grid.Size) != 2 || grid.Size[0] != 1440 || grid.Size[1] != 810 {
+		t.Fatalf("foreground grid should be bounded to 75%% of the canvas, size=%v", grid.Size)
 	}
 }
 

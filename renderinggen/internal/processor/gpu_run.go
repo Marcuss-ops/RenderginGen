@@ -188,6 +188,13 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 			FPSNum:     uint32(metadata.FPSNum),
 			FPSDen:     uint32(metadata.FPSDen),
 			PipePixFmt: p.pipePixFmt,
+			// Ask the renderer to emit the canonical x264 identity in the SAME
+			// session that renders, so the CPU canonicalization pass does not
+			// re-encode the whole artifact after the GPU lane. Only the certified
+			// V3 shape (1920x1080@24, video-only) is eligible; the receipt's
+			// codec_config_sha256 lets the pass prove the bytes are already
+			// canonical and skip itself.
+			EncoderProfile: canonicalEncoderProfileFor(metadata, prepared.AudioSourcePath != ""),
 			// Overlay artifacts are SILENT video-only intermediates (audio is
 			// mastered once by the final Rust audio render, `mux_audio_copy`,
 			// never inside an overlay): they carry no master audio, so they get

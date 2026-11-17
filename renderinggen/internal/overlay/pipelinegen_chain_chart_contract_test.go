@@ -18,9 +18,10 @@ func localOverlaySchemaPath(t *testing.T) string {
 	return filepath.Join(contractschema.Dir(t), overlayContractSchema)
 }
 
-// pipelineGenChainPlan is the VERBATIM bytes produced by PipelineGen's
-// CoalesceChainedOverlays + OverlayPlan marshal for two nearby phrases fused
-// into one phrase_chain item (animation_counts: {chain_gap_ms: 600}). Every
+// pipelineGenChainPlan is the frozen bytes originally captured from
+// PipelineGen's CoalesceChainedOverlays + OverlayPlan marshal for two nearby
+// phrases fused into one phrase_chain item (animation_counts: {chain_gap_ms:
+// 600}); the Rust planner now produces the same wire shape. Every
 // field — item id, kind, template_id, window, chain_segments, chain_camera —
 // is the producer's real output, so this is the cross-repo half of the
 // Multi-Animations Runtime contract: the opt-in chain path is not "verified

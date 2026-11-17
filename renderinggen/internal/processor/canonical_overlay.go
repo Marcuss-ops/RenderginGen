@@ -28,6 +28,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -58,6 +59,47 @@ func isCanonicalizedOutputProfile(profileID string) bool {
 // without an audio stream.
 func isCanonicalOverlayV3(profileID string) bool {
 	return profileID == media.ProfileVeloxOverlayVideoOnlyV3
+}
+
+// canonicalEncoderProfile is the wire name of the single-session canonical
+// x264 lane (Chronon output_spec.encoder_profile).
+const canonicalEncoderProfile = "canonical_x264"
+
+// canonicalSingleSessionEnabled selects the canonical x264 lane automatically
+// for eligible renders. It is false because the 2026-11-16 A/B measured the
+// lane at 39.86 s against 4.88 s of NVENC plus 0.93 s of canonical post-pass on
+// the same 49-frame 1080p24 plan (quiet host, software compositor): the lane
+// pays ~635 ms of backend overhead per frame, so selecting it by default is a
+// ~6.9x wall-time regression. Gate §8 accepts the lane only when the total does
+// not worsen; it worsens. The lane remains reachable through the explicit
+// output_spec.encoder_profile=canonical_x264 (CLI: --encoder-profile) for
+// copy-eligibility experiments, and this switch is the single place to
+// re-enable it once the per-frame overhead is removed and the A/B passes.
+const canonicalSingleSessionEnabled = false
+
+// canonicalEncoderProfileEligible reports whether a render has the exact shape
+// the canonical profile certifies: the V3 lane at 1920x1080, 24/1, video-only.
+// Requesting the lane elsewhere makes Chronon fail closed (it verifies both the
+// geometry and the avcC bytes), so this is a contract rule, not an optimization
+// detail. V1 (assembly-ready, carries audio) and V2 (different level) keep the
+// post-render pass.
+func canonicalEncoderProfileEligible(metadata planMetadata, hasAudio bool) bool {
+	if metadata.ProfileID != media.ProfileVeloxOverlayVideoOnlyV3 || hasAudio {
+		return false
+	}
+	return metadata.Width == 1920 && metadata.Height == 1080 &&
+		metadata.FPSNum == 24 && metadata.FPSDen == 1
+}
+
+// canonicalEncoderProfileFor returns the encoder profile a render must request.
+// While canonicalSingleSessionEnabled is false it always returns empty, so the
+// renderer emits its default stream and the worker keeps the canonical
+// post-pass; see the switch comment for the measured reason.
+func canonicalEncoderProfileFor(metadata planMetadata, hasAudio bool) string {
+	if !canonicalSingleSessionEnabled || !canonicalEncoderProfileEligible(metadata, hasAudio) {
+		return ""
+	}
+	return canonicalEncoderProfile
 }
 
 // canonicalOutputFFmpegArgs is the exact canonical encoder recipe. The avcC
@@ -119,6 +161,20 @@ func canonicalOutputFFmpegArgs(input, output string, keepAudio bool, fpsNum, fps
 // video-only V3 overlay and the assembly-ready V1 clip. It returns true when
 // at least one artifact was re-encoded. The pass is CPU-only and runs in the
 // post pool (FinalizeJob), not on the GPU lane.
+//
+// A segmented batch encodes the same timeline twice (mirror + per-item
+// segments): both are separate deliverables and the canonical avcC is an x264
+// identity the NVENC session cannot emit. Deriving the mirror by packet-copy
+// concat does remove the second encode, but it breaks the uniform 48-frame GOP
+// at every seam. Measured on the dev host: the concat still certifies V3, but
+// its closed-GOP cadence is lost, and downstream copy gates derive
+// copy-readiness from the packet table (closed_gop, keyframe interval). The
+// duplicate is therefore a CONTRACT trade, not an implementation accident:
+// removing it needs either the renderer to emit the canonical x264 stream in
+// one session (Chronon) or a downstream policy that accepts a non-uniform
+// cadence. Do not "fix" it with a concat without that decision. The Chronon
+// side is tracked in
+// Chronon3d/docs/tickets/TICKET-CANONICAL-X264-SINGLE-SESSION-20261116.md.
 func (p *Processor) canonicalizePreparedOutputs(ctx context.Context, prepared *PreparedJob) (bool, error) {
 	if prepared == nil || prepared.Plan == nil {
 		return false, nil
@@ -242,6 +298,26 @@ func canonicalizeOutputMP4(ctx context.Context, path, profileID string, accepted
 	if len(acceptedCodecConfig) > 0 {
 		profile.AcceptedCodecConfigSHA256 = append(append([]string(nil), profile.AcceptedCodecConfigSHA256...), acceptedCodecConfig...)
 	}
+	// The single-session canonical lane publishes the avcC it emitted in the
+	// renderer receipt (TICKET-CANONICAL-X264-SINGLE-SESSION). When that
+	// receipt certifies the profile's exact parameter sets for THIS file, the
+	// artifact is already the deliverable: the pass has nothing to decide, so
+	// it neither re-encodes nor pays the confirmation ffprobe that used to be
+	// the last duplicated read in the finalize.
+	if receiptCertifiesCanonicalIdentity(path, profile.CodecConfigSHA256) {
+		return false, nil
+	}
+	// A renderer receipt describes bytes the renderer just wrote. With no
+	// NVENC allowlist configured those bytes cannot already carry the canonical
+	// x264 identity (refs=1/bf=0/SPS-PPS of the x264 lane), so the pass must
+	// run and the source probe would only re-read a file Chronon just emitted:
+	// two ffprobe processes that can never change the decision. The probe is
+	// kept exactly where it can change it — an allowlist may accept a
+	// recertified native avcC as-is, and an artifact with no render receipt (a
+	// retry of a previously canonicalized file) may already be canonical.
+	if needsCanonicalEncodeFromRenderReceipt(path, profile.CodecConfigSHA256, len(profile.AcceptedCodecConfigSHA256) > 0) {
+		return encodeCanonicalOutput(ctx, path, profile, profileID)
+	}
 	existing, err := media.ProbeFile(ctx, path)
 	if err != nil {
 		return false, fmt.Errorf("probe source: %w", err)
@@ -249,7 +325,75 @@ func canonicalizeOutputMP4(ctx context.Context, path, profileID string, accepted
 	if err := profile.ValidateProbe(existing); err == nil {
 		return false, nil
 	}
+	return encodeCanonicalOutput(ctx, path, profile, profileID)
+}
 
+// receiptCertifiesCanonicalIdentity reports whether the receipt next to path
+// certifies the canonical parameter sets for the file on disk.
+//
+// This is the last duplicate verification the canonical lane pays in the
+// finalize. Chronon's receipt carries media.codec_config_sha256 — the SHA-256
+// of the avcC it emitted — and the worker's own canonical pass writes the same
+// field after hashing the bytes it renamed into place. A passing receipt whose
+// avcC equals the profile's pin and whose byte size equals the file's is a
+// claim about THESE bytes; probing them again cannot change the decision.
+//
+// It is deliberately narrow: no receipt, a failing receipt, a digest-less
+// receipt, a different avcC or a size mismatch all fall through to the probe
+// and (when needed) the encode, so the pass stays fail-closed and idempotent.
+func receiptCertifiesCanonicalIdentity(path, canonicalCodecConfig string) bool {
+	if canonicalCodecConfig == "" {
+		return false
+	}
+	receipt, err := chronon.ReadMediaReceipt(path)
+	if err != nil {
+		return false
+	}
+	if !receipt.VerificationPassed() || receipt.Output.SHA256 == "" {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(receipt.Media.CodecConfigSHA256), canonicalCodecConfig) {
+		return false
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		return false
+	}
+	return receipt.Output.Bytes > 0 && receipt.Output.Bytes == info.Size()
+}
+
+// needsCanonicalEncodeFromRenderReceipt reports whether a render receipt makes
+// the source probe unnecessary because the encode is unconditionally required.
+//
+// It is deliberately conservative: only a PASSING renderer receipt (never the
+// worker's own canonical receipt, which describes already-final bytes) plus an
+// empty allowlist takes the shortcut. Everything else keeps the probe, so the
+// pass stays idempotent for retries and for recertified native artifacts.
+func needsCanonicalEncodeFromRenderReceipt(path, canonicalCodecConfig string, hasAllowlist bool) bool {
+	if hasAllowlist {
+		return false
+	}
+	receipt, err := chronon.ReadMediaReceipt(path)
+	if err != nil || receipt.Schema == canonicalOverlayReceiptSchema {
+		return false
+	}
+	if !receipt.VerificationPassed() || receipt.Output.SHA256 == "" {
+		return false
+	}
+	// A renderer that already certifies the canonical parameter sets is not a
+	// forced re-encode: fall back to the probe, which confirms the bytes and
+	// skips the pass when they match. This is the bridge a single-session
+	// canonical Chronon render needs; without it the shortcut would re-encode
+	// the very artifact that lane exists to produce.
+	if canonicalCodecConfig != "" && receipt.Media.CodecConfigSHA256 == canonicalCodecConfig {
+		return false
+	}
+	return true
+}
+
+// encodeCanonicalOutput rewrites one artifact with the exact canonical x264
+// recipe, certifies the emitted bytes and installs them atomically.
+func encodeCanonicalOutput(ctx context.Context, path string, profile media.OutputProfile, profileID string) (bool, error) {
 	keepAudio := !isCanonicalOverlayV3(profileID)
 	temp := path + ".canonical.tmp.mp4"
 	_ = os.Remove(temp)

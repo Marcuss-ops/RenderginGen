@@ -53,3 +53,13 @@ Supported labels are `Boxe`, `Crime`, `Music`, `Wwe` and `Discovery`. Their
 canonical ids are `drive-background-boxe`, `drive-background-crime`,
 `drive-background-music`, `drive-background-wwe` and
 `drive-background-discovery`.
+
+Six new plates (November 2026) were downloaded from the supplied Drive
+folders and normalized with the classic default codec (`libx264`, `veryfast`,
+CRF 23, `yuv420p`, High@L4.0): every file is 1920×1080, H.264, 30 fps,
+15 seconds, zero audio streams. Their canonical ids are
+`drive-background-boxe-v2`, `drive-background-crime-v2`,
+`drive-background-discovery-v2`, `drive-background-pop`,
+`drive-background-rap-americano` and `drive-background-vecchie-celebrity`.
+Supported labels are `Boxe-v2`, `Crime-v2`, `Discovery-v2`, `Pop`,
+`Rap-Americano` and `Vecchie-Celebrity`.

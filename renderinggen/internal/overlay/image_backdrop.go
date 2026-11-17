@@ -35,8 +35,8 @@ func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetR
 	if !requested || raw == nil {
 		return layers, nil
 	}
-	if len(ri.Item.ImageLayers) != 0 || len(ri.Item.Assets) != 1 {
-		return nil, fmt.Errorf("overlay: image_backdrop is available only for a standalone image with exactly one asset")
+	if len(ri.Item.Assets) == 0 {
+		return nil, fmt.Errorf("overlay: image_backdrop requires at least one asset")
 	}
 	if src == nil || src.Width <= 0 || src.Height <= 0 {
 		return nil, fmt.Errorf("overlay: image_backdrop requires a positive canvas")
@@ -46,9 +46,17 @@ func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetR
 		return nil, fmt.Errorf("overlay: item %q image_backdrop must be an object", ri.Item.ID)
 	}
 	for key := range params {
-		if key != "zoom" && key != "blur_px" && key != "grid" {
+		if key != "zoom" && key != "blur_px" && key != "grid" && key != "asset_id" {
 			return nil, fmt.Errorf("overlay: item %q image_backdrop has unsupported property %q", ri.Item.ID, key)
 		}
+	}
+	backdropAssetID := ""
+	if value, exists := params["asset_id"]; exists && value != nil {
+		id, ok := value.(string)
+		if !ok || id == "" {
+			return nil, fmt.Errorf("overlay: item %q image_backdrop.asset_id must be a non-empty string", ri.Item.ID)
+		}
+		backdropAssetID = id
 	}
 	zoom, blur := defaultSingleImageBackdropZoom, defaultSingleImageBackdropBlur
 	if value, exists := params["zoom"]; exists {
@@ -65,7 +73,22 @@ func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetR
 			return nil, fmt.Errorf("overlay: item %q image_backdrop.blur_px must be within [6,%g]", ri.Item.ID, maxSingleImageBackdropBlur)
 		}
 	}
-	assetPath := registry.Path(ri.Item.Assets[0].ID)
+	assetPath := ""
+	if backdropAssetID != "" {
+		found := false
+		for _, ref := range ri.Item.Assets {
+			if ref.ID == backdropAssetID {
+				assetPath = registry.Path(ref.ID)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("overlay: item %q image_backdrop.asset_id %q references an undeclared asset", ri.Item.ID, backdropAssetID)
+		}
+	} else {
+		assetPath = registry.Path(ri.Item.Assets[0].ID)
+	}
 	backdrop := Layer{
 		ID:             ri.Item.ID + ":image-backdrop",
 		Type:           "image",
@@ -109,10 +132,19 @@ func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetR
 // the same lines in 0..width / 0..height and anchoring the layer at the canvas
 // top-left keeps every segment in the visible frame.
 func compileBackdropGrid(grid *semanticClipGrid, width, height int, duration int64) (Layer, error) {
-	if grid.Style == "dots" || grid.Style == "dot_grid" {
-		return compileClipGrid(grid, width, height, duration)
+	return compileBackdropGridWithScale(grid, width, height, duration, 0)
+}
+
+func compileBackdropGridWithScale(grid *semanticClipGrid, width, height int, duration int64, foregroundScale int) (Layer, error) {
+	w, h := width, height
+	if grid != nil && grid.Scope == "foreground" && foregroundScale > 0 && foregroundScale < 100 {
+		w = width * foregroundScale / 100
+		h = height * foregroundScale / 100
 	}
-	return compileBackdropLineGrid(grid, width, height, duration)
+	if grid.Style == "dots" || grid.Style == "dot_grid" {
+		return compileClipGrid(grid, w, h, duration, foregroundScale)
+	}
+	return compileBackdropLineGrid(grid, w, h, duration)
 }
 
 // maxBackdropGridLines mirrors the renderer's generated-grid bound. A grid
@@ -183,7 +215,7 @@ func parseBackdropGrid(raw any, itemID string) (*semanticClipGrid, error) {
 	}
 	for key := range params {
 		switch key {
-		case "enabled", "style", "color", "spacing_px", "line_width_px", "dot_radius_px", "opacity":
+		case "enabled", "scope", "style", "color", "spacing_px", "line_width_px", "dot_radius_px", "opacity":
 		default:
 			return nil, fmt.Errorf("overlay: item %q image_backdrop.grid has unsupported property %q", itemID, key)
 		}
@@ -202,6 +234,13 @@ func parseBackdropGrid(raw any, itemID string) (*semanticClipGrid, error) {
 		SpacingPX: defaultBackdropGridSpacing,
 		Color:     defaultBackdropGridColor,
 		Opacity:   defaultBackdropGridOpacity,
+	}
+	if value, exists := params["scope"]; exists {
+		scope, ok := value.(string)
+		if !ok || (scope != "full_canvas" && scope != "foreground") {
+			return nil, fmt.Errorf("overlay: item %q image_backdrop.grid.scope must be full_canvas or foreground", itemID)
+		}
+		grid.Scope = scope
 	}
 	if value, exists := params["style"]; exists {
 		style, ok := value.(string)

@@ -81,12 +81,13 @@ func materializeBuiltinFonts(root string, plan *overlay.Plan) error {
 			}
 			return fmt.Errorf("processor: stage bundled font %q: %w", font, err)
 		}
+		// No fsync: the workspace is scratch, and a crash re-runs the job (the
+		// font comes from the read-only bundle, not from the network).
 		_, copyErr := io.Copy(out, in)
-		syncErr := out.Sync()
 		closeOutErr, closeInErr := out.Close(), in.Close()
-		if copyErr != nil || syncErr != nil || closeOutErr != nil || closeInErr != nil {
+		if copyErr != nil || closeOutErr != nil || closeInErr != nil {
 			_ = os.Remove(target)
-			return fmt.Errorf("processor: copy bundled font %q: %v", font, errors.Join(copyErr, syncErr, closeOutErr, closeInErr))
+			return fmt.Errorf("processor: copy bundled font %q: %v", font, errors.Join(copyErr, closeOutErr, closeInErr))
 		}
 	}
 	return nil

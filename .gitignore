@@ -87,6 +87,12 @@ assets/backgrounds/*.mp4
 !assets/backgrounds/background-music.mp4
 !assets/backgrounds/background-wwe.mp4
 !assets/backgrounds/background-discovery.mp4
+!assets/backgrounds/background-boxe-v2.mp4
+!assets/backgrounds/background-crime-v2.mp4
+!assets/backgrounds/background-discovery-v2.mp4
+!assets/backgrounds/background-pop.mp4
+!assets/backgrounds/background-rap-americano.mp4
+!assets/backgrounds/background-vecchie-celebrity.mp4
 
 # Keep testdata/golden intentionally tiny: only canonical CI/regression fixtures.
 /testdata/golden/*

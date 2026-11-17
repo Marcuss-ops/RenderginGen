@@ -209,6 +209,12 @@ type OutputSpec struct {
 	HardwareEncoder string `json:"hardware_encoder,omitempty"`
 	EncoderBackend  string `json:"encoder_backend,omitempty"`
 	GpuHotPathMode  string `json:"gpu_hot_path_mode,omitempty"`
+	// EncoderProfile optionally selects a certified encoder recipe. Empty
+	// keeps the generic lane. "canonical_x264" asks the renderer to emit the
+	// canonical single-session x264 stream itself (the same avcC, closed GOP
+	// 48 and 1/90000 track timescale the post-render canonicalization pass
+	// would otherwise have to produce with a second encode).
+	EncoderProfile string `json:"encoder_profile,omitempty"`
 	// FragmentedMP4 requests a FRAGMENTED MP4 (moof/mdat fragments, no
 	// start-of-file backpatch) for the output container. The artifact bytes
 	// are final the moment they are appended, so the upload lane can stream

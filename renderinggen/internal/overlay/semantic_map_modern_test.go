@@ -54,7 +54,7 @@ func TestModernMap1CompilesEditorialPlate(t *testing.T) {
 		t.Fatalf("compile ModernMap1 Italy: %v", err)
 	}
 	var fills, outlines, borders, maxOutlineCommands int
-	var paper, graticule, label, credit bool
+	var paper, graticule, label, credit, wipe bool
 	for _, layer := range result.Plan.Layers {
 		switch {
 		case layer.ID == "shape-map:modernmap1:paper":
@@ -70,6 +70,13 @@ func TestModernMap1CompilesEditorialPlate(t *testing.T) {
 			label = layer.Type == "text" && layer.Text != ""
 		case layer.ID == "shape-map:modernmap1:credit":
 			credit = layer.Type == "text"
+		case layer.ID == "shape-map:modernmap1:fillwipe":
+			// The reveal is one paper cover with a soft leading edge sweeping
+			// west to east, so the fill itself can stay static.
+			wipe = layer.Type == "shape" && layer.Shape != nil && layer.Shape.Type == "rect" &&
+				layer.Animation != nil && len(layer.Animation.Tracks) == 1 &&
+				layer.Animation.Tracks[0].Property == "position_x" &&
+				len(layer.Animation.Tracks[0].Keyframes) == 2
 		}
 		if strings.Contains(layer.ID, ":modernmap1:outline:") {
 			if layer.Shape == nil || layer.Shape.Stroke == nil || layer.Shape.Fill != nil {
@@ -81,17 +88,29 @@ func TestModernMap1CompilesEditorialPlate(t *testing.T) {
 			}
 			continue
 		}
-		if !strings.Contains(layer.ID, ":modernmap1:territory:") {
+		if !strings.Contains(layer.ID, ":modernmap1:territory") {
 			continue
 		}
-		// Region-anchored triangle fill; the dense outline carries the silhouette.
-		if layer.Type != "shape" || layer.Shape == nil || layer.Shape.Type != "path" || len(layer.Shape.Path) != 4 || layer.Shape.Fill == nil {
-			t.Fatalf("ModernMap1 territory %q is not a filled triangle: %+v", layer.ID, layer)
+		// One plate-wide even-odd fill: every ring is a subpath of a single
+		// closed path, so the native renderer needs one dispatch instead of
+		// dozens of per-triangle layers with visible seams.
+		if layer.Type != "shape" || layer.Shape == nil || layer.Shape.Type != "path" ||
+			layer.Shape.Fill == nil || layer.Shape.Stroke != nil {
+			t.Fatalf("ModernMap1 territory %q is not a fill-only path: %+v", layer.ID, layer)
+		}
+		closes := 0
+		for _, command := range layer.Shape.Path {
+			if command.Type == "close" {
+				closes++
+			}
+		}
+		if closes < 2 {
+			t.Fatalf("ModernMap1 territory %q has %d closed subpaths, want the whole plate in one path", layer.ID, closes)
 		}
 		fills++
 	}
-	if fills < 40 {
-		t.Fatalf("ModernMap1 emitted %d fill bands, want a scanline territory", fills)
+	if fills != 1 {
+		t.Fatalf("ModernMap1 emitted %d territory fills, want exactly one native plate fill", fills)
 	}
 	if outlines == 0 || maxOutlineCommands < 100 {
 		t.Fatalf("ModernMap1 outlines = %d, max commands = %d, want a smooth editorial outline", outlines, maxOutlineCommands)
@@ -99,58 +118,62 @@ func TestModernMap1CompilesEditorialPlate(t *testing.T) {
 	if borders == 0 {
 		t.Fatalf("no ModernMap1 context border layer compiled: %+v", result.Plan.Layers)
 	}
-	if !paper || !graticule || !label || !credit {
-		t.Fatalf("ModernMap1 plate incomplete: paper=%v graticule=%v label=%v credit=%v", paper, graticule, label, credit)
+	if !paper || !graticule || !label || !credit || !wipe {
+		t.Fatalf("ModernMap1 plate incomplete: paper=%v graticule=%v label=%v credit=%v wipe=%v", paper, graticule, label, credit, wipe)
 	}
 }
 
-// The fill must be cut from the exact ring the outline strokes. A coarser fill
+// The fill must be cut from the exact rings the outlines stroke. A coarser fill
 // ring is invisible in layer counts but shows as red stopping inside the coast.
 func TestModernMap1FillUsesOutlineRing(t *testing.T) {
 	result, err := compileMapTestPlan(t, modernMapPlan("Italy", nil))
 	if err != nil {
 		t.Fatalf("compile ModernMap1 Italy: %v", err)
 	}
-	outlines := map[string]map[string]bool{}
+	// Every outline ring is authored in its own bbox-local space; the plate fill
+	// uses the union bbox. Compare in canvas space: local + position + canvas/2.
+	canvasOffset := func(layer Layer) (float64, float64) {
+		return layer.Position[0] + 1920.0/2, layer.Position[1] + 1080.0/2
+	}
+	ringPoints := map[string]bool{}
+	outlines := 0
 	for _, layer := range result.Plan.Layers {
 		if !strings.Contains(layer.ID, ":modernmap1:outline:") || layer.Shape == nil {
 			continue
 		}
-		parts := strings.Split(layer.ID, ":")
-		points := map[string]bool{}
+		outlines++
+		dx, dy := canvasOffset(layer)
 		for _, command := range layer.Shape.Path {
 			if len(command.Point) == 2 {
-				points[fmt.Sprintf("%.6f,%.6f", command.Point[0], command.Point[1])] = true
+				ringPoints[fmt.Sprintf("%.3f,%.3f", command.Point[0]+dx, command.Point[1]+dy)] = true
 			}
 		}
-		outlines[parts[len(parts)-1]] = points
+	}
+	if outlines == 0 {
+		t.Fatal("ModernMap1 emitted no outlines to compare with the fill")
 	}
 	fills := 0
 	for _, layer := range result.Plan.Layers {
-		if !strings.Contains(layer.ID, ":modernmap1:territory:") {
+		if !strings.Contains(layer.ID, ":modernmap1:territory") {
 			continue
 		}
 		if layer.Shape == nil {
 			t.Fatalf("ModernMap1 territory %q has no shape", layer.ID)
 		}
-		parts := strings.Split(layer.ID, ":")
-		ring := outlines[parts[len(parts)-2]]
-		if ring == nil {
-			t.Fatalf("ModernMap1 territory %q has no matching outline", layer.ID)
-		}
+		dx, dy := canvasOffset(layer)
 		for _, command := range layer.Shape.Path {
 			if len(command.Point) != 2 {
 				continue
 			}
-			key := fmt.Sprintf("%.6f,%.6f", command.Point[0], command.Point[1])
-			if !ring[key] {
-				t.Fatalf("ModernMap1 fill vertex %s of %q is not on its outline ring", key, layer.ID)
+			key := fmt.Sprintf("%.3f,%.3f", command.Point[0]+dx, command.Point[1]+dy)
+			if !ringPoints[key] {
+				t.Fatalf("ModernMap1 fill vertex %s of %q is not on an outline ring", key, layer.ID)
 			}
 		}
 		fills++
 	}
-	if fills == 0 {
-		t.Fatal("ModernMap1 emitted no triangles to compare with the outline")
+	if fills != 1 {
+		t.Fatalf("ModernMap1 emitted %d plate fills, want exactly one", fills)
 	}
 }
 

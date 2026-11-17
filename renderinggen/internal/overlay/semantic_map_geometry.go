@@ -84,6 +84,13 @@ func mapPinLabelDimensions(pin SemanticMapPin, canvasW, canvasH int) (float64, f
 		width += 2 * plate.Background.Padding[0] * scale
 		height += 2 * plate.Background.Padding[1] * scale
 	}
+	// The native text fitter probes ink bounds at glyph density, which is
+	// noticeably wider and taller than this layout estimate. A box sized from
+	// the estimate alone makes every place name shrink to its floor, so the
+	// authored font size is never what gets drawn. Padding the measured box
+	// keeps the placement geometry honest AND renders the intended size.
+	width *= mapPinLabelFitDensity
+	height *= mapPinLabelFitDensity
 	return math.Min(width, float64(canvasW)), math.Min(height, float64(canvasH))
 }
 

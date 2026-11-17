@@ -4,8 +4,9 @@ package overlay
 // phrase_chain / image_chain / mixed_chain item becomes N timed layers
 // inside the SAME Chronon render pass, each with its own motion.
 //
-// The producer (PipelineGen CoalesceChainedOverlays) spans the chain from
-// first.Start to last.End and rides every segment in Params["chain_segments"]
+// The producer (BrainRust `coalesce_chained_overlays`, formerly PipelineGen
+// CoalesceChainedOverlays) spans the chain from first.Start to last.End and
+// rides every segment in Params["chain_segments"]
 // (absolute plan microseconds + per-segment text/motion/preset/asset). This
 // file never re-derives editorial timing: it offsets each segment against the
 // chain window and lowers it through the SAME per-kind compiler a standalone

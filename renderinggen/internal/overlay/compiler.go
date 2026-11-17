@@ -331,6 +331,7 @@ type semanticAnimationGroupMember struct {
 }
 
 type semanticClipGrid struct {
+	Scope       string   `json:"scope,omitempty"`
 	Style       string   `json:"style,omitempty"`
 	SpacingPX   float64  `json:"spacing_px"`
 	LineWidthPX *float64 `json:"line_width_px,omitempty"`

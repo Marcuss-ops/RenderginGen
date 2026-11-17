@@ -12,7 +12,7 @@ package overlay
 // in the composite like any other shape and is appended after the source.
 func appendFullFrameStages(plan *Plan, src *semanticPlan) error {
 	if src.ClipGrid != nil {
-		grid, err := compileClipGrid(src.ClipGrid, src.Width, src.Height, plan.Canvas.DurationFrames)
+		grid, err := compileClipGrid(src.ClipGrid, src.Width, src.Height, plan.Canvas.DurationFrames, src.ForegroundScale)
 		if err != nil {
 			return err
 		}

@@ -89,6 +89,54 @@
       "source_drive_file_id": "1q6MKUZAHL1CjME2kGotK6sKacH94ViIh",
       "media_type": "video/mp4",
       "role": "channel-discovery"
+    },
+    {
+      "id": "drive-background-boxe-v2",
+      "file": "background-boxe-v2.mp4",
+      "sha256": "9fa4486b019542ca1638186194e66b9cdb89efb6417ee567dd421abd42ec867d",
+      "source_drive_file_id": "16IOlpLp4BlERuaE_jYBplblfTyGWuA_d",
+      "media_type": "video/mp4",
+      "role": "channel-boxe"
+    },
+    {
+      "id": "drive-background-crime-v2",
+      "file": "background-crime-v2.mp4",
+      "sha256": "009b1e4019c652d138135d7986e40606b956fc7c833db3d5ed03b8579cc3c022",
+      "source_drive_file_id": "1SbgS8j0zsEGQvV5f6rv-0O0InealS15G",
+      "media_type": "video/mp4",
+      "role": "channel-crime"
+    },
+    {
+      "id": "drive-background-discovery-v2",
+      "file": "background-discovery-v2.mp4",
+      "sha256": "7b44c7d6ffdacca686df72f96dd36ce5db48902c2182bdf7d47d9a0cbf21bc42",
+      "source_drive_file_id": "1jyotC-cavH280bnL1dZSzbhVIGIe203W",
+      "media_type": "video/mp4",
+      "role": "channel-discovery"
+    },
+    {
+      "id": "drive-background-pop",
+      "file": "background-pop.mp4",
+      "sha256": "2baa0907522c9bb7248fc6616fd6d2cb8cfbb4a8bbc5e4cdea8bf4cfe928672f",
+      "source_drive_file_id": "1R5hfzGGcujLwaZUv1iwpftlUnNqlP2Ig",
+      "media_type": "video/mp4",
+      "role": "channel-pop"
+    },
+    {
+      "id": "drive-background-rap-americano",
+      "file": "background-rap-americano.mp4",
+      "sha256": "021b9dbc68cd3dad78f2c6e3ee4160a24a8b784645888a7a198aa0a73815591a",
+      "source_drive_file_id": "1w0Q55n7l1RfsjWqZv8S8WSJSZjvKne7n",
+      "media_type": "video/mp4",
+      "role": "channel-rap-americano"
+    },
+    {
+      "id": "drive-background-vecchie-celebrity",
+      "file": "background-vecchie-celebrity.mp4",
+      "sha256": "79b93e03ef5abf106eb9831f872b4a6fed93f1228b4bdb9fd0116ece94affcbf",
+      "source_drive_file_id": "1a5LMQDo361AFuJBWUBTjMbf_NR9RvJZE",
+      "media_type": "video/mp4",
+      "role": "channel-vecchie-celebrity"
     }
   ]
 }

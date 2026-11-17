@@ -49,8 +49,33 @@ const (
 // never how thick the ring around it is.
 const (
 	mapPinStrokeWidthPX = 3.0
-	mapPinStrokeColor   = "#FFFFFF"
-	mapPinLabelHeightPX = 52.0
+	// The dot's core is light and its ring carries the contract colour; the
+	// stroke also grows with the marker so a large pin keeps the same weight.
+	mapPinCoreColor         = "#FFFFFF"
+	mapPinRingFallbackColor = "#1F252A"
+	mapPinStrokeRadiusRatio = 0.22
+	// Place names get a light halo so the contract ink reads on the accent
+	// territory as well as on the paper sea.
+	mapPinLabelHaloColor     = "#FFFFFF"
+	mapPinLabelHaloRatio     = 0.03
+	mapPinLabelShadowColor   = "#000000"
+	mapPinLabelShadowOpacity = 0.35
+	mapPinLabelShadowBlur    = 4.0
+	mapPinLabelShadowOffsetY = 1.0
+	mapPinLabelHeightPX      = 52.0
+	mapPinLabelFitDensity    = 2.0
+	// Territory fill reveal: one paper cover wipes the accent in from west to
+	// east, and its soft front is a feather of this many pixels.
+	//
+	// The window is deliberately short: while any frame differs from the
+	// previous one the native renderer re-executes the whole graph, so a long
+	// reveal costs render time, not quality. Measured on the Italy 1920x1080
+	// plate, one executed frame costs ~246 ms (graph_execute 3.9 s over 16
+	// frames) against ~0.1 ms for a duplicated one, while the composite pass set
+	// itself is unchanged (37 passes, all of them composite). Eight frames keep
+	// the sweep fluid at 24 fps and spend a third less than fourteen.
+	modernMapFillWipeFrames    = 8
+	modernMapFillWipeFeatherPX = 120.0
 
 	mapPinLabelGapPX      = 10.0
 	mapPinLabelFontPX     = 34.0

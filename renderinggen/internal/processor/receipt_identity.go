@@ -46,7 +46,8 @@ type artifactIdentity struct {
 	// and the store phase must compute it from the bytes.
 	SHA256 string
 	// Proven is true only when SHA256 was recomputed from the artifact's bytes
-	// and matched the engine's claim.
+	// and matched the claim. The recomputation may be the renderer's, the
+	// worker's canonical pass, or this gate's own re-read; Source names which.
 	Proven bool
 	// Source names how the identity was established, for the job log.
 	Source string
@@ -162,6 +163,16 @@ func (p *Processor) resolveArtifactIdentity(outputPath string, receipt chronon.M
 			metrics[metricnames.ReceiptIdentityUnverified] = 1
 		}
 		return artifactIdentity{SHA256: claim, Proven: false, Source: "receipt-size-matched"}, nil
+	}
+
+	// The worker's canonical pass wrote this receipt itself, after hashing the
+	// exact bytes it then renamed into place (canonical_overlay.go). The digest
+	// is already proof about THIS file: a second full read cannot learn
+	// anything the pass did not, and every canonical artifact was paying it.
+	// The schema is the marker that the claim came from the worker's own hash
+	// of the final bytes, never from a renderer's unverified assertion.
+	if receipt.Schema == canonicalOverlayReceiptSchema {
+		return artifactIdentity{SHA256: claim, Proven: true, Source: "worker-canonical-pass"}, nil
 	}
 
 	// normal/certify promise proof, so the digest is recomputed. This is the

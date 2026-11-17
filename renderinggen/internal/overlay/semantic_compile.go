@@ -550,7 +550,11 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		return applyImageItemEffects(ri, layers)
+		layers, err = applyImageItemEffects(ri, layers)
+		if err != nil {
+			return nil, err
+		}
+		return addStandaloneImageGrid(ri, src, layers)
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
@@ -562,7 +566,11 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		return applyImageItemEffects(ri, layers)
+		layers, err = applyImageItemEffects(ri, layers)
+		if err != nil {
+			return nil, err
+		}
+		return addStandaloneImageGrid(ri, src, layers)
 	case isImageKind(ri.Kind) && ri.Item.EntityStyleID != "" && len(ri.Item.Assets) > 0:
 		if ri.Item.ImagePresetID == "" {
 			return nil, fmt.Errorf("overlay: entity image item %q with entity_style_id requires image_preset_id", ri.Item.ID)
@@ -575,7 +583,11 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		return applyImageItemEffects(ri, layers)
+		layers, err = applyImageItemEffects(ri, layers)
+		if err != nil {
+			return nil, err
+		}
+		return addStandaloneImageGrid(ri, src, layers)
 	case isVideoKind(ri.Kind):
 		layer, err := compileVideoOverlayLayer(ri, src, registry)
 		if err != nil {

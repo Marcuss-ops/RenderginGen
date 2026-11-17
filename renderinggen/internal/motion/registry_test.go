@@ -201,8 +201,10 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	}
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
-	if len(phrasePool) != 31 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 31", len(phrasePool))
+	// 31 seeded phrase entrances + the 8 typewriter gestures authored for the
+	// short/long phrase pools (4 each, split by `targets`).
+	if len(phrasePool) != 39 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 39", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true

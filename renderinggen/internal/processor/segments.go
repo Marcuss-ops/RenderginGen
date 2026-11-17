@@ -271,6 +271,41 @@ func batchSegmentFacts(entries []SegmentArtifact) []queue.BatchSegmentFacts {
 	return facts
 }
 
+// countDecodedFrames is the full-decode counter behind the segment count gate,
+// wrapped in a variable so the gate's decision is testable without spawning
+// ffprobe for every case (the same seam receipt_verify.go uses for
+// validateDecode).
+var countDecodedFrames = media.CountDecodedFrames
+
+// segmentFrameCountIsCertified reports whether a receipt already proves the
+// segment's decoded frame count, so the gate must not pay a second full decode
+// to re-derive it.
+//
+// Two receipts can prove it:
+//
+//   - Chronon's own receipt, when it ran the count_frames tier and recorded the
+//     measured phase (the historical rule);
+//   - the worker's canonical-pass receipt, which encoded every frame of the
+//     window end to end for exactly the declared frame span and then probed the
+//     emitted bytes. Its frame_count verdict describes that encode, not the
+//     pre-pass file.
+//
+// A missing or empty count is never treated as certified: the full decode stays
+// the fallback, so the gate can only get cheaper, never weaker. Under
+// sample/normal/certify the post-lane decode gate (receipt_verify.go) already
+// traverses every packet before this check runs, which is what keeps truncation
+// detectable without reconstructing every frame; under fast no decode is
+// promised at all, so the skip is that policy's own documented bargain.
+func segmentFrameCountIsCertified(receipt chronon.MediaReceipt, receiptErr error, probed media.ProbeResult) bool {
+	if receiptErr != nil || probed.FrameCount <= 0 || receipt.Verification.FrameCount != "pass" {
+		return false
+	}
+	if receipt.Timing.CountFramesMS != nil {
+		return true
+	}
+	return receipt.Schema == canonicalOverlayReceiptSchema
+}
+
 // verifySegmentOutput applies the per-segment verification cycle
 // ("probe/digest per segmento"): the canonical receipt-identity gate (the same
 // gate the single-output path runs) plus a structural probe. It returns the
@@ -315,10 +350,11 @@ func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID strin
 	if source != probeSourceReceipt {
 		workerlog.ByJobID(jobID).Warnf("segment %s: media facts came from %s (no canonical receipt)", segment.OutputPath, source)
 	}
-	// Certify receipts already carry the full-scan count. Fast receipts and
-	// metadata-only probes do not prove how many frames actually decode.
-	if receiptErr != nil || receipt.Timing.CountFramesMS == nil || receipt.Verification.FrameCount != "pass" {
-		count, err := media.CountDecodedFrames(ctx, segment.OutputPath)
+	// A receipt can already prove the decoded count; only then is the full
+	// -count_frames scan skipped. Fast receipts and metadata-only probes do not
+	// prove how many frames actually decode, so they still pay it.
+	if !segmentFrameCountIsCertified(receipt, receiptErr, probed) {
+		count, err := countDecodedFrames(ctx, segment.OutputPath)
 		if err != nil {
 			return SegmentArtifact{}, err
 		}
