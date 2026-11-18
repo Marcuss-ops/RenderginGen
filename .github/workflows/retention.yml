@@ -1,0 +1,27 @@
+name: retention
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    paths:
+      - "Upload/**"
+      - "UploadDrive/**"
+      - "hdr_bokeh_focus_pull_20261108/**"
+      - "artifacts-retention/**"
+      - "assets/backgrounds/**"
+      - "scripts/ci/check_background_catalog.py"
+      - "scripts/ci/check_derived_artifacts.py"
+      - "tools/media_retention.py"
+  workflow_dispatch:
+
+jobs:
+  derived-artifacts:
+    name: Derived artifacts are not tracked
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check tracked derived artifacts
+        run: python3 scripts/ci/check_derived_artifacts.py
+      - name: Check background catalog count
+        run: python3 scripts/ci/check_background_catalog.py

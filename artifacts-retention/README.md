@@ -5,15 +5,22 @@ The policy is split by artifact class, not by file extension:
 
 | Class | Location | Rule |
 | --- | --- | --- |
-| Source plates | `assets/backgrounds/` | Tracked. Five named backgrounds only. |
+| Source plates | `assets/backgrounds/` | Tracked. Eleven named backgrounds only. |
 | Fixtures | `testdata/` | Tracked. Small, deterministic test inputs. |
 | Certification evidence | `evidence/` | Tracked. Compact proof of a visual result. |
 | Derived renders | `Upload/`, `UploadDrive/`, `hdr_bokeh_focus_pull_20261108/` | Not tracked. Operational output with a TTL; recorded in the manifest and object storage. |
 
-`tools/media_retention.py` hashes every tracked MP4, writes
-`media-retention-2026-11-11.json`, and only then untracks/deletes the derived
-classes. The JSON manifest is the source of truth for what was removed, its
-size and its SHA-256.
+`tools/media_retention.py` hashes every tracked file under the registered
+derived roots (media, logs, tables and flags), writes
+`media-retention-2026-11-18.json`, and only then untracks/deletes the derived
+classes. Compact JSON/Markdown/script/text metadata is kept by
+`tracked-allowlist.txt`. The JSON manifest is the source of truth for what was
+removed, its size, its SHA-256 and how to regenerate it.
+
+The roots and the allowlist are policy files: `derived-roots.txt` and
+`tracked-allowlist.txt`. `scripts/ci/check_derived_artifacts.py` fails a pull
+request that tracks a file under a derived root without an allowlist match;
+the `retention` workflow runs it on every PR and on `main`.
 
 ## Recovery
 

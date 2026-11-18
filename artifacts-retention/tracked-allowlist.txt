@@ -1,0 +1,15 @@
+# Compact evidence and operator scripts remain reviewable. Media, logs, tables
+# and flags do not match these patterns and are removed from the Git index by
+# tools/media_retention.py.
+Upload/**/*.json
+Upload/**/*.md
+Upload/**/*.py
+Upload/**/*.txt
+UploadDrive/**/*.json
+UploadDrive/**/*.md
+UploadDrive/**/*.py
+UploadDrive/**/*.txt
+hdr_bokeh_focus_pull_20261108/**/*.json
+hdr_bokeh_focus_pull_20261108/**/*.md
+hdr_bokeh_focus_pull_20261108/**/*.py
+hdr_bokeh_focus_pull_20261108/**/*.txt
