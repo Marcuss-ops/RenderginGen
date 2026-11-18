@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-// The bounded telemetry summary (chronon3d.render-telemetry-summary.v1) has a
+// The bounded timing-sidecar summary (chronon3d.frame-timing.v3) has a
 // DOCUMENTED numeric subset: mergeTelemetrySummaryMetrics projects exactly the
 // documented keys onto the artifact metrics with the chronon_ prefix, so
 // PipelineGen can read render/GPU KPI-class numbers directly from
@@ -13,7 +13,7 @@ import (
 // scrapes arbitrary internal leaves (observability ownership, Phase 10).
 func TestMergeTelemetrySummaryMetricsProjectsDocumentedSubset(t *testing.T) {
 	summary := json.RawMessage(`{
-	  "schema": "chronon3d.render-telemetry-summary.v1",
+	  "schema": "chronon3d.frame-timing.v3",
 	  "version": 1,
 	  "summary": {"render_loop_fps": 29.2, "end_to_end_fps": 28.9, "p95_frame_ms": 41.2, "frames_over_budget": 3},
 	  "job": {
@@ -64,7 +64,7 @@ func TestMergeTelemetrySummaryMetricsIgnoresUndocumentedLeaves(t *testing.T) {
 	// Internal/undocumented leaves (strings, arrays, unlisted numbers) must
 	// never appear: the projection is an explicit contract, not a scrape.
 	summary := json.RawMessage(`{
-	  "schema": "chronon3d.render-telemetry-summary.v1",
+	  "schema": "chronon3d.frame-timing.v3",
 	  "summary": {"backend": "vulkan", "internal_debug_hint_ms": 999.0},
 	  "job": {"gpu": {"undocumented_frames": 12}},
 	  "outcome": {"status": "ok"}
@@ -100,7 +100,7 @@ func TestMergeTelemetrySummaryMetricsEmptyInputs(t *testing.T) {
 // fallback counters alongside full NVENC frame counts.
 func TestMergeTelemetrySummaryMetricsDirectYuvAcceptanceShape(t *testing.T) {
 	summary := json.RawMessage(`{
-	  "schema": "chronon3d.render-telemetry-summary.v1",
+	  "schema": "chronon3d.frame-timing.v3",
 	  "summary": {"render_loop_fps": 60.0},
 	  "job": {
 	    "execution_path": "direct_yuv",

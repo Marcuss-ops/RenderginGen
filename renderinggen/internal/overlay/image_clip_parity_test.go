@@ -58,7 +58,7 @@ func TestStandaloneImageGridSupportsScopeAndDots(t *testing.T) {
 // TestCompositeBackdropSelectsAsset proves image_backdrop works for composites
 // and honours an explicit asset_id selector.
 func TestCompositeBackdropSelectsAsset(t *testing.T) {
-	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"backdrop-select","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{"asset_id":"effect-photo-2","zoom":1.2,"blur_px":24}}}]}`, imageEffectsAssetRef, imageEffectsSecondAssetRef))
+	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"backdrop-select","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{"asset_id":"effect-photo-2","zoom":1.2,"blur_px":24}}}]}`, imageEffectsAssetRef, imageEffectsSecondAssetRef))
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatalf("compile composite backdrop with asset_id: %v", err)

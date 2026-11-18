@@ -103,16 +103,11 @@ func semanticItemMotionIDs(item semanticItem) []string {
 }
 
 // validateDeprecatedMotions rejects a plan that names a retired motion on any
-// item, image layer, caption or animation policy. It runs before any lowering so
-// the failure is the same every time and names the ID, the item and the reason:
-// a retired motion is never replaced by a similar one, and no partially lowered
-// plan reaches the renderer.
+// item, image layer or caption. It runs before any lowering so the failure is
+// the same every time and names the ID, the item and the reason: a retired
+// motion is never replaced by a similar one, and no partially lowered plan
+// reaches the renderer.
 func validateDeprecatedMotions(src *semanticPlan) error {
-	for _, policy := range src.AnimationPolicies {
-		if err := motionDeprecationError(policy.MotionID); err != nil {
-			return fmt.Errorf("overlay: animation_policies motion %q: %w", policy.MotionID, err)
-		}
-	}
 	for _, item := range src.Items {
 		for _, id := range semanticItemMotionIDs(item) {
 			if err := motionDeprecationError(id); err != nil {

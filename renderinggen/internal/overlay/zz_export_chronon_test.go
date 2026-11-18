@@ -25,8 +25,8 @@ func TestZZExportChrononMapsPlan(t *testing.T) {
 			},
 			"map": map[string]any{
 				"provider": "local", "source_id": "natural-earth", "source_license": "public-domain",
-				"center":      map[string]any{"latitude": 0.0, "longitude": 0.0},
-				"zoom":        0, "width": 1920, "height": 1080,
+				"center": map[string]any{"latitude": 0.0, "longitude": 0.0},
+				"zoom":   0, "width": 1920, "height": 1080,
 				"attribution": "Natural Earth", "pins": pins, "routes": routes,
 			},
 		}

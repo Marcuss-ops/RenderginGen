@@ -62,6 +62,10 @@ type PlanItem struct {
 	// asset_refs (see semanticItem.UnmarshalJSON), so the writer must be able to
 	// transport it instead of forcing callers to hand-write the plan.
 	ImagePresetID string
+	// GroupMotionID is the certified group choreography of a composite image
+	// item. New plans declare one on the parent; the children carry no motion
+	// of their own, so the group has a single animation owner.
+	GroupMotionID string
 	Text          string
 	// EntityCaption is the optional caption rendered with an entity image. The
 	// caption is a first-class animated layer: CaptionMotionID selects its
@@ -151,6 +155,7 @@ func BuildPlan(spec PlanSpec) ([]byte, error) {
 			TemplateID:        item.TemplateID,
 			PresetID:          item.PresetID,
 			ImagePresetID:     item.ImagePresetID,
+			GroupMotionID:     item.GroupMotionID,
 			MotionID:          item.MotionID,
 			Kind:              item.Kind,
 			EntityID:          item.EntityID,
@@ -243,6 +248,7 @@ type semanticItemDocument struct {
 	TemplateID        string                       `json:"template_id"`
 	PresetID          string                       `json:"preset_id"`
 	ImagePresetID     string                       `json:"image_preset_id,omitempty"`
+	GroupMotionID     string                       `json:"group_motion_id,omitempty"`
 	MotionID          string                       `json:"motion_id,omitempty"`
 	Kind              string                       `json:"kind,omitempty"`
 	EntityID          string                       `json:"entity_id,omitempty"`

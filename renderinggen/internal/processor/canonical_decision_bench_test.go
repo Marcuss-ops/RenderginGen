@@ -8,9 +8,20 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
+)
+
+// Benchmark baseline, measured 2026-11-16 on the dev host (quiet host,
+// software compositor) with a 49-frame 1080p24 timeline: NVENC 4.88 s plus
+// canonical post-pass 0.93 s, against 39.86 s for the single-session x264 lane.
+// The post-pass budget below is the measured 930 ms plus 20%, as agreed in
+// RG-AUDIT-13; it is a host-calibrated number, never a generic CI expectation.
+const (
+	canonicalPostPassBaselineMS = 930
+	canonicalPostPassBudgetPct  = 20
 )
 
 // BenchmarkCanonicalizeOutputDecision measures the two paths the canonical
@@ -48,7 +59,76 @@ func BenchmarkCanonicalizeOutputDecision(b *testing.B) {
 // renderer receipt that certifies the canonical avcC for it. The fixture's own
 // avcC is irrelevant to the benchmark: it measures the decision cost for a
 // receipt the renderer has already certified, not the encode.
-func canonicalBenchFixture(b *testing.B) string {
+func TestCanonicalDecisionGuard(t *testing.T) {
+	path := canonicalBenchFixture(t)
+	ctx := context.Background()
+	before, err := media.ProbeFile(ctx, path)
+	if err != nil {
+		t.Fatalf("probe fixture: %v", err)
+	}
+	infoBefore, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := canonicalizeOutputMP4(ctx, path, media.ProfileVeloxOverlayVideoOnlyV3)
+	if err != nil {
+		t.Fatalf("canonicalize: %v", err)
+	}
+	if encoded {
+		t.Fatal("a receipt-certified canonical artifact was re-encoded")
+	}
+	infoAfter, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if infoBefore.Size() != infoAfter.Size() {
+		t.Fatalf("artifact size changed on a skip: %d -> %d", infoBefore.Size(), infoAfter.Size())
+	}
+	after, err := media.ProbeFile(ctx, path)
+	if err != nil {
+		t.Fatalf("probe after decision: %v", err)
+	}
+	if after.FrameCount != before.FrameCount || after.DurationUS != before.DurationUS {
+		t.Fatalf("decision changed the timeline: frames %d -> %d, duration_us %d -> %d",
+			before.FrameCount, after.FrameCount, before.DurationUS, after.DurationUS)
+	}
+	if after.FrameCount != 49 || after.FPSNum != 24 || after.FPSDen != 1 {
+		t.Fatalf("fixture timeline drifted: %d frames at %d/%d fps", after.FrameCount, after.FPSNum, after.FPSDen)
+	}
+}
+
+// TestCanonicalPostPassBudget is the wall-time guard for the CPU post-pass.
+// It is opt-in because the baseline belongs to a named host: run it with
+// CANONICAL_GUARD_STRICT=1 on that host (2026-11-16, 49-frame 1080p24), where
+// the agreed budget is 930 ms + 20% = 1116 ms. The default suite still runs
+// the decision/frame/duration guard above, which is host-independent.
+func TestCanonicalPostPassBudget(t *testing.T) {
+	if os.Getenv("CANONICAL_GUARD_STRICT") != "1" {
+		t.Skip("set CANONICAL_GUARD_STRICT=1 on the calibrated host to enforce the measured post-pass budget")
+	}
+	path := canonicalBenchFixture(t)
+	if err := os.Remove(path + chronon.MediaReceiptSuffix); err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	start := time.Now()
+	encoded, err := canonicalizeOutputMP4(ctx, path, media.ProfileVeloxOverlayVideoOnlyV3)
+	if err != nil {
+		t.Fatalf("canonicalize: %v", err)
+	}
+	if !encoded {
+		t.Fatal("an artifact without a canonical receipt was not re-encoded")
+	}
+	wallMS := float64(time.Since(start).Microseconds()) / 1000
+	budgetMS := float64(canonicalPostPassBaselineMS) * (1 + float64(canonicalPostPassBudgetPct)/100)
+	if wallMS > budgetMS {
+		t.Fatalf("canonical post-pass took %.0f ms, above the %.0f ms budget (baseline %d ms + %d%%, 2026-11-16 dev host)",
+			wallMS, budgetMS, canonicalPostPassBaselineMS, canonicalPostPassBudgetPct)
+	}
+	t.Logf("canonical post-pass wall %.0f ms, budget %.0f ms", wallMS, budgetMS)
+}
+
+func canonicalBenchFixture(b testing.TB) string {
 	b.Helper()
 	if _, err := exec.LookPath("ffmpeg"); err != nil {
 		b.Skip("ffmpeg not available")

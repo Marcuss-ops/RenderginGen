@@ -21,7 +21,7 @@ const semanticSFXSHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 func semanticSFXPlan(soundEffect string) []byte {
 	return []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
 		"plan_id":"semantic-sfx-test","video_id":"source-video",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"items":[{
@@ -70,7 +70,7 @@ func TestCompileSemanticImageSFXLowersToChrononV3AudioClip(t *testing.T) {
 
 func TestCompileSemanticCompositeSFXUsesFirstVisibleChildAndCapsClip(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
 		"plan_id":"composite-sfx-test","video_id":"source-video",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"items":[{
@@ -147,7 +147,7 @@ func TestImageSFXRealChrononRenderHasBoundedNonSilentAudio(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-sfx-e2e","video_id":"image-sfx-e2e",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-sfx-e2e","video_id":"image-sfx-e2e",
 		"width":160,"height":90,"fps_num":24,"fps_den":1,"duration_ms":500,
 		"background":{"kind":"color","color":[0.02,0.02,0.02,1]},
 		"items":[{"id":"photo","kind":"image","template_id":"image_popup","preset_id":"image_focus_in",
@@ -275,7 +275,7 @@ func canonicalSFXPlan(t *testing.T, durationMS int, composite bool) []byte {
 		item += `"asset_refs":[` + asset("a") + `],"params":{"width":320,"height":240},`
 	}
 	item += `"sound_effect":` + sfx + `}`
-	return []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"sfx-canonical","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,"items":[` + item + `]}`)
+	return []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"sfx-canonical","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,"items":[` + item + `]}`)
 }
 
 func TestSoundEffectUsesCanonicalMicrosecondWindow(t *testing.T) {

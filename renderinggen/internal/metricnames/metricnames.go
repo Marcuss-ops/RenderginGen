@@ -125,21 +125,27 @@ func StemHasPair(stem string) bool {
 
 // Counters and non-time facts.
 const (
-	SubtitleLayers                    = "subtitle_layers"
-	RenderFramesDone                  = "render_frames_done"
-	RenderFramesTotal                 = "render_frames_total"
-	RenderFPS                         = "render_fps"
-	ProfileStrippedByConfig           = "profile_stripped_by_config"
-	AudioInertParams                  = "audio_inert_params"
-	AudioModeUnsupported              = "audio_mode_unsupported"
-	UnknownTemplates                  = "unknown_templates"
-	ChrononGPUCompositionPipe         = "chronon_gpu_composition_pipe"
-	ChrononSoftwareFallback           = "chronon_software_fallback"
-	MirrorFailure                     = "mirror_failure"
-	DriveUploadChunks                 = "drive_upload_chunks"
-	DriveUploadBytes                  = "drive_upload_bytes"
-	ChrononTimingPreserved            = "chronon_timing_preserved"
-	ChrononTimingBytes                = "chronon_timing_bytes"
+	SubtitleLayers            = "subtitle_layers"
+	RenderFramesDone          = "render_frames_done"
+	RenderFramesTotal         = "render_frames_total"
+	RenderFPS                 = "render_fps"
+	ProfileStrippedByConfig   = "profile_stripped_by_config"
+	AudioInertParams          = "audio_inert_params"
+	AudioModeUnsupported      = "audio_mode_unsupported"
+	UnknownTemplates          = "unknown_templates"
+	ChrononGPUCompositionPipe = "chronon_gpu_composition_pipe"
+	ChrononSoftwareFallback   = "chronon_software_fallback"
+	MirrorFailure             = "mirror_failure"
+	DriveUploadChunks         = "drive_upload_chunks"
+	DriveUploadBytes          = "drive_upload_bytes"
+	ChrononTimingPreserved    = "chronon_timing_preserved"
+	ChrononTimingBytes        = "chronon_timing_bytes"
+	// ChrononTelemetrySchemaRead carries the accepted timing schema as a
+	// numeric code (2 or 3) because the artifact metric map has no label
+	// dimension. ChrononTelemetrySourceTiming is the source counter (1 = the
+	// canonical timing sidecar); the retired v1 summary is never a source.
+	ChrononTelemetrySchemaRead        = "chronon_telemetry_schema_read_total"
+	ChrononTelemetrySourceTiming      = "chronon_telemetry_source_timing_sidecar"
 	ClosedGOPUncertifiable            = "closed_gop_uncertifiable"
 	PublicationDriveSkippedPolicy     = "publication_drive_skipped_by_policy"
 	PublicationDriveSkippedCapability = "publication_drive_skipped_no_capability"
@@ -221,25 +227,31 @@ const (
 // Ledger facts mirrored into the local artifact database (counts, bytes and
 // media facts the mirror projects as numbers).
 const (
-	OverlayItemCount     = "overlay_item_count"
-	OverlayRenderBatch   = "overlay_render_batch"
-	EntityCount          = "entity_count"
-	ImportantPhraseCount = "important_phrase_count"
-	ImportantWordCount   = "important_word_count"
-	ImageCount           = "image_count"
-	LightLeakCount       = "light_leak_count"
-	InputBytes           = "input_bytes"
-	OutputBytes          = "output_bytes"
-	FrameCount           = "frame_count"
-	DurationUS           = "duration_us"
-	Width                = "width"
-	Height               = "height"
-	FPS                  = "fps"
+	OverlayItemCount   = "overlay_item_count"
+	OverlayRenderBatch = "overlay_render_batch"
+	// Legacy composite image replay. The artifact metric map has no label
+	// dimension, so the "reason" is encoded by two counters: every admitted
+	// image_layers item, and the subset admitted by the explicit sealed-plan
+	// replay marker. A fresh render must leave both at zero.
+	LegacyCompositeImageItems  = "overlay_legacy_composite_image_items"
+	LegacyCompositeImageReplay = "overlay_legacy_composite_image_replay"
+	EntityCount                = "entity_count"
+	ImportantPhraseCount       = "important_phrase_count"
+	ImportantWordCount         = "important_word_count"
+	ImageCount                 = "image_count"
+	LightLeakCount             = "light_leak_count"
+	InputBytes                 = "input_bytes"
+	OutputBytes                = "output_bytes"
+	FrameCount                 = "frame_count"
+	DurationUS                 = "duration_us"
+	Width                      = "width"
+	Height                     = "height"
+	FPS                        = "fps"
 )
 
 // Chronon-owned telemetry is projected behind this prefix: the keys are the
-// engine's (schema chronon3d.render-telemetry-summary.v1), the prefix is the
-// worker's namespace for them on the artifact metrics map.
+// engine's (bounded sections of chronon3d.frame-timing.v2/v3), the prefix is
+// the worker's namespace for them on the artifact metrics map.
 const (
 	ChrononSummaryPrefix = "chronon_summary_"
 	ChrononTimingPrefix  = "chronon_timing_"
@@ -286,6 +298,7 @@ var vocab = map[string]string{
 	MirrorFailure:           UnitCount,
 	DriveUploadChunks:       UnitCount, DriveUploadBytes: UnitBytes,
 	ChrononTimingPreserved: UnitCount, ChrononTimingBytes: UnitBytes,
+	ChrononTelemetrySchemaRead: UnitCount, ChrononTelemetrySourceTiming: UnitCount,
 	ClosedGOPUncertifiable:        UnitCount,
 	PublicationDriveSkippedPolicy: UnitCount, PublicationDriveSkippedCapability: UnitCount,
 	WorkspaceCleanupFailures: UnitCount, ChrononTelemetryMissing: UnitCount,
@@ -300,6 +313,7 @@ var vocab = map[string]string{
 	L2CacheCorrupt: UnitCount,
 
 	OverlayItemCount: UnitCount, OverlayRenderBatch: UnitCount,
+	LegacyCompositeImageItems: UnitCount, LegacyCompositeImageReplay: UnitCount,
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,
 	OutputBytes: UnitBytes, FrameCount: UnitCount, DurationUS: UnitUS,

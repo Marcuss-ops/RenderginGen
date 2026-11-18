@@ -26,6 +26,18 @@ func editorialImageLook(name string) ([]LayerEffect, bool) {
 	return result, ok
 }
 
+// blackAndWhiteEffect lowers the public black_and_white type to Chronon's
+// native color.saturation catalog effect. Both surfaces (clip adjustment stack
+// and image/shape layer stack) call this one helper, so a clip request and an
+// image look cannot disagree on what "black and white" means. amount 1.0 is
+// full desaturation, 0.0 leaves the frame untouched.
+func blackAndWhiteEffect(amount float64) LayerEffect {
+	return LayerEffect{Type: "catalog", Params: map[string]any{
+		"effect_id": "color.saturation",
+		"params":    []map[string]any{{"param": "value", "value": 1 - amount}},
+	}}
+}
+
 // resolveClipEffects lowers the clip-level adjustment stack. Parameter names,
 // bounds, required fields and surface availability all come from the shared
 // effect catalog; this function only decides how a public type becomes
@@ -87,6 +99,8 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 			out = append(out, LayerEffect{Type: typ, Params: map[string]any{"curvature": params["curvature"], "scale": scale}})
 		case "glow":
 			out = append(out, LayerEffect{Type: typ, Params: map[string]any{"radius": params["radius"], "intensity": params["intensity"]}})
+		case "black_and_white":
+			out = append(out, blackAndWhiteEffect(params["amount"].(float64)))
 		case "banded_grain":
 			speed := 0.0
 			if value, present := params["speed"].(float64); present {
@@ -359,6 +373,15 @@ func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 				}
 			}
 			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": math.Min(1, intensity/4), "size": 1.0, "seed": seed, "animated": speed > 0, "color_mode": "monochrome"}})
+			continue
+		case "black_and_white":
+			amount := 1.0
+			if value, present := params["amount"]; present {
+				if f, err := toFloat(value); err == nil {
+					amount = f
+				}
+			}
+			out = append(out, blackAndWhiteEffect(amount))
 			continue
 		case "chromatic_aberration":
 			if _, has := params["red_offset"]; !has {

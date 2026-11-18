@@ -159,9 +159,13 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 	if strings.TrimSpace(ri.Item.GroupMotionID) != "" {
 		return nil, fmt.Errorf("overlay: item %q group_motion_id %q has no certified group recipe; legacy per-child replay refused", ri.Item.ID, ri.Item.GroupMotionID)
 	}
-	// Legacy replay path: a sealed plan with no group_motion_id keeps its
-	// per-child motion_id. New plans always carry group_motion_id, so they
-	// never reach this branch and cannot have two animation owners.
+	// Sealed replay path: a pre-group_motion_id plan keeps its per-child
+	// motion_id only when it carries the explicit replay marker. A new plan
+	// that forgot the group recipe (or a producer that regressed) fails closed
+	// instead of silently taking a second animation path.
+	if !src.LegacyCompositeReplay {
+		return nil, fmt.Errorf("overlay: item %q has image_layers without group_motion_id; new plans must declare a certified group recipe (sealed plans replay only with legacy_composite_replay=true)", ri.Item.ID)
+	}
 	return compileLegacyCompositeImageLayers(ri, src, registry)
 }
 
@@ -493,7 +497,7 @@ var runtimeDefaultImageMotionIDs = func() []string {
 }()
 
 // runtimeDefaultImageMotionID returns a deterministic but video/item-specific
-// choice. Explicit motion_id and animation_policies are handled before this
+// choice. Explicit motion_id and animation groups are handled before this
 // fallback, and therefore remain authoritative.
 var runtimeDefaultCaptionMotionIDs = func() []string {
 	var ids []string

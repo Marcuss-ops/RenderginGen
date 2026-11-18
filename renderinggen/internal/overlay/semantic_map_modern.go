@@ -31,6 +31,7 @@ import (
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/mapgeom"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/tacticalfill"
 )
 
@@ -1060,169 +1061,41 @@ func modernMapPathGeometry(rings [][][2]float64, canvasWidth, canvasHeight int) 
 }
 
 func modernMapRingsBounds(rings [][][2]float64) (minX, minY, maxX, maxY float64) {
-	minX, minY = math.Inf(1), math.Inf(1)
-	maxX, maxY = math.Inf(-1), math.Inf(-1)
-	for _, ring := range rings {
-		for _, point := range ring {
-			minX = math.Min(minX, point[0])
-			minY = math.Min(minY, point[1])
-			maxX = math.Max(maxX, point[0])
-			maxY = math.Max(maxY, point[1])
-		}
+	bounds, ok := mapgeom.BoundsOfRings(rings)
+	if !ok {
+		return math.Inf(1), math.Inf(1), math.Inf(-1), math.Inf(-1)
 	}
-	return minX, minY, maxX, maxY
+	return bounds.MinX, bounds.MinY, bounds.MaxX, bounds.MaxY
 }
 
 func modernMapRingArea(points [][2]float64) float64 {
-	var twice float64
-	for index, point := range points {
-		next := points[(index+1)%len(points)]
-		twice += point[0]*next[1] - next[0]*point[1]
-	}
-	return math.Abs(twice) / 2
+	return mapgeom.RingArea(points)
 }
 
 func modernMapRingBounds(points [][2]float64) (minX, minY, maxX, maxY float64) {
-	minX, minY = math.Inf(1), math.Inf(1)
-	maxX, maxY = math.Inf(-1), math.Inf(-1)
-	for _, point := range points {
-		minX = math.Min(minX, point[0])
-		minY = math.Min(minY, point[1])
-		maxX = math.Max(maxX, point[0])
-		maxY = math.Max(maxY, point[1])
-	}
-	return minX, minY, maxX, maxY
+	return mapgeom.RingBounds(points)
 }
 
-// modernMapCleanRing drops repeated vertices (including a duplicated closing
-// point) so no later step has to divide by a zero-length edge.
 func modernMapCleanRing(points [][2]float64) [][2]float64 {
-	ring := make([][2]float64, 0, len(points))
-	for _, point := range points {
-		if len(ring) > 0 && modernMapDistanceSquared(ring[len(ring)-1], point) <= 1e-6 {
-			continue
-		}
-		ring = append(ring, point)
-	}
-	if len(ring) > 1 && modernMapDistanceSquared(ring[0], ring[len(ring)-1]) <= 1e-6 {
-		ring = ring[:len(ring)-1]
-	}
-	return ring
+	return mapgeom.CleanRing(points)
 }
 
-// simplifyModernMapRing decimates a closed ring with Ramer–Douglas–Peucker.
-// Uniform index sampling (the previous approach) spent points evenly on long
-// straight borders and cut through bays; RDP keeps the capes and skips collinear
-// coast instead.
 func simplifyModernMapRing(points [][2]float64, limit int) [][2]float64 {
-	ring := modernMapCleanRing(points)
-	if len(ring) <= limit || limit < 4 {
-		return ring
-	}
-	// Two far-apart anchors let RDP run on open polylines while the ring stays
-	// closed: the second half ends back at ring[0], which is dropped again.
-	far, farthest := 0, -1.0
-	for index, point := range ring {
-		if distance := modernMapDistanceSquared(ring[0], point); distance > farthest {
-			far, farthest = index, distance
-		}
-	}
-	if far == 0 {
-		far = len(ring) / 2
-	}
-	closed := make([][2]float64, 0, len(ring)-far+1)
-	closed = append(closed, ring[far:]...)
-	closed = append(closed, ring[0])
-	minX, minY, maxX, maxY := modernMapRingBounds(ring)
-	low, high := 0.0, math.Hypot(maxX-minX, maxY-minY)
-	if high <= 0 {
-		return ring
-	}
-	best := ring
-	for try := 0; try < 20; try++ {
-		tolerance := (low + high) / 2
-		simplified := simplifyModernMapPolyline(ring[:far+1], tolerance)
-		tail := simplifyModernMapPolyline(closed, tolerance)
-		simplified = append(simplified, tail[1:len(tail)-1]...)
-		if len(simplified) > limit {
-			low = tolerance
-			continue
-		}
-		best = simplified
-		high = tolerance
-	}
-	return best
+	return mapgeom.SimplifyRing(points, limit)
 }
 
 func simplifyModernMapPolyline(points [][2]float64, tolerance float64) [][2]float64 {
-	if len(points) < 3 {
-		return append([][2]float64(nil), points...)
-	}
-	keep := make([]bool, len(points))
-	keep[0], keep[len(points)-1] = true, true
-	stack := [][2]int{{0, len(points) - 1}}
-	threshold := tolerance * tolerance
-	for len(stack) > 0 {
-		segment := stack[len(stack)-1]
-		stack = stack[:len(stack)-1]
-		farthest, farthestIndex := -1.0, -1
-		for index := segment[0] + 1; index < segment[1]; index++ {
-			if distance := modernMapPointSegmentDistanceSquared(points[index], points[segment[0]], points[segment[1]]); distance > farthest {
-				farthest, farthestIndex = distance, index
-			}
-		}
-		if farthestIndex >= 0 && farthest > threshold {
-			keep[farthestIndex] = true
-			stack = append(stack, [2]int{segment[0], farthestIndex}, [2]int{farthestIndex, segment[1]})
-		}
-	}
-	out := make([][2]float64, 0, len(points))
-	for index, point := range points {
-		if keep[index] {
-			out = append(out, point)
-		}
-	}
-	return out
+	return mapgeom.SimplifyPolyline(points, tolerance)
 }
 
 func modernMapPointSegmentDistanceSquared(point, a, b [2]float64) float64 {
-	dx, dy := b[0]-a[0], b[1]-a[1]
-	length := dx*dx + dy*dy
-	if length <= 0 {
-		return modernMapDistanceSquared(point, a)
-	}
-	t := ((point[0]-a[0])*dx + (point[1]-a[1])*dy) / length
-	t = math.Max(0, math.Min(1, t))
-	px, py := a[0]+t*dx, a[1]+t*dy
-	return (point[0]-px)*(point[0]-px) + (point[1]-py)*(point[1]-py)
+	return mapgeom.PointSegmentDistanceSquared(point, a, b)
 }
 
 func modernMapDistanceSquared(a, b [2]float64) float64 {
-	dx, dy := a[0]-b[0], a[1]-b[1]
-	return dx*dx + dy*dy
+	return mapgeom.DistanceSquared(a, b)
 }
 
-// decimateModernMapRing keeps the silhouette while bounding the command count a
-// single shape can contribute. Raster Natural Earth rings easily exceed what the
-// renderer should flatten per frame; the first and last point are preserved so
-// the ring stays closed.
 func decimateModernMapRing(points [][2]float64, limit int) [][2]float64 {
-	if len(points) <= limit {
-		return points
-	}
-	if limit < 4 {
-		limit = 4
-	}
-	out := make([][2]float64, 0, limit)
-	step := float64(len(points)-1) / float64(limit-1)
-	for index := 0; index < limit; index++ {
-		position := int(float64(index) * step)
-		if position >= len(points) {
-			position = len(points) - 1
-		}
-		out = append(out, points[position])
-	}
-	out[0] = points[0]
-	out[len(out)-1] = points[len(points)-1]
-	return out
+	return mapgeom.DecimateRing(points, limit)
 }

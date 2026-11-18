@@ -131,14 +131,32 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 			t.Fatalf("clip effects must not use the broken adjustment layer: %+v", layer)
 		}
 	}
-	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "grid" || grid.Opacity == nil || *grid.Opacity != 0.2 {
-		t.Fatalf("grid overlay was not compiled: %+v", grid)
+	if grid.Type != "shape" || grid.Shape == nil || grid.Shape.Type != "path" || grid.Opacity == nil || *grid.Opacity != 0.2 {
+		t.Fatalf("line grid must lower to an explicit path, got: %+v", grid)
 	}
-	if len(grid.Position) != 2 || grid.Position[0] != 0 || grid.Position[1] != 0 {
-		t.Fatalf("full-frame grid box must be centred on the canvas so the centred grid path covers it; position=%v", grid.Position)
+	if len(grid.Size) != 2 || grid.Size[0] != 1280 || grid.Size[1] != 720 {
+		t.Fatalf("full_canvas line grid must span the whole canvas, size=%v", grid.Size)
 	}
-	if grid.Shape.GridLineWidth != 1 || grid.Shape.Stroke == nil || grid.Shape.Stroke.Width != 1 || grid.Shape.Stroke.Color != "#33CCDD" {
-		t.Fatalf("grid spacing, line width and color must all survive lowering: %+v", grid.Shape)
+	// A line grid is built from explicit 0..width/0..height commands anchored
+	// at -width/2: the centred generated `grid` shape is clipped by the
+	// renderer to its positive quadrant and only covered a quarter of the frame.
+	if len(grid.Position) != 2 || grid.Position[0] != -640 || grid.Position[1] != -360 {
+		t.Fatalf("line grid must be anchored so its 0..width path covers the canvas; position=%v", grid.Position)
+	}
+	if len(grid.Shape.Path) == 0 {
+		t.Fatalf("line grid has no explicit path commands: %+v", grid.Shape)
+	}
+	first, last := grid.Shape.Path[0], grid.Shape.Path[len(grid.Shape.Path)-1]
+	if first.Type != "move_to" || first.Point[0] != 0 || first.Point[1] != 0 {
+		t.Fatalf("line grid must start at the canvas origin: %+v", first)
+	}
+	// The last row sits on the last grid multiple, so it must still reach the
+	// canvas width and stop within one spacing of the bottom edge.
+	if last.Type != "line_to" || last.Point[0] != 1280 || last.Point[1] < 720-64 || last.Point[1] > 720 {
+		t.Fatalf("line grid must reach the canvas bottom-right: %+v", last)
+	}
+	if grid.Shape.Stroke == nil || grid.Shape.Stroke.Width != 1 || grid.Shape.Stroke.Color != "#33CCDD" {
+		t.Fatalf("grid line width and color must survive lowering: %+v", grid.Shape)
 	}
 	wire, err := result.Plan.Marshal()
 	if err != nil {
@@ -166,10 +184,12 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	var gridWire struct {
 		Layers []struct {
 			ID       string    `json:"id"`
+			Size     []float64 `json:"size"`
 			Position []float64 `json:"position"`
 			Shape    struct {
-				Spacing float64 `json:"spacing"`
-				Stroke  struct {
+				Type   string           `json:"type"`
+				Path   []map[string]any `json:"path"`
+				Stroke struct {
 					Color string  `json:"color"`
 					Width float64 `json:"width"`
 				} `json:"stroke"`
@@ -183,7 +203,7 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	for _, layer := range gridWire.Layers {
 		if layer.ID == "clip__grid" {
 			foundGrid = true
-			if len(layer.Position) != 2 || layer.Position[0] != 0 || layer.Position[1] != 0 || layer.Shape.Spacing != 64 || layer.Shape.Stroke.Width != 1 || layer.Shape.Stroke.Color != "#33CCDD" {
+			if len(layer.Size) != 2 || layer.Size[0] != 1280 || layer.Size[1] != 720 || len(layer.Position) != 2 || layer.Position[0] != -640 || layer.Position[1] != -360 || layer.Shape.Type != "path" || len(layer.Shape.Path) == 0 || layer.Shape.Stroke.Width != 1 || layer.Shape.Stroke.Color != "#33CCDD" {
 				t.Fatalf("grid wire is not full-frame or lost style: %+v", layer)
 			}
 		}

@@ -14,7 +14,7 @@ import (
 // and this test would catch the silent regression.
 func TestCompositeGroupMotionCompilesWithMotionFreeChildren(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
 		"plan_id":"group-owner","video_id":"group-owner",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
 		"items":[{
@@ -54,7 +54,7 @@ func TestCompositeGroupMotionCompilesWithMotionFreeChildren(t *testing.T) {
 // replayable. New producer plans never emit this shape, but old sealed jobs do.
 func TestLegacyCompositeStillCompilesPerChildMotion(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
 		"plan_id":"legacy-owner","video_id":"legacy-owner",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
 		"items":[{
@@ -94,7 +94,7 @@ func TestReusableGroupAnimationWorksForDifferentImageCounts(t *testing.T) {
 			layers = append(layers, fmt.Sprintf(`{"id":%q,"asset_id":%q,"start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":""}`, id, id))
 		}
 		raw := fmt.Sprintf(`{
-			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"reusable-%d","video_id":"reusable-%d",
+			"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"reusable-%d","video_id":"reusable-%d",
 			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":5000,
 			"items":[{"id":"group","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
 			"composition_id":"multiple_images","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,
@@ -132,7 +132,7 @@ func TestAllReusableImageAnimationsCompileForOneImage(t *testing.T) {
 	}
 	for _, id := range ids {
 		raw := fmt.Sprintf(`{
-			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"single-%s","video_id":"single-%s",
+			"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"single-%s","video_id":"single-%s",
 			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
 			"items":[{"id":"image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in",
 			"composition_id":"single_image","motion_id":%q,"start_ms":0,"end_ms":2000,

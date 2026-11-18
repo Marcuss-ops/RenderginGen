@@ -30,7 +30,6 @@ func TestContractSchemaMatchesCompilerStructs(t *testing.T) {
 		goValue       any
 	}{
 		{"plan", "#/", semanticPlan{}},
-		{"plan.animation_policies[]", "#/$defs/animation_policy", semanticAnimationPolicy{}},
 		{"plan.animation_groups[]", "#/$defs/animation_group", semanticAnimationGroup{}},
 		{"plan.animation_groups[].members[]", "#/$defs/animation_group_member", semanticAnimationGroupMember{}},
 		{"plan.source", "#/properties/source", semanticSource{}},

@@ -34,11 +34,12 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 			},
 			{
 				ID: "gallery", Kind: "entity_image", TemplateID: "IMAGE_OVERLAY", PresetID: "image_scale_in",
-				AssetRefs: []PlanAssetRef{plateA, plateB}, DurationMS: int64Pointer(4000), StartMS: 4000, EndMS: 8000,
+				GroupMotionID: "duo_split_reveal",
+				AssetRefs:     []PlanAssetRef{plateA, plateB}, DurationMS: int64Pointer(4000), StartMS: 4000, EndMS: 8000,
 				ImageLayers: []overlay.SemanticImageLayer{
-					{ID: "a", AssetID: "plate-a", StartMS: 0, EndMS: 4000, PresetID: "image_scale_in", MotionID: "image_yaw_reveal", Caption: "Ada Lovelace", CaptionMotionID: "text_word_rise",
+					{ID: "a", AssetID: "plate-a", StartMS: 0, EndMS: 4000, PresetID: "image_scale_in", Caption: "Ada Lovelace", CaptionMotionID: "text_word_rise",
 						Params: map[string]any{"width": 640.0, "height": 420.0, "position_x": -320.0, "position_y": 0.0}},
-					{ID: "b", AssetID: "plate-b", StartMS: 300, EndMS: 4000, PresetID: "image_scale_in", MotionID: "image_photo_drop", Caption: "Grace Hopper", CaptionMotionID: "text_word_stagger",
+					{ID: "b", AssetID: "plate-b", StartMS: 300, EndMS: 4000, PresetID: "image_scale_in", Caption: "Grace Hopper", CaptionMotionID: "text_word_stagger",
 						Params: map[string]any{"width": 640.0, "height": 420.0, "position_x": 320.0, "position_y": 0.0}},
 				},
 			},
@@ -65,6 +66,7 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 		`"entity_caption":"Ada Lovelace"`,
 		`"caption_motion_id":"text_fade_up"`,
 		`"image_layers"`,
+		`"group_motion_id":"duo_split_reveal"`,
 		`"caption_motion_id":"text_word_rise"`,
 		`"caption_motion_id":"text_word_stagger"`,
 		`"map"`,
@@ -102,14 +104,15 @@ func TestBuildPlanTransportsCompositeEntityAndMapFields(t *testing.T) {
 	// composite child count.
 	var probe struct {
 		Items []struct {
-			ImageLayers []overlay.SemanticImageLayer `json:"image_layers"`
-			Map         *overlay.SemanticMap         `json:"map"`
+			GroupMotionID string                       `json:"group_motion_id"`
+			ImageLayers   []overlay.SemanticImageLayer `json:"image_layers"`
+			Map           *overlay.SemanticMap         `json:"map"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(raw, &probe); err != nil {
 		t.Fatal(err)
 	}
-	if len(probe.Items) != 3 || len(probe.Items[1].ImageLayers) != 2 || probe.Items[2].Map == nil {
+	if len(probe.Items) != 3 || probe.Items[1].GroupMotionID != "duo_split_reveal" || len(probe.Items[1].ImageLayers) != 2 || probe.Items[2].Map == nil {
 		t.Fatalf("wire round trip lost the composite/map declarations: %+v", probe.Items)
 	}
 	if probe.Items[1].ImageLayers[0].CaptionMotionID != "text_word_rise" || probe.Items[1].ImageLayers[1].CaptionMotionID != "text_word_stagger" {

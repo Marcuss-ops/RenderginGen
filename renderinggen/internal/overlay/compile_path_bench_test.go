@@ -146,3 +146,11 @@ func BenchmarkCompileSemantic(b *testing.B) {
 func BenchmarkCompileSemanticChain(b *testing.B) {
 	benchmarkCompileSemantic(b, compileBenchDocument(compileBenchChainItems()))
 }
+
+// BenchmarkCompileSemanticModernMap is the map-heavy compile shape used by
+// ticket 14: Natural Earth Italy, territory simplification, borders and the
+// editorial plate. It makes the mapgeom cost visible in a real compile instead
+// of comparing two unrelated microbenchmarks.
+func BenchmarkCompileSemanticModernMap(b *testing.B) {
+	benchmarkCompileSemantic(b, modernMapPlan("Italy", nil))
+}

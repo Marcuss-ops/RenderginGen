@@ -396,7 +396,7 @@ func TestSelectionModelDataFieldsAreEnforced(t *testing.T) {
 	// Every declared field the catalog publishes must survive the wire. The
 	// probe sends the full metric payload; the date payload is covered by
 	// semantic_data_contract_test.go.
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"metric-probe","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"metric-probe","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
 		`"items":[{"id":"metric","kind":"metric_stat","template_id":"METRIC_STAT_CARD","preset_id":"phrase_default","start_ms":0,"end_ms":2000,"text":"42%",` +
 		`"metric":{"value":"42","unit":"%","label":"Growth","delta":"+4","precision":1}}]}`)
 	result, err := CompileSemantic(raw)
@@ -453,7 +453,7 @@ func TestSelectionModelLayerOrderAndCaptionRulesAreEnforced(t *testing.T) {
 		{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},
 		{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"},
 		{"asset_id":"c","sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","url":"https://example.test/c.jpg"}]`
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"order","video_id":"order","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"order","video_id":"order","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
 		`"items":[{"id":"trio","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"duration_ms":5000,` +
 		`"asset_refs":` + assets + `,"image_layers":` + layers + `}]}`)
 	compiled, err := CompileSemantic(raw)
@@ -477,7 +477,7 @@ func TestSelectionModelLayerOrderAndCaptionRulesAreEnforced(t *testing.T) {
 	uncaptionedLayer := func(id string) string {
 		return fmt.Sprintf(`{"id":%q,"asset_id":%q,"start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":420,"height":360,"position_x":0,"position_y":0}}`, id, id)
 	}
-	dense := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"dense","video_id":"dense","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
+	dense := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"dense","video_id":"dense","width":1280,"height":720,"fps_num":24,"fps_den":1,` +
 		`"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","composition_id":"image_double_with_text","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"duration_ms":5000,` +
 		`"asset_refs":` + assets + `,"image_layers":[` + uncaptionedLayer("a") + `,` + uncaptionedLayer("b") + `]}]}`)
 	_, err = CompileSemantic(dense)

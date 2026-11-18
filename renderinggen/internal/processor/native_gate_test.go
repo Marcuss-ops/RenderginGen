@@ -3,6 +3,7 @@ package processor
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -49,8 +50,22 @@ func TestRequireNativeVulkanCertifiesFromV2TimingSidecar(t *testing.T) {
 	}
 }
 
+func TestRequireNativeVulkanRejectsRetiredV1Summary(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "result.mp4")
+	v1 := `{"schema":"chronon3d.render-telemetry-summary.v1","job":{"surface_handoff_path":"direct","gpu":{"effective_backend":"vulkan","encoder_backend":"nvenc","software_fallback_nodes":0,"cpu_readback_frames":0,"software_encode_frames":0,"video_pipe_fallback_frames":0,"nvenc_frames":1,"vulkan_frames":1}}}`
+	if err := os.WriteFile(path+".telemetry-summary.json", []byte(v1), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path+".receipt.json", []byte(`{"copy_eligible":true}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := requireNativeVulkan(path, 1); err == nil || !strings.Contains(err.Error(), "timing sidecar") {
+		t.Fatalf("retired v1 summary gate error = %v, want explicit timing-sidecar failure", err)
+	}
+}
+
 func TestRequireNativeVulkan(t *testing.T) {
-	const summarySchema = "chronon3d.render-telemetry-summary.v1"
+	const summarySchema = "chronon3d.frame-timing.v3"
 	tests := []struct {
 		name string
 		body string
@@ -66,7 +81,7 @@ func TestRequireNativeVulkan(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			path := filepath.Join(t.TempDir(), "result.mp4")
-			if err := os.WriteFile(path+".telemetry-summary.json", []byte(tc.body), 0o600); err != nil {
+			if err := os.WriteFile(path+".timing.json", []byte(tc.body), 0o600); err != nil {
 				t.Fatal(err)
 			}
 			receipt := `{"copy_eligible":true}`

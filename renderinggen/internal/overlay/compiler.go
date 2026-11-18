@@ -286,26 +286,22 @@ type semanticPlan struct {
 	// DurationMS is the explicit clip duration. When provided it seeds the
 	// canvas duration before items are processed; items can only extend it.
 	// Required when items is empty (clip render without entity overlays).
-	DurationMS        int64                     `json:"duration_ms,omitempty"`
-	SceneCamera       *SemanticSceneCamera      `json:"scene_camera,omitempty"`
-	OutputProfileID   string                    `json:"output_profile_id"`
-	MediaContract     string                    `json:"media_contract,omitempty"` // producer media metadata
-	Background        *semanticBackground       `json:"background,omitempty"`
-	Subtitles         *semanticSubtitles        `json:"subtitles,omitempty"`
-	Watermark         *semanticWatermark        `json:"watermark,omitempty"`
-	Audio             *semanticAudio            `json:"audio,omitempty"`
-	MapCompositionID  string                    `json:"map_composition_id,omitempty"`
-	Items             []semanticItem            `json:"items"`
-	AnimationPolicies []semanticAnimationPolicy `json:"animation_policies,omitempty"`
-	AnimationGroups   []semanticAnimationGroup  `json:"animation_groups,omitempty"`
-}
-
-type semanticAnimationPolicy struct {
-	Target       string         `json:"target"`
-	GroupID      string         `json:"group_id"`
-	SubgroupID   string         `json:"subgroup_id,omitempty"`
-	MotionID     string         `json:"motion_id,omitempty"`
-	MotionParams map[string]any `json:"motion_params,omitempty"`
+	DurationMS       int64                    `json:"duration_ms,omitempty"`
+	SceneCamera      *SemanticSceneCamera     `json:"scene_camera,omitempty"`
+	OutputProfileID  string                   `json:"output_profile_id"`
+	MediaContract    string                   `json:"media_contract,omitempty"` // producer media metadata
+	Background       *semanticBackground      `json:"background,omitempty"`
+	Subtitles        *semanticSubtitles       `json:"subtitles,omitempty"`
+	Watermark        *semanticWatermark       `json:"watermark,omitempty"`
+	Audio            *semanticAudio           `json:"audio,omitempty"`
+	MapCompositionID string                   `json:"map_composition_id,omitempty"`
+	Items            []semanticItem           `json:"items"`
+	AnimationGroups  []semanticAnimationGroup `json:"animation_groups,omitempty"`
+	// LegacyCompositeReplay is the explicit replay marker for sealed
+	// pre-group_motion_id composites. New plans must name group_motion_id;
+	// without this marker image_layers fail closed instead of silently taking
+	// the child-by-child legacy path. It is not emitted by PipelineGen.
+	LegacyCompositeReplay bool `json:"legacy_composite_replay,omitempty"`
 }
 
 // semanticAnimationGroup is the V2 heterogeneous animation owner. Members may
@@ -450,15 +446,28 @@ type semanticBackground struct {
 	BlurPX float64 `json:"blur_px,omitempty"`
 }
 
+// semanticEntityRef is the producer's WHO-correlation metadata for an overlay
+// item. RenderingGen never derives displayed text from it; it is carried so the
+// strict plan decoder accepts the production payload and downstream evidence can
+// join the rendered layer to the entity the media resolver selected.
+type semanticEntityRef struct {
+	EntityID          string `json:"entity_id"`
+	Type              string `json:"type"`
+	Name              string `json:"name"`
+	SurfaceText       string `json:"surface_text,omitempty"`
+	CanonicalEntityID string `json:"canonical_entity_id,omitempty"`
+}
+
 type semanticItem struct {
 	ID string `json:"id"`
 	// Producer correlation/group metadata. group_id/subgroup_id select
 	// plan-level animation policies; the other keys remain metadata only.
-	SceneID    string `json:"scene_id,omitempty"`
-	EntityID   string `json:"entity_id,omitempty"`
-	RenderKey  string `json:"render_key,omitempty"`
-	GroupID    string `json:"group_id,omitempty"`
-	SubgroupID string `json:"subgroup_id,omitempty"`
+	SceneID    string             `json:"scene_id,omitempty"`
+	EntityID   string             `json:"entity_id,omitempty"`
+	EntityRef  *semanticEntityRef `json:"entity_ref,omitempty"`
+	RenderKey  string             `json:"render_key,omitempty"`
+	GroupID    string             `json:"group_id,omitempty"`
+	SubgroupID string             `json:"subgroup_id,omitempty"`
 	// Kind is the semantic SSOT of the item. It is authoritative when
 	// PipelineGen sends it; when it is absent the template registry supplies
 	// it. A kind that contradicts the template's kind is rejected fail-closed
@@ -547,20 +556,24 @@ type SemanticOverlaySFX struct {
 // It is deliberately typed so strict decoding, bounds checks and schema parity
 // cannot silently discard map geometry or legal attribution.
 type SemanticMap struct {
-	Provider      string                   `json:"provider"`
-	SourceID      string                   `json:"source_id"`
-	SourceLicense string                   `json:"source_license"`
-	Center        SemanticMapPoint         `json:"center"`
-	Zoom          int                      `json:"zoom"`
-	Width         int                      `json:"width"`
-	Height        int                      `json:"height"`
-	Attribution   string                   `json:"attribution"`
-	MotionID      string                   `json:"motion_id,omitempty"`
-	Pins          []SemanticMapPin         `json:"pins"`
-	LODs          []SemanticMapLOD         `json:"lods,omitempty"`
-	CameraMove    *SemanticMapCameraMove   `json:"camera_move,omitempty"`
-	FlyToFeature  *SemanticMapFlyToFeature `json:"fly_to_feature,omitempty"`
-	Routes        []SemanticMapRoute       `json:"routes,omitempty"`
+	Provider      string           `json:"provider"`
+	SourceID      string           `json:"source_id"`
+	SourceLicense string           `json:"source_license"`
+	Center        SemanticMapPoint `json:"center"`
+	Zoom          int              `json:"zoom"`
+	// AreaGlowRadiusKM is producer metadata for the painted area glow. It is
+	// accepted so the strict decoder does not reject a production plan, but it
+	// plays no part in the lowered map geometry.
+	AreaGlowRadiusKM *float64                 `json:"area_glow_radius_km,omitempty"`
+	Width            int                      `json:"width"`
+	Height           int                      `json:"height"`
+	Attribution      string                   `json:"attribution"`
+	MotionID         string                   `json:"motion_id,omitempty"`
+	Pins             []SemanticMapPin         `json:"pins"`
+	LODs             []SemanticMapLOD         `json:"lods,omitempty"`
+	CameraMove       *SemanticMapCameraMove   `json:"camera_move,omitempty"`
+	FlyToFeature     *SemanticMapFlyToFeature `json:"fly_to_feature,omitempty"`
+	Routes           []SemanticMapRoute       `json:"routes,omitempty"`
 }
 
 type SemanticMapFlyToFeature struct {

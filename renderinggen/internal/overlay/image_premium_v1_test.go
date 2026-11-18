@@ -32,7 +32,7 @@ func TestImageStackClassificationComesFromRecipeMetadata(t *testing.T) {
 }
 
 func premiumImagePlan(id, extra string) []byte {
-	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"premium-%s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"premium-image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%q,"start_ms":0,"end_ms":5000,"asset_refs":[%s]%s}]}`,
+	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"premium-%s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"premium-image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%q,"start_ms":0,"end_ms":5000,"asset_refs":[%s]%s}]}`,
 		id, id, premiumImageAssetRef, extra))
 }
 
@@ -189,7 +189,7 @@ func premiumNumericTrackValue(animation *LayerAnimation, property string, keyfra
 }
 
 func premiumStackPlan(active string) []byte {
-	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"stack","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"stack","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":"image_stack_focus","motion_params":{"active_layer_id":%q},"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"back","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/back.png"},{"asset_id":"front","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/front.png"}],"image_layers":[{"id":"back","asset_id":"back","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"front","asset_id":"front","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}]}]}`, active))
+	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"stack","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"stack","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":"image_stack_focus","motion_params":{"active_layer_id":%q},"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"back","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/back.png"},{"asset_id":"front","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/front.png"}],"image_layers":[{"id":"back","asset_id":"back","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"front","asset_id":"front","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}]}]}`, active))
 }
 
 func TestImagePremiumCaptionAndDurationContractsFailClosed(t *testing.T) {
@@ -217,7 +217,7 @@ func TestImagePremiumCaptionAndDurationContractsFailClosed(t *testing.T) {
 }
 
 func TestStandaloneImageCaptionsSurviveRecipeLowering(t *testing.T) {
-	plainImage := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"standalone-caption","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"standalone","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":3000,"entity_caption":"Caption acceptance","asset_refs":[%s]}]}`, premiumImageAssetRef))
+	plainImage := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"standalone-caption","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"standalone","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":3000,"entity_caption":"Caption acceptance","asset_refs":[%s]}]}`, premiumImageAssetRef))
 	for _, tc := range []struct {
 		name string
 		plan []byte

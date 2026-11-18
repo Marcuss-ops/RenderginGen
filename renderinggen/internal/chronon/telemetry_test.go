@@ -8,47 +8,38 @@ import (
 	"testing"
 )
 
-func TestReadTelemetrySummaryVerbatim(t *testing.T) {
+func TestReadTelemetrySummaryRejectsRetiredV1Summary(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "result.mp4")
-	// The bounded telemetry summary (chronon3d.render-telemetry-summary.v1)
-	// never contains per-frame arrays; the worker records it verbatim.
+	// The v1 summary is retired. Even a well-formed v1 document must not be
+	// accepted now that the inventory found zero v1 artifacts.
 	fixture := `{
-  "schema": "` + TelemetrySummarySchema + `",
+  "schema": "chronon3d.render-telemetry-summary.v1",
   "version": 1,
-  "summary": {"p50_frame_ms": 12.3, "end_to_end_fps": 29.2},
-  "job": {"process_wall_ms": 5123.0, "gpu": {"nvenc_frames": 150}},
-  "outcome": {"status": "ok"}
+  "summary": {"p50_frame_ms": 12.3},
+  "job": {"process_wall_ms": 5123.0}
 }`
-	if err := os.WriteFile(output+TelemetrySummarySuffix, []byte(fixture), 0o644); err != nil {
+	if err := os.WriteFile(output+".telemetry-summary.json", []byte(fixture), 0o644); err != nil {
 		t.Fatalf("write fixture: %v", err)
 	}
-
-	got, err := ReadTelemetrySummary(output)
-	if err != nil {
-		t.Fatalf("ReadTelemetrySummary: %v", err)
-	}
-	if string(got) != fixture {
-		t.Fatalf("summary must be ingested VERBATIM (no parse/mutate/re-encode):\n got %s\nwant %s", got, fixture)
+	if _, err := ReadTelemetrySummary(output); err == nil || !strings.Contains(err.Error(), "timing sidecar") {
+		t.Fatalf("retired v1 summary error = %v, want explicit timing-sidecar failure", err)
 	}
 }
 
-func TestReadTelemetrySummaryRejectsRawDeepProfile(t *testing.T) {
+func TestReadTelemetrySummaryRejectsV1TimingSidecar(t *testing.T) {
 	dir := t.TempDir()
 	output := filepath.Join(dir, "result.mp4")
-	// The RAW deep-profile timing sidecar must never be accepted as the
-	// bounded summary: it carries no summary schema (and may inline the
-	// unbounded per-frame array).
 	rawTiming := `{
   "schema": "chronon3d.frame-timing.v1",
   "frame_times_ms": [{"frame": 0}, {"frame": 1}],
   "job": {"process_wall_ms": 5123.0}
 }`
-	if err := os.WriteFile(output+TelemetrySummarySuffix, []byte(rawTiming), 0o644); err != nil {
+	if err := os.WriteFile(output+TimingSidecarSuffix, []byte(rawTiming), 0o644); err != nil {
 		t.Fatalf("write fixture: %v", err)
 	}
-	if _, err := ReadTelemetrySummary(output); err == nil {
-		t.Fatal("expected a schema error when the summary file carries the raw schema")
+	if _, err := ReadTelemetrySummary(output); err == nil || !strings.Contains(err.Error(), "unsupported schema") {
+		t.Fatalf("v1 timing error = %v, want unsupported schema", err)
 	}
 }
 

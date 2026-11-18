@@ -19,6 +19,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/mapgeom"
 )
 
 const (
@@ -361,19 +362,11 @@ func unwrapRings(rings [][][2]float64, centerLon float64) ([][][2]float64, float
 	return out, minLon, maxLon, minLat, maxLat
 }
 
+// decimate applies the tactical-fill policy explicitly. It intentionally uses
+// the stepped criterion, not the ModernMap1 even-budget one: the two surfaces
+// have different silhouettes and must not be conflated.
 func decimate(points [][2]float64, limit int) [][2]float64 {
-	if len(points) <= limit {
-		return points
-	}
-	step := int(math.Ceil(float64(len(points)) / float64(limit-1)))
-	out := make([][2]float64, 0, limit)
-	for i := 0; i < len(points); i += step {
-		out = append(out, points[i])
-	}
-	if last := points[len(points)-1]; len(out) == 0 || out[len(out)-1] != last {
-		out = append(out, last)
-	}
-	return out
+	return mapgeom.Decimate(points, limit, mapgeom.DecimateStepped)
 }
 
 func closeRing(points [][2]float64) [][2]float64 {

@@ -19,7 +19,7 @@ func compositionSummary(t *testing.T, executionPath string, compositeFrames *int
 		gpu["cuda_composite_frames"] = *compositeFrames
 	}
 	raw, err := json.Marshal(map[string]any{
-		"schema": chronon.TelemetrySummarySchema,
+		"schema": chronon.TimingSidecarSchemaV2,
 		"job": map[string]any{
 			"execution_path":       executionPath,
 			"surface_handoff_path": "direct",

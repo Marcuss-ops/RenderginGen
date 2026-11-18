@@ -27,7 +27,13 @@
     "map_style_morph",
     "mountain_ridge_callout",
     "continental_atlas",
-    "historic_location_timeline"
+    "historic_location_timeline",
+    "editorial_vox",
+    "editorial_paper_cutout",
+    "editorial_dark_radar",
+    "editorial_blueprint",
+    "editorial_connection_arc",
+    "editorial_floating_island"
   ],
   "camera_animations": [
     "slow_approach",

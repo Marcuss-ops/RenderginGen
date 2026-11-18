@@ -295,7 +295,7 @@ func compileDistinctCompositePlanAt(t *testing.T, width, height int) (string, Co
 		t.Fatal("composite fixture assets must contain different image bytes")
 	}
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
 		"plan_id":"composite-image-runtime","video_id":"composite-image-runtime",
 		"width":%d,"height":%d,"fps_num":%d,"fps_den":1,"duration_ms":%d,
 		"background":{"kind":"color","color":[0.04,0.05,0.07,1]},

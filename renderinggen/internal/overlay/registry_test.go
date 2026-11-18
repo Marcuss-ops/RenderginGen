@@ -175,3 +175,27 @@ func TestEntityCardWithImageLowersToOneImageLayer(t *testing.T) {
 		t.Fatalf("entity image layer = %+v", result.Plan.Layers[0])
 	}
 }
+
+// TestLegacyTemplateAliasesResolveToRegisteredTemplates pins the alias table:
+// every alias must normalize to a registered canonical template, and an
+// unknown spelling must not be invented as a registered id.
+func TestLegacyTemplateAliasesResolveToRegisteredTemplates(t *testing.T) {
+	for alias, canonical := range legacyTemplateAliases {
+		if got := canonicalTemplateID(alias); got != canonical {
+			t.Errorf("canonicalTemplateID(%q) = %q, want %q", alias, got, canonical)
+		}
+		spec := templateSpecFor(alias)
+		if !spec.Registered {
+			t.Errorf("alias %q does not resolve to a registered template", alias)
+		}
+		if spec.Kind != templateSpecFor(canonical).Kind {
+			t.Errorf("alias %q resolves to kind %q, want %q", alias, spec.Kind, templateSpecFor(canonical).Kind)
+		}
+	}
+	if got := canonicalTemplateID("not_a_known_alias"); got != "NOT_A_KNOWN_ALIAS" {
+		t.Fatalf("unknown alias = %q, want the uppercased spelling", got)
+	}
+	if templateSpecFor("not_a_known_alias").Registered {
+		t.Fatal("unknown alias must not resolve to a registered template")
+	}
+}

@@ -10,6 +10,11 @@ type PresetUsage struct {
 	Count      int    `json:"count"`
 }
 
+// zeroStats is the error-exit summary. It exists so non-owner pipeline files
+// do not construct a second Stats value; the compile pass still owns every
+// real counter and the zero value carries no information.
+func zeroStats() Stats { return Stats{} }
+
 // Stats is the small, stable summary the artifact pipeline records for a
 // rendered job (plan section "DB metrics"): how many overlays of each semantic
 // kind the plan carried and which preset was selected. The worker only counts
@@ -24,6 +29,13 @@ type Stats struct {
 	ImportantWordCnt   int `json:"important_word_count"`
 	ImageCount         int `json:"image_count"`
 	LightLeakCount     int `json:"light_leak_count"`
+	// LegacyCompositeImageCount counts image_layers items lowered through the
+	// sealed pre-group_motion_id replay path. A nonzero value in a fresh render
+	// is a producer regression, not a normal fallback.
+	LegacyCompositeImageCount int `json:"legacy_composite_image_count"`
+	// LegacyCompositeReplayCount is the subset admitted by the explicit
+	// legacy_composite_replay marker (the only admitted subset).
+	LegacyCompositeReplayCount int `json:"legacy_composite_replay_count"`
 	// PresetID is the first preset_id the plan carries (all items are
 	// expected to share one per job); empty when the plan is legacy.
 	PresetID string `json:"preset_id"`
@@ -95,6 +107,12 @@ func (s *Stats) addResolved(ri resolvedItem) {
 		s.ImageCount++
 	case overlayStatLightLeak:
 		s.LightLeakCount++
+	}
+	if ri.LegacyCompositeImage {
+		s.LegacyCompositeImageCount++
+		if ri.LegacyCompositeReplay {
+			s.LegacyCompositeReplayCount++
+		}
 	}
 	template := strings.ToUpper(strings.TrimSpace(ri.Item.Template))
 	if ri.PresetID != "" {

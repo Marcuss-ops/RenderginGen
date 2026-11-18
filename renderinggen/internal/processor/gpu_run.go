@@ -1,39 +1,33 @@
-// gpu_run.go owns the GPU half of the staged pipeline: the single Chronon
-// invocation, its progress observations and the strict-backend receipt gate.
+// gpu_run.go owns the orchestration of the GPU half: resolve the policy, start
+// the tail upload, build the request, execute one session and certify/hand off.
+// The stages live in gpu_request.go, gpu_progress.go, gpu_session.go and
+// gpu_execution_policy.go.
 package processor
 
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"sync"
 	"time"
 
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // progressLogInterval bounds how often a render's frame milestones reach the
 // log. Every milestone still updates the progress tracker and the stall
-// heartbeat; only the log line is sampled, because the standard logger's mutex
-// is shared by every GPU lane and a 24-60fps render emits tens of thousands of
-// milestone lines. The first and the final milestone are always logged.
+// heartbeat; only the log line is sampled. The first and final milestone are
+// always logged.
 const progressLogInterval = 10 * time.Second
 
 // renderHeartbeatInterval is how long a render may go without a frame
 // milestone before the worker emits an elapsed-time heartbeat. The daemon IPC
 // transport executes RENDER_JOB in one blocking call and never streams frame
-// milestones, so without this a multi-minute job would log "rendering" once and
-// then stay silent until "rendered". Jobs that do report milestones are left
-// to their richer progress lines.
+// milestones.
 const renderHeartbeatInterval = 15 * time.Second
 
-// progressSummary renders a frame position as a percentage plus a linear ETA,
-// so a job log answers "how far along is it?" without the reader doing the
-// arithmetic. A renderer that prints no milestones reports "unknown" instead of
-// pretending to be at 0%.
+// progressSummary renders a frame position as a percentage plus a linear ETA.
+// A renderer that prints no milestones reports "unknown" instead of pretending
+// to be at 0%.
 func progressSummary(done, total int64, fps float64) string {
 	if total <= 0 {
 		return "unknown"
@@ -53,358 +47,69 @@ func progressSummary(done, total int64, fps float64) string {
 	return summary
 }
 
-// RunGPU performs the single Chronon invocation for a prepared job plus the
-// strict-backend receipt gate. This is the only stage that touches the GPU.
+// RunGPU performs one render session for a prepared job plus the strict-backend
+// receipt gate. It is an orchestration: every decision comes from
+// RenderExecutionPolicy and every stage owns its own state.
 func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
-	phaseStart := time.Now()
-	job := prepared.Job
-	finalComposite := isFinalJobComposite(job)
-	renderBackend := p.backend
-	if finalComposite {
-		// Final-job intermediates must use the full Vulkan compositor so layers
-		// that begin after frame zero are preserved.
-		renderBackend = "auto"
+	if prepared == nil || prepared.Job == nil {
+		return fmt.Errorf("processor: RunGPU requires a prepared job")
 	}
-	encodePreset := encodePresetForJob(p.encodePreset, finalComposite)
-	metadata := planMetadataOf(prepared.Plan)
-	// The chunk contract is half-open [Start, End); Chronon consumes an
-	// inclusive last frame. The range is carried EXPLICITLY (RangeEnabled)
-	// because a chunk covering exactly frame 0 (Start=0, End=1 -> last=0) is
-	// otherwise indistinguishable from "render the whole plan", which would
-	// silently over-render a single-frame chunk.
-	firstFrame, lastFrame, hasFrameRange := jobFrameRange(job)
-	// Only the chunk producer may request the future disjoint execution class.
-	// Do not infer it from a range: callers can request a range for correctness
-	// or seeking without proving that another job owns the complementary range.
-	parallelDisjoint := job != nil && job.ParentJobID != "" && hasFrameRange && job.ChunkIndex >= 0
-	// Native NVENC is required for every visual job on the strict Vulkan
-	// profile. The worker reports semantic source/overlay facts; Chronon owns
-	// the compiled-program choice between DirectYUV and FullGraph.
-	hasSourceVideo := planHasVideoSource(prepared.Plan)
-	compositionRequired := planHasVisualOverlay(prepared.Plan)
-	if compositionRequired && !hasSourceVideo {
-		// Chronon owns this physical choice: Vulkan composition followed by a
-		// host-frame pipe handoff. It is intentionally distinct from the
-		// native source-video/NVENC surface lane.
+	policy, err := ResolveExecutionPolicy(prepared.Job, prepared.Plan, p.executionPolicyConfig(prepared))
+	if err != nil {
+		return err
+	}
+	if policy.CompositionRequired && !policy.VideoSourceRequired {
+		// Chronon owns the physical choice: Vulkan composition followed by a
+		// host-frame pipe handoff, distinct from the native source/NVENC lane.
 		prepared.Metrics[metricnames.ChrononGPUCompositionPipe] = 1
 	}
-	gpuRequired := (hasSourceVideo || compositionRequired) && (p.strictNativeBackend ||
-		chronon.StrictNativeRequired(p.backend, p.hardwareEncoder))
-	workerlog.ByJobID(job.ID).Statef("rendering", "canvas=%dx%d fps=%d/%d frames=%d backend=%s encoder=%s gpu_required=%t",
-		metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen, metadata.FrameCount, renderBackend, p.hardwareEncoder, gpuRequired)
-	// Render progress: every '[video] N/M frames' milestone the renderer
-	// prints is sampled into the log (where did the 12 minutes go) and, when a
-	// shared tracker is installed, fed into it so health and the queue pusher
-	// can report live position. The last milestone also lands in the ledger
-	// metrics as render_frames_done/total + render_fps.
-	//
-	// The observation is mutex-guarded because the renderer invokes Progress
-	// from BOTH its stdout and stderr streaming goroutines: unsynchronised
-	// writes to sawProgress/lastProgress were a data race, and the final
-	// milestone could be dropped or read torn.
-	var progressMu sync.Mutex
-	var lastProgress chronon.RenderProgress
-	sawProgress := false
-	var lastProgressAt time.Time
-	var lastProgressLogAt time.Time
-	// Tail upload: a fragmented overlay artifact's bytes are final while
-	// appended, so the object-store upload starts HERE — before the render —
-	// and tails the output file while the mux writes it. Commit semantics are
-	// the render's: Finish at the point the output can no longer change,
-	// Abort on every error path, so a failed render never installs bytes.
-	var tail *stagedUpload
-	handedOff := false
-	// The tail-upload lane streams ONE growing file. A segmented (P4) job
-	// produces N per-item outputs and is uploaded per-segment at finalize
-	// instead, so the lane stays off for it.
-	if prepared.FragmentedMP4 && p.store.SupportsStaging() && len(prepared.Segments) == 0 &&
-		!isCanonicalizedOutputProfile(metadata.ProfileID) {
-		tail = p.startTailUpload(ctx, job.ID, prepared.OutputPath)
-		// Until ownership moves to the store phase (below), every error path
-		// must discard the pending upload. After hand-off, FinalizeJob owns it.
-		defer func() {
-			if !handedOff {
-				tail.Abort()
-			}
-		}()
+	metadata := planMetadataOf(prepared.Plan)
+	workerlog.ByJobID(prepared.Job.ID).Statef("rendering", "canvas=%dx%d fps=%d/%d frames=%d backend=%s encoder=%s gpu_required=%t",
+		metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen, metadata.FrameCount,
+		policy.Backend, policy.HardwareEncoder, policy.GPURequired)
+	tail := p.startTailUploadIfEligible(ctx, prepared, metadata)
+	observer := newRenderProgressObserver(prepared.Job, p.progressTracker, policy.Backend, policy.HardwareEncoder)
+	request, err := p.BuildChrononRequest(prepared, policy, observer.Observe)
+	if err != nil {
+		abortTail(tail)
+		return err
 	}
-	renderRequest := chronon.RenderRequest{
-		PlanPath:            prepared.Workspace.PlanPath(),
-		PreparedPackagePath: prepared.Workspace.PreparedPackagePath(),
-		// Plans use the canonical assets/<file> namespace. The workspace
-		// root (not root/assets) is therefore Chronon's mounted root.
-		AssetsRoot:            prepared.Workspace.Root(),
-		OutputPath:            prepared.OutputPath,
-		AudioSourcePath:       prepared.AudioSourcePath,
-		AudioTargetSampleRate: prepared.AudioTargetSampleRate,
-		Report:                p.report,
-		EncodePreset:          encodePreset,
-		// Forward the configured encoder instead of letting the adapter guess:
-		// the config value is validated at load, so whatever reaches here is
-		// what the CLI is asked to run with.
-		HardwareEncoder: p.hardwareEncoder,
-		EncoderBackend:  p.encoderBackend,
-		// Canonical verification: the worker resolves the ENFORCEMENT policy
-		// (single authority, pipeline.receipt_verify) and asks Chronon for the
-		// matching wire tier (chrononReceiptRequest). Under normal the request
-		// is the fast tier: the promised full decode runs in the worker's post
-		// pool (enforceDecodableOutput), never on the render lane. Chronon
-		// records what it actually ran in the receipt, which FinalizeJob
-		// enforces.
-		ReceiptVerify: p.chrononReceiptRequest(),
-		LaneTiming: func(idle time.Duration) {
-			prepared.Metrics[metricnames.DaemonLaneIdleUS] = float64(idle.Microseconds())
-		},
-		Requirements: chronon.ExecutionRequirements{
-			Backend:     renderBackend,
-			GPURequired: gpuRequired,
-			// Final-job scene composites have a dedicated, namespaced job ID.
-			// Their authored layers can start after frame zero, so Chronon must
-			// classify and execute the complete Vulkan graph instead of selecting
-			// DirectYUV from a frame that has no active overlay yet. Ordinary jobs
-			// retain the configured fallback policy, except a source-only plan:
-			// it has no authored overlay that could start later, and DirectYUV
-			// preserves the complete source timeline under the strict profile.
-			CPUFallbackAllowed: !p.strictNativeBackend || (hasSourceVideo && !compositionRequired),
-			// This is a semantic composition requirement, not a backend/path
-			// selection. Chronon classifies the compiled program after this
-			// request crosses the boundary.
-			CompositionRequired: compositionRequired,
-			VideoSourceRequired: planHasVideoSource(prepared.Plan),
-			PacketCopyAllowed:   true,
-		},
-		FirstFrame:       firstFrame,
-		LastFrame:        lastFrame,
-		RangeEnabled:     hasFrameRange,
-		ParallelDisjoint: parallelDisjoint,
-		// Forward the complete immutable canvas contract to Chronon. The daemon
-		// uses these fields both for encoder configuration and for the canonical
-		// render receipt; sending only the codec leaves the receipt without an
-		// expected frame rate and makes a valid render fail closed at finalize.
-		Output: chronon.OutputSpec{
-			Codec:      "h264",
-			Width:      uint32(metadata.Width),
-			Height:     uint32(metadata.Height),
-			FPSNum:     uint32(metadata.FPSNum),
-			FPSDen:     uint32(metadata.FPSDen),
-			PipePixFmt: p.pipePixFmt,
-			// Ask the renderer to emit the canonical x264 identity in the SAME
-			// session that renders, so the CPU canonicalization pass does not
-			// re-encode the whole artifact after the GPU lane. Only the certified
-			// V3 shape (1920x1080@24, video-only) is eligible; the receipt's
-			// codec_config_sha256 lets the pass prove the bytes are already
-			// canonical and skip itself.
-			EncoderProfile: canonicalEncoderProfileFor(metadata, prepared.AudioSourcePath != ""),
-			// Overlay artifacts are SILENT video-only intermediates (audio is
-			// mastered once by the final Rust audio render, `mux_audio_copy`,
-			// never inside an overlay): they carry no master audio, so they get
-			// the fragmented MP4 container whose bytes are final when appended
-			// (streamable upload while the mux is open). An artifact that muxes
-			// source audio keeps the classic MP4. The flag is resolved ONCE at
-			// PrepareJob (PreparedJob.FragmentedMP4): the container and the
-			// tail-upload lane must never diverge.
-			FragmentedMP4: prepared.FragmentedMP4,
-		},
-		// P4 batch superjob: the per-item windows ride to the daemon, which
-		// cuts one MP4 per item from this ONE encoder session (forced IDR at
-		// each window start, all muxes finalized after the single EOF).
-		// Empty preserves the single-output path verbatim.
-		OutputSegments: prepared.Segments,
-		TotalFrames:    int64(metadata.FrameCount),
-		Progress: func(progress chronon.RenderProgress) {
-			progressMu.Lock()
-			sawProgress = true
-			lastProgress = progress
-			lastProgressAt = time.Now()
-			final := progress.FramesTotal > 0 && progress.FramesDone >= progress.FramesTotal
-			logNow := final || lastProgressLogAt.IsZero() || time.Since(lastProgressLogAt) >= progressLogInterval
-			if logNow {
-				lastProgressLogAt = time.Now()
-			}
-			progressMu.Unlock()
-			if logNow {
-				workerlog.ByJobID(job.ID).Infof("job_state=rendering progress=%s frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=%s encoder=%s",
-					progressSummary(progress.FramesDone, progress.FramesTotal, progress.FPS),
-					progress.FramesDone, progress.FramesTotal, progress.FPS,
-					progress.At.Format(time.RFC3339Nano), renderBackend, p.hardwareEncoder)
-			}
-			if p.progressTracker != nil {
-				p.progressTracker.Observe(job.ID, job.LeaseGeneration, progress.FramesDone, progress.FramesTotal)
-			}
-		},
+	stopHeartbeat := observer.Heartbeat(ctx)
+	defer stopHeartbeat()
+	prepared.baseRenderRequest = request
+	outcome, err := p.ExecuteRenderSession(ctx, prepared, request, policy)
+	if err != nil {
+		abortTail(tail)
+		return err
 	}
-	// Keep a silent render legible. This covers both the daemon IPC transport,
-	// whose single blocking RENDER_JOB reply carries no frame stream, and any
-	// long stretch of the CLI path without a milestone. It logs only after
-	// renderHeartbeatInterval with no new frame observation.
-	heartbeatCtx, stopHeartbeat := context.WithCancel(ctx)
-	heartbeatDone := make(chan struct{})
-	go func() {
-		defer close(heartbeatDone)
-		ticker := time.NewTicker(renderHeartbeatInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-heartbeatCtx.Done():
-				return
-			case now := <-ticker.C:
-				progressMu.Lock()
-				saw := sawProgress
-				last := lastProgress
-				observedAt := lastProgressAt
-				progressMu.Unlock()
-				if saw && !observedAt.IsZero() && now.Sub(observedAt) < renderHeartbeatInterval {
-					continue
-				}
-				if saw {
-					workerlog.ByJobID(job.ID).Statef("rendering", "state=in_progress elapsed=%s frames_done=%d frames_total=%d progress=%s note=no_new_frames backend=%s encoder=%s",
-						time.Since(phaseStart).Round(time.Second), last.FramesDone, last.FramesTotal,
-						progressSummary(last.FramesDone, last.FramesTotal, last.FPS), renderBackend, p.hardwareEncoder)
-					continue
-				}
-				workerlog.ByJobID(job.ID).Statef("rendering", "state=in_progress elapsed=%s progress=unknown note=renderer_sent_no_frame_milestones backend=%s encoder=%s",
-					time.Since(phaseStart).Round(time.Second), renderBackend, p.hardwareEncoder)
-			}
-		}
-	}()
-	defer func() {
-		stopHeartbeat()
-		<-heartbeatDone
-	}()
-	// The P4 single-segment retry re-renders from the exact request this
-	// session used, narrowed to one frame window.
-	prepared.baseRenderRequest = renderRequest
-	if err := p.renderer.Render(ctx, renderRequest); err != nil {
-		if !gpuRequired || p.strictNativeBackend || len(renderRequest.OutputSegments) > 0 || !softwareRetryableGPUFailure(err) {
-			// Segmented sessions get no software fallback: the fallback lane
-			// renames ONE output and would silently drop the per-item contract.
-			return fmt.Errorf("processor: render: %w", err)
-		}
-		workerlog.ByJobID(job.ID).Warnf("Vulkan render failed with a recoverable device/capability error; retrying the same plan through the software renderer: %v", err)
-		fallbackRequest := renderRequest
-		fallbackRequest.OutputPath = prepared.OutputPath + ".software-fallback.mp4"
-		fallbackRequest.EncodePreset = ""
-		fallbackRequest.HardwareEncoder = chronon.HardwareEncoderNone
-		fallbackRequest.EncoderBackend = "pipe"
-		fallbackRequest.Requirements.Backend = "software"
-		fallbackRequest.Requirements.GPURequired = false
-		fallbackRequest.Requirements.CPUFallbackAllowed = true
-		fallbackRequest.Progress = func(progress chronon.RenderProgress) {
-			workerlog.ByJobID(job.ID).Infof("job_state=rendering progress=%s stage=chronon_render_software_fallback frames_done=%d frames_total=%d fps=%.2f last_frame_at=%s backend=software encoder=libx264",
-				progressSummary(progress.FramesDone, progress.FramesTotal, progress.FPS),
-				progress.FramesDone, progress.FramesTotal, progress.FPS,
-				progress.At.Format(time.RFC3339Nano))
-			if p.progressTracker != nil {
-				p.progressTracker.Observe(job.ID, job.LeaseGeneration, progress.FramesDone, progress.FramesTotal)
-			}
-		}
-		if _, statErr := os.Stat(fallbackRequest.OutputPath); statErr == nil {
-			return fmt.Errorf("processor: software fallback output already exists; refusing to overwrite %s (original render error: %w)", fallbackRequest.OutputPath, err)
-		} else if !os.IsNotExist(statErr) {
-			return fmt.Errorf("processor: inspect software fallback output %s: %w", fallbackRequest.OutputPath, statErr)
-		}
-		if fallbackErr := p.renderer.Render(ctx, fallbackRequest); fallbackErr != nil {
-			return fmt.Errorf("processor: render failed on Vulkan (%v) and software fallback failed: %w", err, fallbackErr)
-		}
-		if _, statErr := os.Stat(prepared.OutputPath); statErr == nil {
-			return fmt.Errorf("processor: original render left an output at %s; preserving it and the successful software fallback at %s", prepared.OutputPath, fallbackRequest.OutputPath)
-		} else if !os.IsNotExist(statErr) {
-			return fmt.Errorf("processor: inspect original output %s before publishing software fallback: %w", prepared.OutputPath, statErr)
-		}
-		if renameErr := os.Rename(fallbackRequest.OutputPath, prepared.OutputPath); renameErr != nil {
-			return fmt.Errorf("processor: publish software fallback %s as %s: %w", fallbackRequest.OutputPath, prepared.OutputPath, renameErr)
-		}
-		fallbackTiming := fallbackRequest.OutputPath + ".timing.json"
-		if _, statErr := os.Stat(fallbackTiming); statErr == nil {
-			if renameErr := os.Rename(fallbackTiming, prepared.OutputPath+".timing.json"); renameErr != nil {
-				return fmt.Errorf("processor: publish software fallback timing sidecar: %w", renameErr)
-			}
-		}
-		prepared.Metrics[metricnames.ChrononSoftwareFallback] = 1
-		workerlog.ByJobID(job.ID).Infof("software fallback completed and was published at %s", filepath.Base(prepared.OutputPath))
+	ownership, err := p.CertifyAndHandoff(prepared, policy, outcome, observer, tail)
+	if err != nil {
+		abortTail(tail)
+		return err
 	}
-	us := float64(time.Since(phaseStart).Microseconds())
-	prepared.Metrics[metricnames.RenderMS] = us / 1000
-	prepared.Metrics[metricnames.RenderUS] = us
-	p.recordPhase(metricnames.RenderStem, phaseStart)
-	// Duty-cycle telemetry: the gap this render waited since the previous
-	// render ended on this worker. First job reports 0. The same value is
-	// published to the optional duty-cycle observer (gpu_gap_hook.go), so the
-	// per-job metric and the worker's histogram can never disagree.
-	gapUS := p.recordGPUGap(phaseStart)
-	prepared.Metrics[metricnames.GPUGapUS] = gapUS
-	p.noteGPUGap(time.Duration(gapUS) * time.Microsecond)
-	progressMu.Lock()
-	observedProgress := sawProgress
-	finalProgress := lastProgress
-	progressMu.Unlock()
-	// Frames this invocation was asked to render. A chunk covers only its
-	// half-open window; a whole-plan job covers the plan. Reported even when
-	// the transport streams no milestones, so "rendered" answers how much was
-	// rendered without pretending the renderer reported it as progress.
-	renderedFrames := int64(metadata.FrameCount)
-	if hasFrameRange {
-		renderedFrames = lastFrame - firstFrame + 1
-	}
-	renderedProgress := progressSummary(finalProgress.FramesDone, finalProgress.FramesTotal, finalProgress.FPS)
-	if !observedProgress || finalProgress.FramesTotal <= 0 {
-		renderedProgress = "not_reported"
-	}
-	workerlog.ByJobID(job.ID).Statef("rendered", "elapsed_ms=%.1f frames=%d frames_done=%d frames_total=%d fps=%.2f progress=%s output=%s",
-		us/1000, renderedFrames, finalProgress.FramesDone, finalProgress.FramesTotal, finalProgress.FPS, renderedProgress, filepath.Base(prepared.OutputPath))
-	// Frame-level observability: the final frame position the renderer
-	// reported plus its average fps (0 when the renderer printed no frame
-	// milestones — never silently confused with real progress).
-	if observedProgress && finalProgress.FramesDone > 0 {
-		prepared.Metrics[metricnames.RenderFramesDone] = float64(finalProgress.FramesDone)
-		prepared.Metrics[metricnames.RenderFramesTotal] = float64(finalProgress.FramesTotal)
-		fps := finalProgress.FPS
-		if fps <= 0 {
-			if elapsed := time.Since(phaseStart).Seconds(); elapsed > 0 {
-				fps = float64(finalProgress.FramesDone) / elapsed
-			}
-		}
-		if fps > 0 {
-			prepared.Metrics[metricnames.RenderFPS] = fps
-		}
-	}
-	if p.progressTracker != nil {
-		p.progressTracker.Forget(job.ID)
-	}
-	// The native Vulkan/NVENC receipt gate applies to source-video jobs. An
-	// image/text-only composition is a different valid Chronon plan: GPU
-	// composition plus host-frame pipe handoff, with no native video surface to
-	// certify. Do not demand NVENC surface counters from that plan.
-	if p.strictNativeBackend && hasSourceVideo && !finalComposite {
-		// metadata was computed once at the top of RunGPU from this same plan;
-		// do not re-derive (and shadow) it here.
-		if len(prepared.Segments) > 0 {
-			// The timing sidecar certifies the one shared native session. Each
-			// item's receipt/media identity is checked later in FinalizeJob,
-			// where one invalid segment can be retried without rejecting siblings.
-			if err := requireNativeVulkanTelemetry(
-				prepared.OutputPath, metadata.FrameCount); err != nil {
-				return fmt.Errorf("processor: gpu-vulkan-native batch gate: %w", err)
-			}
-		} else if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
-			return fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
-		}
-		prepared.NativeCertified = true
-	}
-	// Canonicalized profiles (V3 overlays and V1 assembly clips) are emitted by
-	// a CPU x264 re-encode, not by the render. That pass belongs to the post
-	// pool (FinalizeJob): doing it here held a GPU lane while re-encoding an
-	// artifact that was already finished. The native certification above still
-	// describes the render path that produced the source bytes, which is the
-	// cross-service identity PipelineGen requires (chronon_vulkan).
-	// Hand-off point: the output is final (render succeeded, software-fallback
-	// rename done, native gate passed), but the bytes are NOT committed yet —
-	// the store phase finishes the stream (and thus the install) only after
-	// the verification gates have passed, so a gate that fails closed discards
-	// the pending upload instead of installing bytes for a rejected job.
-	if tail != nil {
-		prepared.TailUpload = tail
-		handedOff = true
+	if ownership.Commit {
+		prepared.TailUpload = ownership.Upload
+	} else {
+		abortTail(tail)
 	}
 	return nil
+}
+
+// startTailUploadIfEligible starts the streaming upload exactly when the
+// artifact is a fragmented overlay, the store can stage and the job is not a
+// segmented or canonicalized lane.
+func (p *Processor) startTailUploadIfEligible(ctx context.Context, prepared *PreparedJob, metadata planMetadata) *stagedUpload {
+	if !prepared.FragmentedMP4 || !p.store.SupportsStaging() || len(prepared.Segments) > 0 ||
+		isCanonicalizedOutputProfile(metadata.ProfileID) {
+		return nil
+	}
+	return p.startTailUpload(ctx, prepared.Job.ID, prepared.OutputPath)
+}
+
+// abortTail discards a pending upload. It is nil-safe and a no-op once Finish
+// committed the stream.
+func abortTail(tail *stagedUpload) {
+	if tail != nil {
+		tail.Abort()
+	}
 }

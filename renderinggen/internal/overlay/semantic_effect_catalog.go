@@ -192,6 +192,18 @@ var effectDefinitions = map[string]effectDefinition{
 		},
 		clipRequired: []string{"amount", "wavelength"},
 	},
+	// black_and_white is the archival/opening treatment: amount 1.0 is full
+	// desaturation, 0.0 leaves the frame untouched. It lowers to Chronon's
+	// native color.saturation catalog effect with value = 1 - amount, the same
+	// primitive the archive image look already renders, so a clip request and
+	// an image stack never diverge on what "black and white" means.
+	"black_and_white": {
+		layer: true, clip: true,
+		params: map[string]effectParamSpec{
+			"amount": effectBounded(0, 1),
+		},
+		clipRequired: []string{"amount"},
+	},
 	// Renderer-native effects with no surface-specific bounds. Their parameter
 	// validation is limited to finiteness and colour parsing, exactly as before
 	// the catalog existed.

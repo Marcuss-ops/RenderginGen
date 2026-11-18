@@ -15,69 +15,6 @@
     "fps_den"
   ],
   "$defs": {
-    "animation_policy": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": [
-        "target",
-        "group_id"
-      ],
-      "properties": {
-        "target": {
-          "enum": [
-            "important_phrase",
-            "image",
-            "caption",
-            "date",
-            "metric"
-          ]
-        },
-        "group_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "subgroup_id": {
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "motion_id": {
-          "type": "string",
-          "description": "Optional certified motion choice. Omission or an empty value selects one deterministic random motion for the declared group/subgroup."
-        },
-        "motion_params": {
-          "type": "object",
-          "description": "Open motion-plugin parameters. enter_frames/exit_frames are optional integer frame counts from 1 to 240; zero retains the catalog or preset window."
-        }
-      },
-      "allOf": [
-        {
-          "if": {
-            "required": [
-              "subgroup_id"
-            ]
-          },
-          "then": {
-            "required": [
-              "group_id"
-            ]
-          }
-        },
-        {
-          "if": {
-            "required": [
-              "motion_params"
-            ]
-          },
-          "then": {
-            "required": [
-              "motion_id"
-            ]
-          }
-        }
-      ]
-    },
     "animation_group": {
       "type": "object",
       "additionalProperties": false,
@@ -1044,6 +981,24 @@
                 "maximum": 4294967295
               }
             }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "type",
+              "amount"
+            ],
+            "properties": {
+              "type": {
+                "const": "black_and_white"
+              },
+              "amount": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
           }
         ]
       }
@@ -1138,7 +1093,8 @@
             "glitch",
             "scanlines",
             "lens_distortion",
-            "banded_grain"
+            "banded_grain",
+            "black_and_white"
           ]
         },
         "params": {
@@ -1356,14 +1312,6 @@
     "schema_version": {
       "const": "renderinggen.overlay-plan.v1"
     },
-    "animation_policies": {
-      "type": "array",
-      "maxItems": 1024,
-      "items": {
-        "$ref": "#/$defs/animation_policy"
-      },
-      "description": "Runtime animation defaults selected by group/subgroup and target. Exact subgroup rules override group rules; item/layer motion ids override both."
-    },
     "animation_groups": {
       "type": "array",
       "maxItems": 64,
@@ -1371,6 +1319,10 @@
         "$ref": "#/$defs/animation_group"
       },
       "description": "Heterogeneous animation groups. Each group owns one shared timeline and one motion per role across phrases, images, captions and metric/date cards. Members must not carry their own motion."
+    },
+    "legacy_composite_replay": {
+      "type": "boolean",
+      "description": "Explicit replay marker for sealed plans that predate group_motion_id. New plans must declare a certified group recipe and fail closed without it."
     },
     "scene_camera": {
       "$ref": "#/$defs/scene_camera",
@@ -1731,6 +1683,17 @@
           },
           "entity_id": {
             "type": "string"
+          },
+          "entity_ref": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "entity_id": { "type": "string" },
+              "type": { "type": "string" },
+              "name": { "type": "string" },
+              "surface_text": { "type": "string" },
+              "canonical_entity_id": { "type": "string" }
+            }
           },
           "group_id": {
             "type": "string",
@@ -2535,6 +2498,11 @@
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 22
+              },
+              "area_glow_radius_km": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Producer-owned area glow radius metadata. The map lowering does not derive geometry from it."
               },
               "width": {
                 "type": "integer",

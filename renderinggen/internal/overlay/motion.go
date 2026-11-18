@@ -2,10 +2,9 @@ package overlay
 
 import (
 	"fmt"
-	"math"
-	"sort"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motionmath"
 )
 
 // The motion registry is the only authoring-motion → renderer-track lowering
@@ -234,118 +233,6 @@ func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
 		return nil, nil
 	}
 	return animation.Tracks, nil
-}
-
-func retimeMotionTracks(tracks []AnimationTrack, duration, authoredEnter int64) []AnimationTrack {
-	if duration <= 0 {
-		return tracks
-	}
-	if authoredEnter <= 0 {
-		for _, track := range tracks {
-			for _, keyframe := range track.Keyframes {
-				if keyframe.Frame > authoredEnter {
-					authoredEnter = keyframe.Frame
-				}
-			}
-		}
-	}
-	if authoredEnter <= 0 || authoredEnter == duration {
-		return clampMotionTracks(tracks, duration)
-	}
-	targetLast := lastValidFrame(duration)
-	for i := range tracks {
-		for j := range tracks[i].Keyframes {
-			frame := tracks[i].Keyframes[j].Frame
-			if frame > authoredEnter {
-				// Catalogs may append long hold keyframes after the entrance.
-				// They define a settled state, not a longer entrance; collapse
-				// them to the entrance's final frame before appending the exit.
-				tracks[i].Keyframes[j].Frame = targetLast
-				continue
-			}
-			tracks[i].Keyframes[j].Frame = frame * targetLast / authoredEnter
-		}
-	}
-	return clampMotionTracks(tracks, duration)
-}
-
-// clampMotionTracks keeps preset-authored keyframes inside the concrete
-// layer duration. A semantic overlay can be shorter than the catalog's
-// default enter duration (for example a brief spoken entity); Chronon rejects
-// any keyframe beyond that layer/composition boundary.
-func clampMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
-	if duration <= 0 {
-		return tracks
-	}
-	for i := range tracks {
-		clampAnimationTrack(&tracks[i], duration)
-	}
-	return tracks
-}
-
-// lastValidFrame is the single frame-boundary authority for all animation
-// tracks. A duration is a count of frames, so the valid interval is
-// [0, duration), never [0, duration].
-func lastValidFrame(duration int64) int64 {
-	if duration <= 1 {
-		return 0
-	}
-	return duration - 1
-}
-
-func clampAnimationTrack(track *AnimationTrack, duration int64) {
-	if track == nil || duration <= 0 {
-		return
-	}
-	last := lastValidFrame(duration)
-	for i := range track.Keyframes {
-		if track.Keyframes[i].Frame < 0 {
-			track.Keyframes[i].Frame = 0
-		} else if track.Keyframes[i].Frame > last {
-			track.Keyframes[i].Frame = last
-		}
-	}
-	// Retiming and clamping can collapse authored hold keyframes onto the
-	// same frame (for example an entrance endpoint and a later settled hold).
-	// Chronon requires unique frames; keep the last authored value when that
-	// happens so the settled state wins at the collapsed boundary.
-	coalesceDuplicateFrames(track)
-}
-
-// coalesceDuplicateFrames collapses keyframes that land on the same frame,
-// keeping the LAST authored value so a settled state wins at a collapsed
-// boundary. Chronon rejects duplicate frames, so every clamp pass must end here.
-func coalesceDuplicateFrames(track *AnimationTrack) {
-	if track == nil || len(track.Keyframes) < 2 {
-		return
-	}
-	unique := track.Keyframes[:0]
-	for _, keyframe := range track.Keyframes {
-		if len(unique) > 0 && unique[len(unique)-1].Frame == keyframe.Frame {
-			unique[len(unique)-1] = keyframe
-			continue
-		}
-		unique = append(unique, keyframe)
-	}
-	track.Keyframes = unique
-}
-
-func clampTextSelectorTracks(selector *TextSelector, duration int64) {
-	if selector == nil || duration <= 0 {
-		return
-	}
-	clampAnimationTrack(selector.Start, duration)
-	clampAnimationTrack(selector.End, duration)
-	clampAnimationTrack(selector.Offset, duration)
-	clampAnimationTrack(selector.Amount, duration)
-	// Clamping a sweep whose authored extent equals the last valid frame
-	// collapses its keyframes onto that frame (the 95-frame layer with a
-	// 0..95 sweep: every authored keyframe clamps to 95, leaving duplicates
-	// that Chronon's strict decoder rejects). Coalesce to the LAST value so
-	// the sweep keeps its settled 100 semantics instead of restarting.
-	for _, track := range []*AnimationTrack{selector.Start, selector.End, selector.Offset, selector.Amount} {
-		coalesceDuplicateFrames(track)
-	}
 }
 
 // animationForPreset is the shared lowering path for the official catalog. The
@@ -592,134 +479,6 @@ func fromTextMotionDefinitions(src []motion.TextAnimatorDefinition, duration int
 	return result, nil
 }
 
-// sampleTextPropertyTrack bakes catalog easing into frame-sampled linear
-// keyframes. Chronon intentionally accepts no easing metadata on per-glyph
-// property tracks, so forwarding a catalog's "out_cubic" made phrase overlays
-// fail during plan validation.
-func sampleTextPropertyTrack(track motion.TrackDefinition) (AnimationTrack, error) {
-	if len(track.Keyframes) == 0 {
-		return AnimationTrack{}, fmt.Errorf("no keyframes")
-	}
-	keys := append([]motion.AnimationKeyframe(nil), track.Keyframes...)
-	sort.Slice(keys, func(i, j int) bool { return keys[i].Frame < keys[j].Frame })
-	for i := 1; i < len(keys); i++ {
-		if keys[i].Frame <= keys[i-1].Frame {
-			return AnimationTrack{}, fmt.Errorf("keyframe frames must be unique and increasing")
-		}
-	}
-	if len(keys) == 1 {
-		return AnimationTrack{Property: track.Property, Easing: "linear", Keyframes: []AnimationKeyframe{{Frame: keys[0].Frame, Value: keys[0].Value}}}, nil
-	}
-	first, last := keys[0].Frame, keys[len(keys)-1].Frame
-	if first < 0 || last-first > 65535 {
-		return AnimationTrack{}, fmt.Errorf("sample window [%d,%d] exceeds Chronon's 65536-keyframe limit", first, last)
-	}
-	out := AnimationTrack{Property: track.Property, Easing: "linear", Keyframes: make([]AnimationKeyframe, 0, last-first+1)}
-	segment := 0
-	for frame := first; frame <= last; frame++ {
-		for segment+1 < len(keys)-1 && frame > keys[segment+1].Frame {
-			segment++
-		}
-		a, err := numericComponents(keys[segment].Value)
-		if err != nil {
-			return AnimationTrack{}, err
-		}
-		b, err := numericComponents(keys[segment+1].Value)
-		if err != nil {
-			return AnimationTrack{}, err
-		}
-		if len(a) != len(b) {
-			return AnimationTrack{}, fmt.Errorf("keyframe value arity changed")
-		}
-		rawT := float64(frame-keys[segment].Frame) / float64(keys[segment+1].Frame-keys[segment].Frame)
-		t, err := easingValue(track.Easing, rawT)
-		if err != nil {
-			return AnimationTrack{}, err
-		}
-		values := make([]float64, len(a))
-		for i := range values {
-			values[i] = a[i] + (b[i]-a[i])*t
-		}
-		var value any = values
-		if len(values) == 1 {
-			value = values[0]
-		}
-		out.Keyframes = append(out.Keyframes, AnimationKeyframe{Frame: frame, Value: value})
-	}
-	return out, nil
-}
-
-func numericComponents(value any) ([]float64, error) {
-	switch v := value.(type) {
-	case float64:
-		return []float64{v}, nil
-	case float32:
-		return []float64{float64(v)}, nil
-	case int:
-		return []float64{float64(v)}, nil
-	case int64:
-		return []float64{float64(v)}, nil
-	case []float64:
-		return append([]float64(nil), v...), nil
-	case []any:
-		out := make([]float64, len(v))
-		for i, component := range v {
-			n, ok := component.(float64)
-			if !ok {
-				return nil, fmt.Errorf("keyframe component %d is %T, want number", i, component)
-			}
-			out[i] = n
-		}
-		return out, nil
-	default:
-		return nil, fmt.Errorf("keyframe value is %T, want numeric scalar or vector", value)
-	}
-}
-
-func easingValue(easing string, t float64) (float64, error) {
-	switch easing {
-	case "", "linear":
-		return t, nil
-	case "out_cubic":
-		return 1 - math.Pow(1-t, 3), nil
-	case "in_out_cubic":
-		if t < 0.5 {
-			return 4 * t * t * t, nil
-		}
-		return 1 - math.Pow(-2*t+2, 3)/2, nil
-	case "smoothstep":
-		return t * t * (3 - 2*t), nil
-	case "in_sine":
-		return 1 - math.Cos(t*math.Pi/2), nil
-	case "out_sine":
-		return math.Sin(t * math.Pi / 2), nil
-	case "in_out_sine":
-		return -(math.Cos(math.Pi*t) - 1) / 2, nil
-	case "out_expo":
-		if t == 1 {
-			return 1, nil
-		}
-		return 1 - math.Pow(2, -10*t), nil
-	case "out_back":
-		const c1, c3 = 1.70158, 2.70158
-		return 1 + c3*math.Pow(t-1, 3) + c1*math.Pow(t-1, 2), nil
-	case "per_word_land":
-		const split, residual = 0.78, 0.07
-		const slope = ((1 - residual) / split) * 0.5
-		if t < split {
-			x := t / split
-			return (1 - residual) * (0.5*(1-math.Pow(1-x, 3)) + 0.5*x), nil
-		}
-		u := (t - split) / (1 - split)
-		b := slope * (1 - split)
-		c := 3*residual - 2*b
-		d := b - 2*residual
-		return 1 - residual + b*u + c*u*u + d*u*u*u, nil
-	default:
-		return 0, fmt.Errorf("unsupported easing %q", easing)
-	}
-}
-
 func resolveLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvasHeight int) []float64 {
 	if boxWidth <= 0 {
 		boxWidth = DefaultTextBoxWidth
@@ -764,4 +523,145 @@ func resolveImageLayout(l PresetLayout, boxWidth, boxHeight, canvasWidth, canvas
 // subtracting half the canvas, so the canvas midpoint is [w/2,h/2].
 func resolveTextLayout(canvasW, canvasH int) []float64 {
 	return []float64{float64(canvasW) / 2, float64(canvasH) / 2}
+}
+
+// The functions below are the boundary between the overlay AnimationTrack and
+// the pure motionmath package. They preserve the historical in-place mutation
+// semantics: callers that hold a *AnimationTrack or a *TextSelector observe the
+// same object updated, not a replacement.
+
+func toMotionMathTrack(track AnimationTrack) motionmath.Track {
+	keyframes := make([]motionmath.Keyframe, len(track.Keyframes))
+	for i, keyframe := range track.Keyframes {
+		keyframes[i] = motionmath.Keyframe{Frame: keyframe.Frame, Value: keyframe.Value}
+	}
+	return motionmath.Track{
+		Property:  track.Property,
+		Easing:    track.Easing,
+		Keyframes: keyframes,
+		Component: track.Component,
+	}
+}
+
+func fromMotionMathTrack(track motionmath.Track) AnimationTrack {
+	keyframes := make([]AnimationKeyframe, len(track.Keyframes))
+	for i, keyframe := range track.Keyframes {
+		keyframes[i] = AnimationKeyframe{Frame: keyframe.Frame, Value: keyframe.Value}
+	}
+	return AnimationTrack{
+		Property:  track.Property,
+		Easing:    track.Easing,
+		Keyframes: keyframes,
+		Component: track.Component,
+	}
+}
+
+func toMotionMathTracks(tracks []AnimationTrack) []motionmath.Track {
+	out := make([]motionmath.Track, len(tracks))
+	for i, track := range tracks {
+		out[i] = toMotionMathTrack(track)
+	}
+	return out
+}
+
+func retimeMotionTracks(tracks []AnimationTrack, duration, authoredEnter int64) []AnimationTrack {
+	if duration <= 0 {
+		return tracks
+	}
+	converted := toMotionMathTracks(tracks)
+	result := motionmath.Retime(converted, duration, authoredEnter)
+	for i := range tracks {
+		tracks[i] = fromMotionMathTrack(result[i])
+	}
+	return tracks
+}
+
+func clampMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
+	if duration <= 0 {
+		return tracks
+	}
+	converted := toMotionMathTracks(tracks)
+	result := motionmath.Clamp(converted, duration)
+	for i := range tracks {
+		tracks[i] = fromMotionMathTrack(result[i])
+	}
+	return tracks
+}
+
+func lastValidFrame(duration int64) int64 {
+	return motionmath.LastValidFrame(duration)
+}
+
+func clampAnimationTrack(track *AnimationTrack, duration int64) {
+	if track == nil || duration <= 0 {
+		return
+	}
+	converted := toMotionMathTrack(*track)
+	motionmath.ClampTrack(&converted, duration)
+	*track = fromMotionMathTrack(converted)
+}
+
+func coalesceDuplicateFrames(track *AnimationTrack) {
+	if track == nil {
+		return
+	}
+	converted := toMotionMathTrack(*track)
+	motionmath.Coalesce(&converted)
+	*track = fromMotionMathTrack(converted)
+}
+
+func clampTextSelectorTracks(selector *TextSelector, duration int64) {
+	if selector == nil || duration <= 0 {
+		return
+	}
+	converted := motionmath.Selector{}
+	if selector.Start != nil {
+		track := toMotionMathTrack(*selector.Start)
+		converted.Start = &track
+	}
+	if selector.End != nil {
+		track := toMotionMathTrack(*selector.End)
+		converted.End = &track
+	}
+	if selector.Offset != nil {
+		track := toMotionMathTrack(*selector.Offset)
+		converted.Offset = &track
+	}
+	if selector.Amount != nil {
+		track := toMotionMathTrack(*selector.Amount)
+		converted.Amount = &track
+	}
+	motionmath.ClampSelector(&converted, duration)
+	if selector.Start != nil && converted.Start != nil {
+		*selector.Start = fromMotionMathTrack(*converted.Start)
+	}
+	if selector.End != nil && converted.End != nil {
+		*selector.End = fromMotionMathTrack(*converted.End)
+	}
+	if selector.Offset != nil && converted.Offset != nil {
+		*selector.Offset = fromMotionMathTrack(*converted.Offset)
+	}
+	if selector.Amount != nil && converted.Amount != nil {
+		*selector.Amount = fromMotionMathTrack(*converted.Amount)
+	}
+}
+
+func sampleTextPropertyTrack(track motion.TrackDefinition) (AnimationTrack, error) {
+	keys := make([]motionmath.Keyframe, len(track.Keyframes))
+	for i, keyframe := range track.Keyframes {
+		keys[i] = motionmath.Keyframe{Frame: keyframe.Frame, Value: keyframe.Value}
+	}
+	sampled, err := motionmath.SamplePropertyTrack(track.Property, track.Easing, keys)
+	if err != nil {
+		return AnimationTrack{}, err
+	}
+	return fromMotionMathTrack(sampled), nil
+}
+
+func numericComponents(value any) ([]float64, error) {
+	return motionmath.NumericComponents(value)
+}
+
+func easingValue(easing string, t float64) (float64, error) {
+	return motionmath.EasingValue(easing, t)
 }

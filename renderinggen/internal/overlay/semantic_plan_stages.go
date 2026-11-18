@@ -12,7 +12,13 @@ package overlay
 // in the composite like any other shape and is appended after the source.
 func appendFullFrameStages(plan *Plan, src *semanticPlan) error {
 	if src.ClipGrid != nil {
-		grid, err := compileClipGrid(src.ClipGrid, src.Width, src.Height, plan.Canvas.DurationFrames, src.ForegroundScale)
+		// compileBackdropGridWithScale routes line grids through explicit
+		// 0..width path commands. The generated `grid` shape used by
+		// compileClipGrid is centred on its local origin and the renderer
+		// clips it to the positive quadrant, so a full-canvas line grid only
+		// painted the bottom-right quarter of the frame. Dot grids are still
+		// delegated to compileClipGrid.
+		grid, err := compileBackdropGridWithScale(src.ClipGrid, src.Width, src.Height, plan.Canvas.DurationFrames, src.ForegroundScale)
 		if err != nil {
 			return err
 		}

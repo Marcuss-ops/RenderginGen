@@ -16,8 +16,8 @@ const mapPinFadeInFrames = 6
 
 // pinTiming is the resolved frame window of one pin inside its map item.
 type pinTiming struct {
-	Start    int64
-	Duration int64
+	Start     int64
+	Duration  int64
 	Scheduled bool
 }
 

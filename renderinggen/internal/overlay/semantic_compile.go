@@ -40,6 +40,12 @@ type resolvedItem struct {
 	Preset      PresetDefinition
 	ImagePreset PresetDefinition
 	Map         *resolvedMap
+	// LegacyCompositeImage marks an image_layers item with no group_motion_id.
+	// It only compiles when the plan carries legacy_composite_replay; the
+	// marker is counted separately so a sealed replay is never confused with
+	// a new plan that should have declared a group recipe.
+	LegacyCompositeImage  bool
+	LegacyCompositeReplay bool
 }
 
 // decodeSemanticPlan performs the ONE strict decode of a semantic overlay
@@ -53,6 +59,15 @@ type resolvedItem struct {
 // The error is returned UNWRAPPED so each entry point can apply its own
 // historical error taxonomy on top (see CompileSemantic's error path).
 func decodeSemanticPlan(raw []byte) (semanticPlan, error) {
+	// animation_policies is a retired pre-v2 wire field. Check it before the
+	// strict decode so a historical producer gets an actionable migration
+	// error instead of the generic DisallowUnknownFields diagnostic.
+	var envelope map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &envelope); err == nil {
+		if _, retired := envelope["animation_policies"]; retired {
+			return semanticPlan{}, fmt.Errorf("animation_policies is retired; migrate to animation groups or explicit motion_id")
+		}
+	}
 	var src semanticPlan
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
@@ -78,262 +93,25 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 // decode happens once upstream so the prepare path never re-reads the raw
 // document.
 func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string, error) {
-	if src.PlanID == "" || src.VideoID == "" || src.Width <= 0 || src.Height <= 0 || src.FPSNum <= 0 || src.FPSDen <= 0 {
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan requires plan_id, video_id and positive canvas/fps")
-	}
-	if err := resolveAnimationPolicies(src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	// Animation groups are the V2 owner: they resolve after the legacy policy
-	// selector so the two generations cannot silently stack, and before the
-	// retirement/item passes so their selected motions and windows are the ones
-	// actually validated and lowered.
-	if err := resolveAnimationGroups(src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	// Retirement is checked after the policies are expanded, so a motion that
-	// arrives through a plan-level default is rejected exactly like an explicit
-	// motion_id instead of only when the item names it directly.
-	if err := validateDeprecatedMotions(src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	// A plan must have at least one renderable primitive: a source clip, a
-	// background, or an overlay item. An empty plan with nothing to render is
-	// always rejected fail-closed.
-	if src.Source == nil && src.Background == nil && len(src.Items) == 0 {
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan has no renderable primitives (source, background or items required)")
-	}
-	// The Plan constructor is the single owner of the schema/version and the
-	// output defaults, so the compiler cannot drift from it.
-	plan := *newPlan(src.PlanID, src.Width, src.Height, src.FPSNum, src.FPSDen, 0)
-	plan.Output.ProfileID = src.OutputProfileID
-	plan.Output.ColorSpace = canonicalProfileColorSpace(src.OutputProfileID)
-
-	// Seed canvas duration from the explicit duration_ms when provided. Items
-	// can extend it but cannot shrink it. For clip renders with items:[] this
-	// is the only source of duration; the compiler rejects zero duration at the
-	// end of the function.
-	if src.DurationMS > 0 {
-		_, endFrame := msFrames(0, src.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
-		plan.Canvas.DurationFrames = endFrame
-	}
-
-	registry := newAssetRegistry()
-	if src.Audio != nil {
-		plan.Output.Audio = &Audio{
-			Mode: src.Audio.Mode, Codec: src.Audio.Codec,
-			SampleRate: src.Audio.SampleRate, Channels: src.Audio.Channels,
-		}
-	}
-	bgLayer, bgPresent, err := compileBackgroundLayer(src, registry)
+	validated, err := validateSemanticPlan(src)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	if bgPresent {
-		plan.Layers = append(plan.Layers, bgLayer)
-	}
-
-	// Named map targets are producer-level inputs to item resolution, so resolve
-	// them before the one authoritative semantic-item pass.
-	if err := resolveMapFeatureMoves(src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	// Resolve every item once before lowering any item-specific assets. The
-	// resolved kind and frame window are authoritative for SFX eligibility and
-	// placement (template aliases and frame quantization included).
-	resolved, err := resolveSemanticItems(src)
+	// normalizeCompatibility is the only mutable stage; it works on a deep
+	// copy, so the decoded document remains a replayable input.
+	normalized, err := normalizeCompatibility(validated)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	resolvedByID := make(map[string]resolvedItem, len(resolved))
-	for _, item := range resolved {
-		resolvedByID[item.Item.ID] = item
-	}
-	type pendingSFX struct {
-		clip            AudioClipPlan
-		visibleEndFrame int64
-	}
-	var pendingSFXClips []pendingSFX
-	// Pre-register every item asset so collisions fail before any layer is
-	// emitted (the registry is the single owner of the id → path mapping).
-	for _, item := range src.Items {
-		for _, ref := range item.Assets {
-			if _, err := registry.Register(ref); err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
-			}
-		}
-		if sfx := item.SoundEffect; sfx != nil {
-			resolvedItem, ok := resolvedByID[item.ID]
-			if !ok || !isImageKind(resolvedItem.Kind) {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: item %q sound_effect is only valid on an image overlay", item.ID)
-			}
-			clip, visibleEndFrame, err := resolveSoundEffectCue(item, resolvedItem, src, registry)
-			if err != nil {
-				return nil, nil, Stats{}, nil, err
-			}
-			pendingSFXClips = append(pendingSFXClips, pendingSFX{clip: clip, visibleEndFrame: visibleEndFrame})
-
-		}
-	}
-
-	// Every resolved item passed the fail-closed template gate above, so this
-	// list is empty for any plan that reaches here. It is COMPUTED rather than
-	// assumed so CompileResult.UnknownTemplates keeps being a projection of what
-	// was actually resolved — the day the gate is relaxed, the field says so.
-	unknown := unknownTemplates(resolved)
-
-	// Source clip — lowers to a full-canvas video layer. When foreground_scale
-	// is set the source is scaled and centered on the canvas.
-	var sourceLayerIndex = -1
-	if src.Source != nil && src.Source.AssetID != "" {
-		path := src.Source.Path
-		ref := SemanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256}
-		if path == "" {
-			registered, err := registry.Register(ref)
-			if err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source asset: %w", err)
-			}
-			path = registered
-		} else {
-			registered, err := registry.RegisterAtPath(ref, path)
-			if err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source asset: %w", err)
-			}
-			path = registered
-		}
-		// FullGraph video layers must carry the same explicit fit contract as
-		// background video layers. DirectYUV does not need it, which hid this
-		// omission until an overlay/background selected the compositor: Chronon
-		// then rendered the overlay over a black canvas instead of the source.
-		srcLayer := Layer{ID: "source", Type: "video", Source: path,
-			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: FitCover, StartFrame: 0}
-		// Foreground scale: keep the sampled video surface at canvas size and
-		// express the centred transform in Chronon's modular coordinate space.
-		// ForegroundScale == 0 or 100 means full-canvas (no scaling).
-		if src.ForegroundScale > 0 && src.ForegroundScale < 100 {
-			// The modular resolver adds the canvas half-size to unpinned 2D
-			// layers. Cancelling that implicit shift here leaves the transform
-			// centred in TransformNode's pixel-space contract. Position [0,0]
-			// would apply the implicit centre a second time and place the video
-			// in the lower-right quadrant.
-			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
-			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
-		}
-		// Card treatment of the clip (border frame + drop shadow + perimeter
-		// stroke). The border is lowered behind the source layer; the stroke gets
-		// its own transparent shape above the media box. A declaration the worker
-		// cannot honour is a compile error (see applyFrameTreatment), never dropped.
-		if err := applyFrameTreatment(&srcLayer, src.SourceFrame); err != nil {
-			return nil, nil, Stats{}, nil, err
-		}
-		sourceLayerIndex = len(plan.Layers)
-		plan.Layers = append(plan.Layers, srcLayer)
-		if srcLayer.FrameStroke != nil {
-			strokeLayer, err := compileMediaStrokeLayer(srcLayer, src.Width, src.Height)
-			if err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source_frame: %w", err)
-			}
-			plan.Layers = append(plan.Layers, strokeLayer)
-		}
-	} else if src.SourceFrame != nil {
-		// A frame with no source clip to attach to would be dropped silently.
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source_frame requires a source clip")
-	}
-
-	// Sidecar subtitles remain a published companion asset. Chronon's current
-	// render-plan schema has no `subtitle` layer type, so do not emit one.
-	if sub := src.Subtitles; sub != nil {
-		if len(sub.AssetRefs) == 0 {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitles require at least one asset_ref")
-		}
-		if _, err := registry.Register(sub.AssetRefs[0]); err != nil {
-			return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitle asset: %w", err)
-		}
-		// The declared burn font is materialized with the plan so the prepare
-		// pass has the caller's face available (no worker-side font search).
-		if sub.FontRef != nil {
-			if _, err := registry.Register(*sub.FontRef); err != nil {
-				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: subtitle font asset: %w", err)
-			}
-		}
-		// Sidecar subtitles remain a published companion asset: the manifest
-		// entry (above) is what gets published; Chronon has no subtitle layer.
-	}
-
-	// Watermark — lowers to a text or image layer at the requested position.
-	// Geometry and style come ONLY from the plan's typed blocks: font size,
-	// color, shadow (style), position + margin_px (layout). Unknown or missing
-	// values are compile errors, never silent fallbacks.
-	wmLayer, wmPresent, err := compileWatermarkLayer(src, registry, plan.Canvas.DurationFrames)
+	resolved, err := resolvePlan(normalized)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	if wmPresent {
-		plan.Layers = append(plan.Layers, wmLayer)
-	}
-
-	// Item overlay layers — one compile per resolved kind, counters from the
-	// same pass.
-	var stats Stats
-	cameras := cameraControllerSet{scene: src.SceneCamera}
-	// The plan-level whole-scene camera is validated up front so a malformed
-	// rig fails before any layer work. Cross-controller conflicts are decided
-	// after the loop, once every item has been observed.
-	if err := validateSceneCamera(src.SceneCamera); err != nil {
+	concrete, stats, err := lowerPlan(resolved)
+	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	if err := appendResolvedItemLayers(&plan, resolved, src, registry, &cameras, &stats); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-
-	// The grid is an ordinary full-frame shape and therefore participates in
-	// the composite before the optional final adjustment stack.
-	if err := appendFullFrameStages(&plan, src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-
-	// Resolve the single camera authority after the loop: every controller is
-	// known, so a map camera or an entity camera on the final item cannot slip
-	// through and the verdict does not depend on item order.
-	if err := cameras.apply(&plan, src); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-
-	finalizeLayerDurations(&plan, sourceLayerIndex)
-	ensureClipGridOnTop(&plan)
-	if plan.Canvas.DurationFrames <= 0 {
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: semantic plan duration is zero — provide duration_ms or at least one item with end_ms > 0")
-	}
-	for _, pending := range pendingSFXClips {
-		clip := pending.clip
-		availableFrames := plan.Canvas.DurationFrames - clip.Start
-		visibleFrames := pending.visibleEndFrame - clip.Start
-		if availableFrames < visibleFrames {
-			visibleFrames = availableFrames
-		}
-		if visibleFrames < clip.ClipOut {
-			clip.ClipOut = visibleFrames
-		}
-		if clip.ClipOut <= 0 || clip.Start >= plan.Canvas.DurationFrames {
-			// The item's first image frame lies outside the finalized canvas;
-			// there is no audible cue to emit for an invisible image.
-			continue
-		}
-		if plan.Audio == nil {
-			plan.Audio = &AudioMixPlan{}
-		}
-		plan.Audio.Clips = append(plan.Audio.Clips, clip)
-	}
-
-	if err := bakeResolvedCameraSamples(&plan); err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	plan.Schema, plan.Version = RenderPlanWireVersion(&plan)
-
-	// Stable asset order (the registry sorts) keeps prepared-plan
-	// fingerprints reproducible. The plan stays typed; the caller marshals it
-	// exactly once at the Chronon boundary.
-	return &plan, registry.Assets(), stats, unknown, nil
+	return sealPlan(concrete, stats, resolved)
 }
 
 // resolveSemanticItems validates the plan's items once and lowers each to its
@@ -386,6 +164,21 @@ func resolveMapFeatureMoves(src *semanticPlan) error {
 	return nil
 }
 
+// validateCaptionMotionTargets is the live half of the retired animation
+// policy pass: a caption motion is admitted only by the canonical catalog's
+// text target, whether it arrives on the item or on a composite child.
+func validateCaptionMotionTargets(item semanticItem) error {
+	if strings.TrimSpace(item.EntityCaption) != "" && item.CaptionMotionID != "" && !motionAdmitsTarget(item.CaptionMotionID, TargetCaption) {
+		return fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", item.ID, item.CaptionMotionID)
+	}
+	for _, child := range item.ImageLayers {
+		if strings.TrimSpace(child.Caption) != "" && child.CaptionMotionID != "" && !motionAdmitsTarget(child.CaptionMotionID, TargetCaption) {
+			return fmt.Errorf("overlay: item %q image layer %q caption motion %q is not supported for text captions", item.ID, child.ID, child.CaptionMotionID)
+		}
+	}
+	return nil
+}
+
 // mergeSemanticParams resolves the plan's explicit style precedence once:
 // Params is the runtime base; Style overrides matching keys. Chain segments
 // use this same helper so their standalone and fused lowering is identical.
@@ -400,138 +193,203 @@ func mergeSemanticParams(params, style map[string]any) map[string]any {
 	return merged
 }
 
+// itemEnvelope is the validated timeline projection of one item.
+type itemEnvelope struct {
+	Start, End int64
+}
+
+// itemPresentation is the resolved style/preset projection of one item. It is
+// produced after classification and consumed by the same resolvedItem.
+type itemPresentation struct {
+	Params      map[string]any
+	PresetID    string
+	Preset      PresetDefinition
+	ImagePreset PresetDefinition
+}
+
 func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 	out := make([]resolvedItem, 0, len(src.Items))
 	for _, item := range src.Items {
-		start, end := itemFrames(item, int64(src.FPSNum), int64(src.FPSDen))
-		startUS, endUS := item.StartMS*1000, item.EndMS*1000
-		if item.StartUS != nil && item.DurationUS != nil {
-			startUS, endUS = *item.StartUS, *item.StartUS+*item.DurationUS
-		}
-		if item.ID == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
-			return nil, fmt.Errorf("overlay: invalid semantic item %q", item.ID)
-		}
-		if end <= start {
-			return nil, fmt.Errorf("overlay: item %q window [%d,%d) us collapses to no frames at %d/%d fps",
-				item.ID, startUS, endUS, src.FPSNum, src.FPSDen)
-		}
-		if err := validateTextElementContract(item); err != nil {
-			return nil, err
-		}
-		spec := templateSpecFor(item.Template)
-		kind, err := spec.resolveKind(item.Kind, item.ID)
+		envelope, err := resolveItemEnvelope(item, src)
 		if err != nil {
 			return nil, err
 		}
-		// Unknown templates fail closed: a non-empty template_id that
-		// resolves to no registry row and no legacy alias is a producer
-		// typo or an unregistered addition, and silently lowering it as a
-		// bare primitive once produced visibly wrong videos with pixels as
-		// the only evidence. An empty template_id stays valid (simple text
-		// primitive); compatibility travels only through the explicit
-		// legacyTemplateAliases table.
-		if strings.TrimSpace(item.Template) != "" && !spec.Registered {
-			return nil, fmt.Errorf("overlay: item %q names unknown template %q: register it in the template registry or add an explicit legacy alias", item.ID, item.Template)
-		}
-		if err := validateSemanticImageLayers(item, kind); err != nil {
-			return nil, err
-		}
-		if item.EntityStyleID != "" {
-			if _, ok := ResolveEntityStyle(item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, item.ID); !ok {
-				return nil, fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
-			}
-			behavior := behaviorOf(kind)
-			if behavior != behaviorEntity && behavior != behaviorImage {
-				return nil, fmt.Errorf("overlay: item %q entity_style_id is only valid for entity or image items", item.ID)
-			}
-			if len(item.ImageLayers) > 0 {
-				return nil, fmt.Errorf("overlay: item %q entity_style_id does not support composite image_layers", item.ID)
-			}
-			if len(item.Assets) == 0 || strings.TrimSpace(item.EntityCaption) == "" {
-				return nil, fmt.Errorf("overlay: item %q entity_style_id %q requires an image and entity_caption", item.ID, item.EntityStyleID)
-			}
-		}
-		// The map declaration is validated for EVERY item, not only map ones: a
-		// map block on a phrase item would otherwise be carried through the plan
-		// and silently ignored, which is exactly the kind of contract drift the
-		// worker exists to stop.
-		if err := validateMapContract(item, kind, src.Width, src.Height); err != nil {
-			return nil, err
-		}
-		// The resolved kind is authoritative for the preset family too, so an
-		// unknown template paired with an explicit image kind still validates
-		// against the image catalog. Registered DATE/METRIC presentation kinds
-		// also stay on the text preset family while their dedicated catalog
-		// motion_id controls the presentation animation.
-		if isImageKind(kind) {
-			spec.Family = PresetImage
-		} else if spec.Kind == KindPrimitive || kind == KindNumber || kind == KindMetricStat || kind == KindTimelineDate {
-			spec.Family = PresetText
-		}
-		params := mergeSemanticParams(item.Params, item.Style)
-		if _, requested := params["image_backdrop"]; requested && !isImageKind(kind) {
-			return nil, fmt.Errorf("overlay: item %q image_backdrop is valid only for image items", item.ID)
-		}
-		ri := resolvedItem{Item: item, Spec: spec, Kind: kind, Params: params, Start: start, End: end}
-
-		if isImageKind(kind) && kind != KindLightLeak && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
-			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
-		}
-		if kind == KindLightLeak && strings.TrimSpace(item.MotionID) == "" {
-			return nil, fmt.Errorf("overlay: light leak item %q requires a certified lightleak motion_id", item.ID)
-		}
-		if isVideoKind(kind) && len(item.Assets) == 0 {
-			return nil, fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", item.Template, item.ID)
-		}
-		preset, err := presetFor(item, spec)
+		spec, kind, err := classifyItem(item)
 		if err != nil {
 			return nil, err
 		}
-		ri.PresetID = preset
-		if preset != "" {
-			def, err := resolveOfficialPreset(preset, string(spec.Family))
-			if err != nil {
-				return nil, err
-			}
-			ri.Preset = def
-		}
-		if preset == ClassicPhrasePresetID && !isOpaqueWhiteCanvas(src.Background) {
-			return nil, fmt.Errorf("overlay: preset %q requires an opaque white canvas background", preset)
-		}
-		if err := validateChildCaptionStyles(item); err != nil {
+		if err := validateResolvedItem(item, spec, kind, src); err != nil {
 			return nil, err
 		}
-		hasCaption := itemHasCaption(item)
-		if item.CameraMotionID != "" && len(item.ImageLayers) > 0 {
-			// Camera sequences render each child's caption beside its portrait;
-			// the group itself intentionally has no aggregate EntityCaption.
-			hasCaption = true
-		}
-		if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, hasCaption); err != nil {
+		presentation, err := resolveItemPresentation(item, spec, kind, src)
+		if err != nil {
 			return nil, err
 		}
-		if isMapKind(kind) && !isModernMap1(item) {
-			mapSpec, err := resolveMap(item.Map, item.Assets, src.Width, src.Height, end-start)
-			if err != nil {
-				return nil, fmt.Errorf("overlay: map item %q resolve: %w", item.ID, err)
-			}
-			ri.Map = mapSpec
+		mapSpec, err := resolveItemMap(item, kind, src, envelope)
+		if err != nil {
+			return nil, err
 		}
-		if (isEntityKind(kind) || (isImageKind(kind) && item.EntityStyleID != "")) && len(item.Assets) > 0 {
-			if imagePreset := strings.TrimSpace(item.ImagePresetID); imagePreset != "" {
-				def, err := resolveOfficialPreset(imagePreset, string(PresetImage))
-				if err != nil {
-					return nil, err
-				}
-				ri.ImagePreset = def
-			}
+		ri := resolvedItem{
+			Item: item, Spec: spec, Kind: kind, Params: presentation.Params,
+			Start: envelope.Start, End: envelope.End,
+			PresetID: presentation.PresetID, Preset: presentation.Preset,
+			ImagePreset: presentation.ImagePreset, Map: mapSpec,
 		}
+		ri.LegacyCompositeImage = len(item.ImageLayers) > 0 && strings.TrimSpace(item.GroupMotionID) == ""
+		ri.LegacyCompositeReplay = ri.LegacyCompositeImage && src.LegacyCompositeReplay
 		out = append(out, ri)
 	}
 	if err := validateMapComposition(src.MapCompositionID, out); err != nil {
 		return nil, err
 	}
 	return out, nil
+}
+
+// resolveItemEnvelope validates the item identity and timeline. It performs no
+// catalog or asset lookup.
+func resolveItemEnvelope(item semanticItem, src *semanticPlan) (itemEnvelope, error) {
+	start, end := itemFrames(item, int64(src.FPSNum), int64(src.FPSDen))
+	startUS, endUS := item.StartMS*1000, item.EndMS*1000
+	if item.StartUS != nil && item.DurationUS != nil {
+		startUS, endUS = *item.StartUS, *item.StartUS+*item.DurationUS
+	}
+	if item.ID == "" || item.StartMS < 0 || item.EndMS <= item.StartMS {
+		return itemEnvelope{}, fmt.Errorf("overlay: invalid semantic item %q", item.ID)
+	}
+	if end <= start {
+		return itemEnvelope{}, fmt.Errorf("overlay: item %q window [%d,%d) us collapses to no frames at %d/%d fps",
+			item.ID, startUS, endUS, src.FPSNum, src.FPSDen)
+	}
+	if err := validateTextElementContract(item); err != nil {
+		return itemEnvelope{}, err
+	}
+	return itemEnvelope{Start: start, End: end}, nil
+}
+
+// classifyItem resolves the template registry row and the authoritative kind.
+func classifyItem(item semanticItem) (TemplateSpec, ItemKind, error) {
+	spec := templateSpecFor(item.Template)
+	kind, err := spec.resolveKind(item.Kind, item.ID)
+	if err != nil {
+		return TemplateSpec{}, "", err
+	}
+	// Unknown templates fail closed: a non-empty template_id that resolves to
+	// no registry row and no legacy alias is a producer typo or an unregistered
+	// addition. An empty template_id stays a valid simple text primitive;
+	// compatibility travels only through legacyTemplateAliases.
+	if strings.TrimSpace(item.Template) != "" && !spec.Registered {
+		return TemplateSpec{}, "", fmt.Errorf("overlay: item %q names unknown template %q: register it in the template registry or add an explicit legacy alias", item.ID, item.Template)
+	}
+	return spec, kind, nil
+}
+
+// validateResolvedItem enforces the per-family contracts that need no preset
+// resolution.
+func validateResolvedItem(item semanticItem, spec TemplateSpec, kind ItemKind, src *semanticPlan) error {
+	if err := validateSemanticImageLayers(item, kind); err != nil {
+		return err
+	}
+	if item.EntityStyleID != "" {
+		if _, ok := ResolveEntityStyle(item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, item.ID); !ok {
+			return fmt.Errorf("overlay: item %q has unsupported entity_style_id %q", item.ID, item.EntityStyleID)
+		}
+		behavior := behaviorOf(kind)
+		if behavior != behaviorEntity && behavior != behaviorImage {
+			return fmt.Errorf("overlay: item %q entity_style_id is only valid for entity or image items", item.ID)
+		}
+		if len(item.ImageLayers) > 0 {
+			return fmt.Errorf("overlay: item %q entity_style_id does not support composite image_layers", item.ID)
+		}
+		if len(item.Assets) == 0 || strings.TrimSpace(item.EntityCaption) == "" {
+			return fmt.Errorf("overlay: item %q entity_style_id %q requires an image and entity_caption", item.ID, item.EntityStyleID)
+		}
+	}
+	// The map declaration is validated for EVERY item, not only map ones: a map
+	// block on a phrase item would otherwise be silently ignored.
+	if err := validateMapContract(item, kind, src.Width, src.Height); err != nil {
+		return err
+	}
+	if isImageKind(kind) && kind != KindLightLeak && len(item.Assets) == 0 && len(item.ImageLayers) == 0 {
+		return fmt.Errorf("overlay: image template %q item %q requires asset_refs", item.Template, item.ID)
+	}
+	if kind == KindLightLeak && strings.TrimSpace(item.MotionID) == "" {
+		return fmt.Errorf("overlay: light leak item %q requires a certified lightleak motion_id", item.ID)
+	}
+	if isVideoKind(kind) && len(item.Assets) == 0 {
+		return fmt.Errorf("overlay: video overlay template %q item %q requires asset_refs", item.Template, item.ID)
+	}
+	return nil
+}
+
+// resolveItemPresentation resolves the preset family, style precedence and
+// text/caption contracts. It never touches map geometry or assets.
+func resolveItemPresentation(item semanticItem, spec TemplateSpec, kind ItemKind, src *semanticPlan) (itemPresentation, error) {
+	// The resolved kind is authoritative for the preset family too, so an
+	// unknown template paired with an explicit image kind still validates
+	// against the image catalog. DATE/METRIC presentation kinds stay on the
+	// text preset family while their catalog motion_id controls the animation.
+	if isImageKind(kind) {
+		spec.Family = PresetImage
+	} else if spec.Kind == KindPrimitive || kind == KindNumber || kind == KindMetricStat || kind == KindTimelineDate {
+		spec.Family = PresetText
+	}
+	params := mergeSemanticParams(item.Params, item.Style)
+	if _, requested := params["image_backdrop"]; requested && !isImageKind(kind) {
+		return itemPresentation{}, fmt.Errorf("overlay: item %q image_backdrop is valid only for image items", item.ID)
+	}
+	preset, err := presetFor(item, spec)
+	if err != nil {
+		return itemPresentation{}, err
+	}
+	out := itemPresentation{Params: params, PresetID: preset}
+	if preset != "" {
+		def, err := resolveOfficialPreset(preset, string(spec.Family))
+		if err != nil {
+			return itemPresentation{}, err
+		}
+		out.Preset = def
+	}
+	if preset == ClassicPhrasePresetID && !isOpaqueWhiteCanvas(src.Background) {
+		return itemPresentation{}, fmt.Errorf("overlay: preset %q requires an opaque white canvas background", preset)
+	}
+	if err := validateChildCaptionStyles(item); err != nil {
+		return itemPresentation{}, err
+	}
+	if err := validateCaptionMotionTargets(item); err != nil {
+		return itemPresentation{}, err
+	}
+	hasCaption := itemHasCaption(item)
+	if item.CameraMotionID != "" && len(item.ImageLayers) > 0 {
+		// Camera sequences render each child's caption beside its portrait; the
+		// group itself intentionally has no aggregate EntityCaption.
+		hasCaption = true
+	}
+	if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, hasCaption); err != nil {
+		return itemPresentation{}, err
+	}
+	if (isEntityKind(kind) || (isImageKind(kind) && item.EntityStyleID != "")) && len(item.Assets) > 0 {
+		if imagePreset := strings.TrimSpace(item.ImagePresetID); imagePreset != "" {
+			def, err := resolveOfficialPreset(imagePreset, string(PresetImage))
+			if err != nil {
+				return itemPresentation{}, err
+			}
+			out.ImagePreset = def
+		}
+	}
+	return out, nil
+}
+
+// resolveItemMap resolves only map geometry, after presentation validation so
+// error precedence stays the historical one.
+func resolveItemMap(item semanticItem, kind ItemKind, src *semanticPlan, envelope itemEnvelope) (*resolvedMap, error) {
+	if !isMapKind(kind) || isModernMap1(item) {
+		return nil, nil
+	}
+	mapSpec, err := resolveMap(item.Map, item.Assets, src.Width, src.Height, envelope.End-envelope.Start)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: map item %q resolve: %w", item.ID, err)
+	}
+	return mapSpec, nil
 }
 
 // compileItem dispatches one resolved item to its per-kind compiler. The kind

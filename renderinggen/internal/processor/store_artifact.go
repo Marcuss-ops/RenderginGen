@@ -217,22 +217,26 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 	// Total time must be set before the ledger row is written (the deferred
 	// publish/total metrics above are for the artifact returned to the queue).
 	phaseMetrics[metricnames.TotalUS] = float64(time.Since(totalStart).Microseconds())
-	// Ingest Chronon's BOUNDED telemetry summary (observability ownership,
-	// Phase 10): `<output>.telemetry-summary.json` is the only Chronon
-	// telemetry surface the worker reads. It is recorded verbatim (Chronon
-	// owns the schema) and only its documented numeric subset is projected.
-	// A missing summary is non-fatal: the rendered bytes are still valid,
-	// only the bounded telemetry blob is absent from the ledger.
+	// Ingest Chronon's canonical BOUNDED telemetry (observability ownership,
+	// Phase 10): only the v2/v3 timing sidecar is accepted. Its bounded sections
+	// are recorded verbatim (Chronon owns the schema) and only the documented
+	// numeric subset is projected. A missing sidecar is non-fatal: the rendered
+	// bytes are still valid, only the bounded telemetry blob is absent.
 	var chrononTelemetry json.RawMessage
-	if raw, err := chronon.ReadTelemetrySummary(outputPath); err != nil {
+	if raw, schema, err := chronon.ReadTelemetrySummaryWithSchema(outputPath); err != nil {
 		// Fail-open, but not invisible: the absence is a per-artifact metric so
-		// a renderer that silently stops emitting its summary is visible in the
+		// a renderer that silently stops emitting its sidecar is visible in the
 		// ledger and on GET /jobs/{id} instead of only in a log line.
 		phaseMetrics[metricnames.ChrononTelemetryMissing] = 1
-		workerlog.ByJobID(jobID).Warnf("chronon telemetry summary unavailable: %v", err)
+		workerlog.ByJobID(jobID).Warnf("chronon telemetry sidecar unavailable: %v", err)
 	} else {
 		chrononTelemetry = raw
 		artifact.ChrononTelemetry = raw
+		phaseMetrics[metricnames.ChrononTelemetrySourceTiming] = 1
+		phaseMetrics[metricnames.ChrononTelemetrySchemaRead] = float64(chronon.TelemetrySchemaCode(schema))
+		if schema == chronon.TimingSidecarSchemaV2 {
+			workerlog.ByJobID(jobID).Warnf("reading previous Chronon telemetry schema %s; support window ends with the next release", schema)
+		}
 		mergeTelemetrySummaryMetrics(phaseMetrics, raw)
 		// Cross-check the composition requirement the worker derived from the
 		// plan against the execution path the engine reports. This runs where

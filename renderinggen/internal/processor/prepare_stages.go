@@ -100,6 +100,10 @@ func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error 
 	if st.stats.SemanticItemCount > 1 {
 		st.metrics[metricnames.OverlayRenderBatch] = 1
 	}
+	if st.stats.LegacyCompositeImageCount > 0 {
+		st.metrics[metricnames.LegacyCompositeImageItems] = float64(st.stats.LegacyCompositeImageCount)
+		st.metrics[metricnames.LegacyCompositeImageReplay] = float64(st.stats.LegacyCompositeReplayCount)
+	}
 	// UnknownTemplates is empty for every plan the compiler accepts: a non-empty
 	// template_id that resolves to no registry row and no legacy alias is
 	// REJECTED by resolveSemanticItems, not lowered as a preset-less primitive.

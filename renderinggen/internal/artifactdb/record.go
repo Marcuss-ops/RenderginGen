@@ -62,13 +62,12 @@ type ArtifactRecord struct {
 	DriveUploadUS       int64
 	TotalUS             int64
 
-	// ChrononTelemetry is the BOUNDED telemetry summary ingested from Chronon's
-	// `<output>.telemetry-summary.json` (schema
-	// chronon3d.render-telemetry-summary.v1) — the only Chronon telemetry
-	// surface the worker consumes (observability ownership, Phase 10). It is
-	// stored verbatim as JSON (Chronon owns the schema); the worker records
-	// only its distributive phases in the typed columns above. nil when the
-	// summary was missing.
+	// ChrononTelemetry is the BOUNDED telemetry ingested from Chronon's
+	// `<output>.timing.json` (schema chronon3d.frame-timing.v2/v3) — the only
+	// Chronon telemetry surface the worker consumes (observability ownership,
+	// Phase 10). It is stored as the bounded JSON projection (Chronon owns the
+	// schema); the worker records only its distributive phases in the typed
+	// columns above. nil when the sidecar was missing.
 	ChrononTelemetry json.RawMessage
 
 	// ChrononTiming* mirror the RawTimingArtifactRef on the queue artifact:

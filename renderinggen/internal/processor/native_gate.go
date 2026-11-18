@@ -1,14 +1,13 @@
 // native_gate.go owns the gpu-vulkan-native receipt gate: a render certified
 // as native Vulkan must prove it in Chronon's BOUNDED telemetry document +
 // media receipt before the artifact may be published under the strict native
-// identity. The bounded document is either the legacy summary
-// (`<output>.telemetry-summary.json`, chronon3d.render-telemetry-summary.v1) or
-// the current engine's frame-timing sidecar (`<output>.timing.json`,
-// chronon3d.frame-timing.v2/v3) reduces to its inline summary/job sections —
-// the timing sidecar became the engine's SINGLE telemetry artifact, and its summary
-// publishes the very same job/gpu counters under the same paths. The gate
-// never reads the per-frame array (opaque artifact), so it cannot drift from
-// the bounded contract (observability ownership, Phase 10).
+// identity. The bounded document is the engine's frame-timing sidecar
+// (`<output>.timing.json`, chronon3d.frame-timing.v2/v3) reduced to its inline
+// summary/job sections — the timing sidecar is the engine's SINGLE telemetry
+// artifact, and its summary publishes the job/gpu counters under the same paths.
+// The retired v1 summary is rejected. The gate never reads the per-frame array
+// (opaque artifact), so it cannot drift from the bounded contract
+// (observability ownership, Phase 10).
 package processor
 
 import (
@@ -31,12 +30,11 @@ func requireNativeVulkan(outputPath string, expectedFrames int) error {
 // session. In a segmented render, each item's own receipt is checked later by
 // verifySegmentOutput and the session anchor has no media artifact receipt.
 func requireNativeVulkanTelemetry(outputPath string, expectedFrames int) error {
-	// Observability ownership (Phase 10): the gate certifies from Chronon's
-	// BOUNDED telemetry document — the legacy summary when the engine wrote
-	// one, else the bounded sections of the v2 frame-timing sidecar. Neither
-	// the unbounded per-frame array nor an unversioned document is ever
+	// Observability ownership (Phase 10): the gate certifies from the bounded
+	// sections of the v2/v3 frame-timing sidecar. Neither the unbounded
+	// per-frame array, the retired v1 summary nor an unversioned document is
 	// accepted: ReadTelemetrySummary + DecodeNativeTelemetry reject a missing
-	// artifact and any unknown schema, so the gate fails closed by
+	// artifact and any unsupported schema, so the gate fails closed by
 	// construction.
 	raw, err := chronon.ReadTelemetrySummary(outputPath)
 	if err != nil {

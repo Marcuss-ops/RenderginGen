@@ -5,13 +5,12 @@ import (
 	"testing"
 )
 
-// summaryDoc builds a bounded telemetry summary with the given job facts. The
-// shape mirrors the engine's own document (see the recorded summaries under the
-// Chronon checkout), and is deliberately minimal: only the fields
-// ExecutionFacts reads.
+// summaryDoc builds a bounded timing-sidecar document with the given job facts.
+// The shape mirrors the engine's own v3 document and is deliberately minimal:
+// only the fields ExecutionFacts reads.
 func summaryDoc(t *testing.T, job map[string]any) json.RawMessage {
 	t.Helper()
-	doc := map[string]any{"schema": TelemetrySummarySchema, "job": job}
+	doc := map[string]any{"schema": TimingSidecarSchemaV3, "version": 3, "job": job}
 	raw, err := json.Marshal(doc)
 	if err != nil {
 		t.Fatal(err)
@@ -26,6 +25,7 @@ func TestDecodeExecutionFactsRejectsNonSummaryDocuments(t *testing.T) {
 		"unversioned":             []byte(`{"schema":"chronon3d.render-telemetry.v1","job":{}}`),
 		"raw timing":              []byte(`{"frame_times_ms":[1,2,3]}`),
 		"summary of another repo": []byte(`{"schema":"renderinggen.overlay-plan.v1"}`),
+		"retired v1 summary":      []byte(`{"schema":"chronon3d.render-telemetry-summary.v1","job":{}}`),
 	}
 	for name, raw := range cases {
 		name, raw := name, raw
@@ -181,7 +181,7 @@ func TestExecutionFactsExecutionPathNamesTheAbsence(t *testing.T) {
 // against the engine's documented field names: these are the keys the recorded
 // summaries carry, so a rename on either side fails here.
 func TestDecodeExecutionFactsReadsTheEngineFieldNames(t *testing.T) {
-	raw := json.RawMessage(`{"schema":"` + TelemetrySummarySchema + `","job":{"execution_path":"full_graph_native","surface_handoff_path":"direct","gpu":{"cuda_composite_frames":120}}}`)
+	raw := json.RawMessage(`{"schema":"` + TimingSidecarSchemaV3 + `","version":3,"job":{"execution_path":"full_graph_native","surface_handoff_path":"direct","gpu":{"cuda_composite_frames":120}}}`)
 	facts, err := DecodeExecutionFacts(raw)
 	if err != nil {
 		t.Fatal(err)

@@ -83,7 +83,7 @@ func TestEntityGroupAndNewFontsRenderCanary(t *testing.T) {
 	shaA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "member-a.png"))
 	shaB := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "member-b.png"))
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1",
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
 		"plan_id":"group-fonts-canary","video_id":"group-fonts-canary",
 		"width":1280,"height":720,"fps_num":24,"fps_den":1,"duration_ms":4000,
 		"background":{"kind":"color","color":[0.04,0.05,0.07,1]},

@@ -9,33 +9,21 @@ import (
 )
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Observability ownership (Phase 10): Chronon owns telemetry. The engine has
-// shipped TWO generations of that contract:
+// Observability ownership (Phase 10): Chronon owns telemetry. The engine's
+// canonical and ONLY telemetry artifact is `<output>.timing.json`
+// (chronon3d.frame-timing.v3, with v2 accepted for older workers). It carries
+// the bounded summary INLINE (`summary` + `job` sections) alongside the
+// unbounded per-frame array. The historical
+// `<output>.telemetry-summary.json` (chronon3d.render-telemetry-summary.v1) was
+// retired on 2026-11-18 after the workspace inventory found zero v1 sidecars
+// and 155 v3 timing sidecars; Chronon3d's architecture contract already forbids
+// it (`timing_sidecar_v2_is_the_only_schema`).
 //
-//   * `<output>.telemetry-summary.json` (chronon3d.render-telemetry-summary.v1)
-//     — the historical BOUNDED summary. Chronon3d's architecture contract now
-//     FORBIDS this artifact (`timing_sidecar_v2_is_the_only_schema`), so a
-//     current engine never writes it; it is still read when a legacy engine
-//     produces it.
-//   * `<output>.timing.json` (chronon3d.frame-timing.v3, with v2 accepted for
-//     older workers) — the canonical
-//     single telemetry artifact of the current engine. It carries the bounded
-//     summary INLINE (`summary` + `job` sections, the same field paths the
-//     legacy summary used) alongside the unbounded per-frame array.
-//
-// This file ingests whichever the engine produced. From the v2/v3 sidecar it
-// takes ONLY the bounded `schema`/`version`/`summary`/`job` sections — the
+// This file takes ONLY the bounded sections of the timing sidecar — the
 // per-frame array never enters the ledger — and it re-derives nothing: every
 // value is Chronon's own, transported verbatim. Independently, the processor
 // preserves the whole sidecar opaquely (bytes → hash → object store → ref).
 // ═══════════════════════════════════════════════════════════════════════════
-
-// TelemetrySummarySchema is the schema of Chronon's historical bounded
-// telemetry summary sidecar (`<output>.telemetry-summary.json`).
-const TelemetrySummarySchema = "chronon3d.render-telemetry-summary.v1"
-
-// TelemetrySummarySuffix is the file suffix of the bounded summary sidecar.
-const TelemetrySummarySuffix = ".telemetry-summary.json"
 
 // TimingSidecarSchemaV2 and V3 are the accepted schemas of Chronon's canonical
 // frame-timing sidecar (`<output>.timing.json`). V3 adds telemetry sections;
@@ -62,21 +50,46 @@ var boundedTimingSections = []string{"schema", "version", "summary", "job"}
 const RawTimingSidecarContentType = "application/vnd.chronon.timing+json"
 
 // ReadTelemetrySummary reads the bounded telemetry document Chronon wrote next
-// to the rendered output. A legacy engine's summary is returned VERBATIM (no
-// parse/mutate/re-encode) after its schema header validates; a current engine's
-// v2 frame-timing sidecar is projected onto its own bounded sections. A host
-// that finds neither document fails closed — it never falls back to scraping a
-// log.
+// to the rendered output. Only the v2/v3 frame-timing sidecar is accepted; a
+// host that finds no supported document fails closed and never falls back to
+// scraping a log or the retired v1 summary.
 func ReadTelemetrySummary(outputPath string) (json.RawMessage, error) {
-	raw, legacyErr := ReadTelemetrySummaryFile(outputPath + TelemetrySummarySuffix)
-	if legacyErr == nil {
-		return raw, nil
+	raw, _, err := ReadTelemetrySummaryWithSchema(outputPath)
+	return raw, err
+}
+
+// ReadTelemetrySummaryWithSchema is ReadTelemetrySummary plus the accepted
+// timing schema. The processor records the schema on the artifact metrics so
+// "which generation was read" is answerable from the ledger instead of inferred
+// from the raw JSON.
+func ReadTelemetrySummaryWithSchema(outputPath string) (json.RawMessage, string, error) {
+	raw, err := ReadTimingSidecarTelemetry(outputPath + TimingSidecarSuffix)
+	if err != nil {
+		return nil, "", err
 	}
-	raw, sidecarErr := ReadTimingSidecarTelemetry(outputPath + TimingSidecarSuffix)
-	if sidecarErr == nil {
-		return raw, nil
+	return raw, TelemetrySchemaOf(raw), nil
+}
+
+// TelemetrySchemaOf returns the `schema` header of a bounded telemetry document.
+func TelemetrySchemaOf(raw json.RawMessage) string {
+	var header struct {
+		Schema string `json:"schema"`
 	}
-	return nil, fmt.Errorf("%v; %v", legacyErr, sidecarErr)
+	_ = json.Unmarshal(raw, &header)
+	return header.Schema
+}
+
+// TelemetrySchemaCode is the numeric encoding of a supported timing schema for
+// the float64 artifact metric map (v2=2, v3=3). Unknown schemas return 0.
+func TelemetrySchemaCode(schema string) int {
+	switch schema {
+	case TimingSidecarSchemaV2:
+		return 2
+	case TimingSidecarSchemaV3:
+		return 3
+	default:
+		return 0
+	}
 }
 
 // ReadTimingSidecarTelemetry reads Chronon's v2/v3 frame-timing sidecar from an
@@ -176,26 +189,6 @@ func BoundTimingSidecar(data []byte) (json.RawMessage, error) {
 	return out, nil
 }
 
-// ReadTelemetrySummaryFile reads a bounded telemetry summary from an explicit
-// path and validates the schema header.
-func ReadTelemetrySummaryFile(path string) (json.RawMessage, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("chronon telemetry summary: %w", err)
-	}
-	var header struct {
-		Schema string `json:"schema"`
-	}
-	if err := json.Unmarshal(data, &header); err != nil {
-		return nil, fmt.Errorf("chronon telemetry summary: decode: %w", err)
-	}
-	if header.Schema != TelemetrySummarySchema {
-		return nil, fmt.Errorf("chronon telemetry summary: schema %q, want %q",
-			header.Schema, TelemetrySummarySchema)
-	}
-	return data, nil
-}
-
 // NativeTelemetry is the bounded summary slice the gpu-vulkan-native receipt
 // gate certifies: execution identity (path/backends/surface handoff) plus the
 // strict counters that must prove zero fallback, zero readback and a full
@@ -221,10 +214,8 @@ type NativeTelemetry struct {
 }
 
 // DecodeNativeTelemetry decodes a bounded telemetry document for the native
-// gate. It accepts exactly the two certified schemas — the historical bounded
-// summary and the current v2 frame-timing sidecar — and rejects everything
-// else, so the gate can never accidentally certify from a raw v1 deep-profile
-// document or from any future unversioned shape.
+// gate. It accepts exactly the two supported timing schemas (v2/v3) and rejects
+// the retired v1 summary or any future unversioned shape.
 func DecodeNativeTelemetry(raw json.RawMessage) (NativeTelemetry, error) {
 	var telemetry NativeTelemetry
 	if len(raw) == 0 {
@@ -233,8 +224,8 @@ func DecodeNativeTelemetry(raw json.RawMessage) (NativeTelemetry, error) {
 	if err := json.Unmarshal(raw, &telemetry); err != nil {
 		return telemetry, fmt.Errorf("chronon telemetry summary: decode: %w", err)
 	}
-	if telemetry.Schema != TelemetrySummarySchema && !isTimingSidecarSchema(telemetry.Schema) {
-		return telemetry, fmt.Errorf("chronon telemetry summary: unsupported schema %q", telemetry.Schema)
+	if !isTimingSidecarSchema(telemetry.Schema) {
+		return telemetry, fmt.Errorf("chronon telemetry summary: unsupported schema %q (telemetry-summary.v1 is retired; use the timing sidecar)", telemetry.Schema)
 	}
 	return telemetry, nil
 }

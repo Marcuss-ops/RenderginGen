@@ -118,6 +118,32 @@ una provincia italiana serve aggiungere il relativo GeoJSON al catalogo. Con un
 piano `ModernMap1` si compila e si renderizza con
 `go run ./cmd/modernmap-demo -place Italy -out-dir /tmp/modernmap1`.
 
+### EditorialMap — sei stili vettoriali
+
+`cmd/editorial-map` porta in RenderingGen la lane vettoriale a sei stili
+(`editorial_vox`, `paper_cutout`, `dark_radar`, `blueprint`, `connection_arc`,
+`floating_island`). Il comando consuma un DTO
+`chrononplugin.editorial-map-scene.v1` già proiettato da ChrononPlugin, lo
+abbassa con `chronontemplate_emit_editorial_map` e, con `-render`, produce
+l'MP4 tramite Chronon3D. RenderingGen non legge GeoJSON e non proietta nulla:
+coordina soltanto i due binari nativi.
+
+```bash
+# connection_arc anima il trim dell'arco: prova animata della lane.
+go run ./cmd/editorial-map \
+  -scene ../../ChrononTemplate/tests/fixtures/editorial_map_connection_arc.scene.json \
+  -out-dir ../../.tmp/renderinggen-connection-arc \
+  -backend vulkan \
+  -render ../../.tmp/renderinggen-connection-arc/connection_arc.mp4
+```
+
+`-backend` accetta `software` (default) o `vulkan`; il backend software è
+utile come fallback ma può essere molto più lento su 240 frame 1080p.
+
+`-emit`, `-chronon` e `-assets-root` sovrascrivono i path dei binari e del root
+font; in alternativa si usano `CHRONONTEMPLATE_EMIT_EDITORIAL_MAP`,
+`CHRONON_BIN` e `CHRONON_TEMPLATE_ROOT`.
+
 Quindi la proposta editoriale parte da **7 sezioni principali** (le prime sette
 righe) più “Altri elementi”. Lo scenario concatenato già presente, invece, ha
 **6 atti runtime**: frasi, date, metriche, entità, luoghi+mappa, immagini. Date

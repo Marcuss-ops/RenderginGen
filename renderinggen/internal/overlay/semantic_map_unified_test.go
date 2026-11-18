@@ -87,8 +87,8 @@ func TestModernMap1AdmitsPresentationButRejectsCameraLODs(t *testing.T) {
 	bad := modernMapPlanWithPins("Italy", pins, nil)
 	badItem := bad["items"].([]any)[0].(map[string]any)
 	badItem["map"].(map[string]any)["camera_move"] = map[string]any{
-		"from": map[string]any{"latitude": 41.9, "longitude": 12.5},
-		"to":   map[string]any{"latitude": 45.4, "longitude": 9.19},
+		"from":       map[string]any{"latitude": 41.9, "longitude": 12.5},
+		"to":         map[string]any{"latitude": 45.4, "longitude": 9.19},
 		"start_zoom": 4.0, "end_zoom": 6.0, "start_tilt_deg": 0.0, "end_tilt_deg": 0.0, "bearing_deg": 0.0,
 	}
 	if _, err := compileMapTestPlan(t, bad); err == nil || !strings.Contains(err.Error(), "camera") {
