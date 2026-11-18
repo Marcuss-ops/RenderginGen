@@ -78,29 +78,33 @@ func decodeChainSegments(params map[string]any, itemID string) ([]chainSegment, 
 	return segments, nil
 }
 
-// segRIItem rebuilds one chain segment as the standalone semantic item it
-// was fused from: the segment's own kind/template/text/motion/assets/
-// layers/map/caption/style with the chain's absolute timing. AssetRefs fall
-// back to the chain-level assets filtered by AssetID for segments produced
-// before per-segment asset lists existed.
-func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
-	item := chain
-	item.ID = chain.ID
-	// A segment without its own kind/template must NEVER inherit the
-	// chain's: it would resolve back to a chain kind and recurse forever
-	// through compileItem. Default from content (map → map, assets →
-	// image, otherwise text), mirroring the producer's chain families.
+// segmentIdentity resolves a chain segment's kind and template.
+//
+// The producer writes both (`ChainSegment` in BrainRust's planner), so this is
+// a compatibility shim for hand-authored plans and for segments produced
+// before per-segment identity existed — not a second decision layer. It
+// therefore only infers what the content names unambiguously: a segment that
+// carries both a map and image bytes, or carries no content at all, fails
+// closed instead of being guessed into the nearest family.
+func segmentIdentity(seg chainSegment, itemID string, index int) (string, string, error) {
 	segKind := strings.TrimSpace(seg.Kind)
 	segTemplate := strings.TrimSpace(seg.TemplateID)
+	hasMap := seg.Map != nil
+	hasImage := len(seg.Assets) > 0 || strings.TrimSpace(seg.AssetID) != "" || len(seg.ImageLayers) > 0
 	if segKind == "" {
 		switch {
-		case seg.Map != nil:
+		case hasMap && hasImage:
+			return "", "", fmt.Errorf("overlay: chain item %q segment %d carries both a map and image content; its kind cannot be inferred", itemID, index)
+		case hasMap:
 			segKind = string(KindMap)
-		case len(seg.Assets) > 0 || strings.TrimSpace(seg.AssetID) != "" || len(seg.ImageLayers) > 0:
+		case hasImage:
 			segKind = string(KindImageSynonym)
 		default:
 			segKind = string(KindTextPhraseSynonym)
 		}
+	}
+	if !segmentCarriesContent(seg) {
+		return "", "", fmt.Errorf("overlay: chain item %q segment %d carries no content", itemID, index)
 	}
 	if segTemplate == "" {
 		switch ItemKind(segKind) {
@@ -116,6 +120,37 @@ func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
 			segTemplate = "IMPORTANT_PHRASE"
 		}
 	}
+	return segKind, segTemplate, nil
+}
+
+// segmentCarriesContent mirrors the producer's fail-closed segment check: a
+// segment with nothing to draw is a producer bug, never an empty layer.
+func segmentCarriesContent(seg chainSegment) bool {
+	return strings.TrimSpace(seg.Text) != "" ||
+		strings.TrimSpace(seg.EntityCaption) != "" ||
+		strings.TrimSpace(seg.AssetID) != "" ||
+		len(seg.Assets) > 0 ||
+		len(seg.ImageLayers) > 0 ||
+		seg.Map != nil ||
+		strings.TrimSpace(seg.MotionID) != "" ||
+		seg.Params != nil ||
+		seg.Style != nil
+}
+
+// segRIItem rebuilds one chain segment as the standalone semantic item it
+// was fused from: the segment's own kind/template/text/motion/assets/
+// layers/map/caption/style with the chain's absolute timing. AssetRefs fall
+// back to the chain-level assets filtered by AssetID for segments produced
+// before per-segment asset lists existed.
+func segRIItem(seg chainSegment, chain semanticItem, itemID string, index int) (semanticItem, error) {
+	segKind, segTemplate, err := segmentIdentity(seg, itemID, index)
+	if err != nil {
+		return semanticItem{}, err
+	}
+	item := chain
+	item.ID = chain.ID
+	// A segment without its own kind must NEVER inherit the chain's: it would
+	// resolve back to a chain kind and recurse forever through compileItem.
 	item.Kind = segKind
 	item.GroupID = seg.GroupID
 	item.SubgroupID = seg.SubgroupID
@@ -159,7 +194,7 @@ func segRIItem(seg chainSegment, chain semanticItem) semanticItem {
 	default:
 		item.Assets = nil
 	}
-	return item
+	return item, nil
 }
 
 func chainSequenceCamera(ri resolvedItem, fpsNum, fpsDen int) (string, semanticItem, int64, int64, bool) {
@@ -174,7 +209,14 @@ func chainSequenceCamera(ri resolvedItem, fpsNum, fpsDen int) (string, semanticI
 		startUS := segment.StartUS
 		endUS := startUS + segment.DurationUS
 		startFrame, endFrame := usFrames(startUS, endUS, int64(fpsNum), int64(fpsDen))
-		return segment.CameraMotionID, segRIItem(segment, ri.Item), startFrame, endFrame, true
+		// A segment whose identity cannot be resolved is reported by
+		// compileChainItem, which fails the whole compile; here it only means
+		// this segment contributes no extra camera controller.
+		segItem, err := segRIItem(segment, ri.Item, ri.Item.ID, 0)
+		if err != nil {
+			continue
+		}
+		return segment.CameraMotionID, segItem, startFrame, endFrame, true
 	}
 	return "", semanticItem{}, 0, 0, false
 }
@@ -258,7 +300,10 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			return nil, fmt.Errorf("overlay: chain item %q segment %d collapses to no frames", ri.Item.ID, n)
 		}
 		segID := fmt.Sprintf("%s:seg%d", ri.Item.ID, n)
-		segItem := segRIItem(seg, ri.Item)
+		segItem, err := segRIItem(seg, ri.Item, ri.Item.ID, n)
+		if err != nil {
+			return nil, err
+		}
 		segItem.ID = segID
 		segSpec := templateSpecFor(segItem.Template)
 		segKind, err := segSpec.resolveKind(segItem.Kind, segID)
