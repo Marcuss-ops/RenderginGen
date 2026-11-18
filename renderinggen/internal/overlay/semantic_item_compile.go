@@ -22,7 +22,7 @@ func appendResolvedItemLayers(plan *Plan, resolved []resolvedItem, src *semantic
 			// layers. Attach a clip stroke to the actual image layer only.
 			plan.Layers = append(plan.Layers, layer)
 			if layer.FrameStroke != nil && layer.Type != "shape" {
-				strokeLayer, err := compileMediaStrokeLayer(layer)
+				strokeLayer, err := compileMediaStrokeLayer(layer, src.Width, src.Height)
 				if err != nil {
 					return fmt.Errorf("overlay: item %q: %w", ri.Item.ID, err)
 				}

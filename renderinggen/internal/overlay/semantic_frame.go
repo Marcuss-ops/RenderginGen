@@ -258,7 +258,7 @@ func frameFromImageParams(params map[string]any, existing *semanticSourceFrame) 
 // compileMediaStrokeLayer expands transient frame-stroke metadata into a
 // Chronon rounded-rectangle path which sits above its media layer. Its fill is
 // transparent, while the visible line follows the same radius as the clip.
-func compileMediaStrokeLayer(media Layer) (Layer, error) {
+func compileMediaStrokeLayer(media Layer, canvasWidth, canvasHeight int) (Layer, error) {
 	if media.FrameStroke == nil || media.FrameStroke.Width <= 0 {
 		return Layer{}, fmt.Errorf("media frame stroke is missing a positive width")
 	}
@@ -278,19 +278,21 @@ func compileMediaStrokeLayer(media Layer) (Layer, error) {
 	}
 	strokeWidth := media.FrameStroke.Width
 	strokeRadius := media.Radius
-	position := append([]float64(nil), media.Position...)
-	if media.Type == "video" && len(position) >= 2 {
-		// Render-plan video positions name the top-left of the unscaled source
-		// box in canvas-centred coordinates, while a shape transform is
-		// anchored at its box centre. Follow the same origin-to-centre
-		// conversion the video scene builder applies (add half the unscaled
-		// box) so the outline lands exactly on the displayed clip instead of
-		// being left at the un-scaled origin. The displayed size is already
-		// baked into Size above / Scale is unit, so the shape itself must not
-		// be shifted by the foreground inset a second time.
+	position := make([]float64, 2)
+	if len(media.Position) >= 2 {
+		position[0], position[1] = media.Position[0], media.Position[1]
+	}
+	if media.Type == "video" {
+		// Video positions name the top-left of the unscaled source box in
+		// canvas-centred coordinates; normalise to the box centre.
 		position[0] += media.Size[0] * 0.5
 		position[1] += media.Size[1] * 0.5
 	}
+	// Shape positions are absolute canvas coordinates naming the box
+	// top-left. The clip is centred on the canvas, so the outline starts at
+	// the canvas centre minus half the displayed (already scaled) box.
+	position[0] += float64(canvasWidth)*0.5 - width*0.5
+	position[1] += float64(canvasHeight)*0.5 - height*0.5
 	if !finite(strokeWidth) || !finite(strokeRadius) {
 		return Layer{}, fmt.Errorf("media frame stroke width/radius must be finite")
 	}
@@ -310,6 +312,9 @@ func compileMediaStrokeLayer(media Layer) (Layer, error) {
 		StartFrame:     media.StartFrame,
 		DurationFrames: media.DurationFrames,
 		Opacity:        media.Opacity,
+		// Screen-space keeps the outline in the same compositing domain as the
+		// clip; shape positions are then absolute canvas coordinates.
+		ScreenSpace: true,
 		Shape: &LayerShape{
 			Type: "rounded_rect", Radius: strokeRadius,
 			Stroke: &style,

@@ -229,7 +229,7 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 		sourceLayerIndex = len(plan.Layers)
 		plan.Layers = append(plan.Layers, srcLayer)
 		if srcLayer.FrameStroke != nil {
-			strokeLayer, err := compileMediaStrokeLayer(srcLayer)
+			strokeLayer, err := compileMediaStrokeLayer(srcLayer, src.Width, src.Height)
 			if err != nil {
 				return nil, nil, Stats{}, nil, fmt.Errorf("overlay: source_frame: %w", err)
 			}

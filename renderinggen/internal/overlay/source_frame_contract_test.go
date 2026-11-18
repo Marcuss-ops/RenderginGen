@@ -139,8 +139,8 @@ func TestSourceFrameStrokeLowersToPerimeterShape(t *testing.T) {
 	if len(stroke.Size) != 2 || stroke.Size[0] != 1344 || stroke.Size[1] != 756 {
 		t.Errorf("stroke bounds = %v, want displayed video box [1344 756]", stroke.Size)
 	}
-	if stroke.Position[0] != 0 || stroke.Position[1] != 0 {
-		t.Errorf("stroke position = %v, want [0 0] (the centred box centre, not the unscaled origin)", stroke.Position)
+	if stroke.Position[0] != 288 || stroke.Position[1] != 162 {
+		t.Errorf("stroke position = %v, want [288 162] (top-left of the 1344x756 box centred on a 1920x1080 canvas)", stroke.Position)
 	}
 	if len(stroke.Scale) != 2 || stroke.Scale[0] != 1 || stroke.Scale[1] != 1 {
 		t.Errorf("stroke shape scale = %v, want unit scale because bounds are in output pixels", stroke.Scale)
@@ -174,8 +174,8 @@ func TestSourceFrameStrokeLowersOnItemVideoOverlay(t *testing.T) {
 	if layer.Shape.Radius != 12 || len(layer.Size) != 2 || layer.Size[0] != 1440 || layer.Size[1] != 810 {
 		t.Errorf("item stroke geometry = radius %v size %v, want displayed video box [1440 810]", layer.Shape.Radius, layer.Size)
 	}
-	if layer.Position[0] != 0 || layer.Position[1] != 0 {
-		t.Errorf("item stroke transform position = %v, want [0 0] for the centred scaled box", layer.Position)
+	if layer.Position[0] != 240 || layer.Position[1] != 135 {
+		t.Errorf("item stroke position = %v, want [240 135] for the 1440x810 box centred on a 1920x1080 canvas", layer.Position)
 	}
 	if len(layer.Scale) != 2 || layer.Scale[0] != 1 || layer.Scale[1] != 1 {
 		t.Errorf("item stroke scale = %v, want unit scale because bounds are in output pixels", layer.Scale)
