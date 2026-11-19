@@ -115,6 +115,39 @@ func TestCompileMixedChainExpandsImageAndText(t *testing.T) {
 	}
 }
 
+// PipelineGen mirrors the first segment's preset onto the chain container. An
+// image-first mixed chain therefore carries image_fade_in on a mixed_chain, but
+// the container itself has no preset: the image and text segments own theirs.
+func TestCompileMixedChainIgnoresImagePresetOnContainer(t *testing.T) {
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"chain-mixed-image-first","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{
+		"id":"chain-mixed-image-first","kind":"mixed_chain","template_id":"MIXED_CHAIN","preset_id":"image_fade_in",
+		"text":"Evander Holyfield difende il titolo","start_ms":0,"end_ms":5000,
+		"asset_refs":[{"asset_id":"img-1","url":"https://example/img.jpg","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","media_type":"image/jpeg"}],
+		"params":{"chain_camera":"fly_under_fade","chain_count":2,"chain_segments":[
+			{"text":"","motion_id":"image_fade_reveal","preset_id":"image_fade_in","template_id":"IMAGE_OVERLAY","kind":"image","start_us":0,"duration_us":2500000,"asset_id":"img-1"},
+			{"text":"Evander Holyfield difende il titolo","motion_id":"phrase_apple_clean_01_blur_soft_reveal","preset_id":"phrase_default","template_id":"IMPORTANT_PHRASE","kind":"text_phrase","start_us":2900000,"duration_us":2100000}
+		]}
+	}]}`)
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("CompileSemantic image-first mixed chain: %v", err)
+	}
+	hasImage, hasText := false, false
+	for i := range result.Plan.Layers {
+		layer := result.Plan.Layers[i]
+		if layer.Type == "image" {
+			hasImage = true
+		}
+		if layer.Type == "text" && layer.Text != "" {
+			hasText = true
+		}
+	}
+	if !hasImage || !hasText {
+		rawPlan, _ := json.Marshal(result.Plan)
+		t.Fatalf("image-first mixed chain needs image+text, got %s", rawPlan)
+	}
+}
+
 // A mixed_chain with a number segment lowers it through the text path with
 // its own motion and the fly-under fade.
 func TestCompileMixedChainExpandsNumberSegment(t *testing.T) {

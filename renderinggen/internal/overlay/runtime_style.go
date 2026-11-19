@@ -145,13 +145,18 @@ type runtimeTextStyle struct {
 	ShadowOpacity   *float64
 	ShadowOffsetXPX *float64
 	ShadowOffsetYPX *float64
+	// Background is the optional plate behind the text run. It rides the
+	// nested style.background block (card_background in PipelineGen) so the
+	// payload can put a coloured rectangle behind an entity context label.
+	Background *LayerBackground
 }
 
 func (s runtimeTextStyle) empty() bool {
 	return s.FontPath == "" && s.FontSizePX == nil && s.Fill == nil &&
 		s.GlowSize == nil && s.GlowColor == nil && s.StrokeSize == nil &&
 		s.ShadowBlurPX == nil && s.ShadowOpacity == nil &&
-		s.ShadowOffsetXPX == nil && s.ShadowOffsetYPX == nil
+		s.ShadowOffsetXPX == nil && s.ShadowOffsetYPX == nil &&
+		s.Background == nil
 }
 
 // decodeRuntimeTextStyle parses the controls once, for validation and lowering.
@@ -220,7 +225,87 @@ func decodeRuntimeTextStyle(params map[string]any) (runtimeTextStyle, error) {
 	if style.ShadowOffsetYPX, err = runtimeSignedNumber(params, "shadow_offset_y_px", maxRuntimeShadowSize); err != nil {
 		return runtimeTextStyle{}, err
 	}
+	if value, exists := params["style"]; exists {
+		// A string style id is a legacy presentation selector, not the nested
+		// runtime style block; only a map can carry the caption plate.
+		nested, ok := value.(map[string]any)
+		if !ok {
+			return style, nil
+		}
+		if raw, chosen := nested["background"]; chosen {
+			background, err := decodeRuntimeTextBackground(raw)
+			if err != nil {
+				return runtimeTextStyle{}, err
+			}
+			style.Background = background
+		}
+	}
 	return style, nil
+}
+
+// decodeRuntimeTextBackground parses the optional text plate. The renderer's
+// BackgroundStyle is the contract: color is required, opacity defaults to the
+// renderer's 1, radius to 0 and padding to 0. Malformed values fail closed so a
+// producer never ships a plate the renderer would silently drop.
+func decodeRuntimeTextBackground(raw any) (*LayerBackground, error) {
+	entry, ok := raw.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("params.style.background must be an object")
+	}
+	color, ok := entry["color"].(string)
+	if !ok || !isHexColor(color) {
+		return nil, fmt.Errorf("params.style.background.color must be #RRGGBB")
+	}
+	background := &LayerBackground{Color: color, LiftToShape: true}
+	if value, exists := entry["opacity"]; exists {
+		n, ok := numericValue(value)
+		if !ok || !finite(n) || n < 0 || n > 1 {
+			return nil, fmt.Errorf("params.style.background.opacity must be between 0 and 1")
+		}
+		background.Opacity = &n
+	}
+	if value, exists := entry["radius"]; exists {
+		n, ok := numericValue(value)
+		if !ok || !finite(n) || n < 0 || n > 512 {
+			return nil, fmt.Errorf("params.style.background.radius must be between 0 and 512 pixels")
+		}
+		background.Radius = n
+	}
+	if value, exists := entry["padding"]; exists {
+		padding, err := runtimeBackgroundPadding(value)
+		if err != nil {
+			return nil, err
+		}
+		background.Padding = padding
+	}
+	return background, nil
+}
+
+func runtimeBackgroundPadding(value any) ([]float64, error) {
+	var raw []any
+	switch values := value.(type) {
+	case []any:
+		raw = values
+	case []float64:
+		raw = make([]any, len(values))
+		for i, n := range values {
+			raw[i] = n
+		}
+	default:
+		return nil, fmt.Errorf("params.style.background.padding accepts at most [x,y]")
+	}
+	if len(raw) == 0 || len(raw) > 2 {
+		return nil, fmt.Errorf("params.style.background.padding accepts at most [x,y]")
+	}
+	out := make([]float64, len(raw))
+	for i, value := range raw {
+		n, ok := numericValue(value)
+		if !ok || !finite(n) || n < 0 || n > 512 {
+			return nil, fmt.Errorf("params.style.background.padding values must be between 0 and 512 pixels")
+		}
+		out[i] = n
+	}
+	return out, nil
 }
 
 func runtimeColor(value any, key string) (string, error) {
@@ -493,6 +578,9 @@ func applyDecodedTextRuntimeOverrides(layer *Layer, style runtimeTextStyle) erro
 		} else {
 			layer.Style.Shadow = &shadow
 		}
+	}
+	if style.Background != nil {
+		layer.Style.Background = cloneLayerStyleBackground(style.Background)
 	}
 	return nil
 }

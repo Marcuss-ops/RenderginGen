@@ -3,6 +3,7 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"strings"
 	"testing"
 )
@@ -63,6 +64,68 @@ func TestEntityImageStyleRandomCompilesAndKeepsCaption(t *testing.T) {
 	}
 	if !hasImage || !hasCaption {
 		t.Fatalf("styled entity image plan lost its image or caption: %+v", result.Plan.Layers)
+	}
+}
+
+func TestEntityCaptionPayloadBadgeColorCompilesPlateAndContrast(t *testing.T) {
+	for _, tc := range []struct {
+		color string
+		text  string
+	}{
+		{color: "#F0D020", text: "#0A0B0E"},
+		{color: "#17304A", text: "#FFFFFF"},
+	} {
+		raw := styledEntityImagePlan(t, "entity-badge-"+tc.color[1:], "premium_below_random_v1")
+		var plan map[string]any
+		if err := json.Unmarshal(raw, &plan); err != nil {
+			t.Fatal(err)
+		}
+		items := plan["items"].([]any)
+		item := items[0].(map[string]any)
+		item["style"] = map[string]any{"style": map[string]any{
+			"background": map[string]any{"color": tc.color, "radius": 0, "padding": []any{12, 24}},
+		}}
+		raw, err := json.Marshal(plan)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result, err := CompileSemantic(raw)
+		if err != nil {
+			t.Fatalf("CompileSemantic badge color %s: %v", tc.color, err)
+		}
+		found := false
+		for _, layer := range result.Plan.Layers {
+			if layer.Type != "text" || strings.TrimSpace(layer.Text) != "Ada Lovelace" {
+				continue
+			}
+			found = true
+			if layer.Style == nil || layer.Style.Background != nil {
+				t.Fatalf("caption still carries a dead text box: %+v", layer.Style)
+			}
+			if layer.Style.Fill != tc.text {
+				t.Fatalf("caption fill = %q, want contrast color %q", layer.Style.Fill, tc.text)
+			}
+			var plate *Layer
+			for i := range result.Plan.Layers {
+				if result.Plan.Layers[i].ID == layer.ID+":plate" {
+					plate = &result.Plan.Layers[i]
+				}
+			}
+			if plate == nil || plate.Type != "shape" || plate.Shape == nil {
+				t.Fatalf("badge color %s produced no shape plate", tc.color)
+			}
+			want, err := parseHexColor(tc.color)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got, ok := plate.Shape.Fill.([]float64)
+			if !ok || len(got) != 4 || math.Abs(got[0]-want[0]) > 1e-9 || math.Abs(got[1]-want[1]) > 1e-9 || math.Abs(got[2]-want[2]) > 1e-9 {
+				t.Fatalf("caption plate fill = %#v, want %s", plate.Shape.Fill, tc.color)
+			}
+		}
+		if !found {
+			t.Fatalf("badge color %s produced no caption layer", tc.color)
+		}
 	}
 }
 

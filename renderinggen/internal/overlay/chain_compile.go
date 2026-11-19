@@ -266,6 +266,51 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if err != nil {
 		return nil, err
 	}
+	// A chain camera-pan turns the image run into ONE continuous camera move:
+	// the segments sit on a strip one canvas apart and the strip travels so each
+	// segment lands at the centre in turn. That is the group choreography, not N
+	// independent single-image entrances. It is opt-in through the producer's
+	// `chain_camera` value and only valid for single-asset image segments.
+	panSpec, panMode := chainPanSpecFor(ri.Params)
+	if panMode && ri.Kind != KindImageChain {
+		return nil, fmt.Errorf("overlay: chain item %q chain_camera %q requires an image_chain", ri.Item.ID, ri.Params["chain_camera"])
+	}
+	panSpacing := 0.0
+	var panArrivals []int64
+	if panMode {
+		panSpacing = float64(src.Width)
+		if panSpec.axis == "y" {
+			// One canvas height leaves the second-next member peeking into
+			// the frame while an earlier member holds; Chronon then prepares
+			// an inactive full-canvas surface and reuses it. 1.5x keeps every
+			// non-active vertical member fully off-canvas.
+			panSpacing = float64(src.Height) * 3 / 2
+		}
+		panArrivals = make([]int64, len(segments))
+		for n, seg := range segments {
+			kind, _, err := segmentIdentity(seg, ri.Item.ID, n)
+			if err != nil {
+				return nil, err
+			}
+			if !isImageKind(ItemKind(kind)) || len(seg.Assets) != 1 || len(seg.ImageLayers) != 0 || seg.Map != nil {
+				return nil, fmt.Errorf("overlay: chain item %q segment %d cannot join a camera pan: it must be a single-asset image segment", ri.Item.ID, n)
+			}
+			startFrame, _ := usFrames(seg.StartUS, seg.StartUS+seg.DurationUS, int64(src.FPSNum), int64(src.FPSDen))
+			panArrivals[n] = startFrame - ri.Start
+			if panArrivals[n] < 0 {
+				panArrivals[n] = 0
+			}
+		}
+		chainFrames := ri.End - ri.Start
+		for n := 1; n < len(panArrivals); n++ {
+			if panArrivals[n] <= panArrivals[n-1] {
+				panArrivals[n] = panArrivals[n-1] + 1
+			}
+			if chainFrames > 1 && panArrivals[n] >= chainFrames {
+				panArrivals[n] = chainFrames - 1
+			}
+		}
+	}
 	// Maps are standalone by contract. A hand-built mixed/image/text chain
 	// carrying a map would lower a georeferenced full-canvas segment inside a
 	// container that cannot validate its LOD window; reject it before any
@@ -349,6 +394,17 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			return nil, fmt.Errorf("overlay: chain item %q segment %d: %w", ri.Item.ID, n, err)
 		}
 		segRI.Params = segParams
+		// A chain owns N independent photos, so a chain-level image_backdrop is
+		// projected onto every image segment and blurred behind its own card.
+		// A segment that declares its own block keeps it.
+		if isImageKind(segKind) && len(segItem.Assets) > 0 {
+			if _, declared := segParams["image_backdrop"]; !declared {
+				if backdrop, requested := ri.Params["image_backdrop"]; requested && backdrop != nil {
+					segParams["image_backdrop"] = backdrop
+					segRI.Params = segParams
+				}
+			}
+		}
 		if isMapKind(segKind) {
 			resolved, err := resolveMap(segItem.Map, segItem.Assets, src.Width, src.Height, end-start)
 			if err != nil {
@@ -363,12 +419,143 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 			}
 			segRI.ImagePreset = def
 		}
+		if panMode {
+			// The strip owns the camera; a per-segment scene camera would be a
+			// second controller and a per-segment position still would fight the
+			// group track.
+			segItem.CameraMotionID = ""
+			segRI.Item.CameraMotionID = ""
+		}
 		var layers []Layer
 		// Lower through the same dispatcher as standalone items (map and
 		// entity branches included); segment kinds are never chains, so
 		// this recurses at most one level.
 		if layers, err = compileItem(segRI, src, registry); err != nil {
 			return nil, fmt.Errorf("overlay: chain item %q segment %d: %w", ri.Item.ID, n, err)
+		}
+		if panMode {
+			chainFrames := ri.End - ri.Start
+			pan := chainPanTrack(panArrivals, len(segments), panSpacing, chainFrames, panSpec)
+			panStarts, panEnds := chainPanWindows(panArrivals, len(segments), chainFrames)
+			offset := float64(n) * panSpacing * panSpec.layoutSign
+			segStart, segEnd := usFrames(seg.StartUS, seg.StartUS+seg.DurationUS, int64(src.FPSNum), int64(src.FPSDen))
+			if segEnd > ri.End {
+				segEnd = ri.End
+			}
+			for i := range layers {
+				// Images (and their card decorations) live on the strip for the
+				// whole chain; a caption only exists during its own segment, so it
+				// appears exactly when its image reaches the centre and cannot sit
+				// on a neighbouring standalone overlay for the rest of the run.
+				isCaption := layers[i].CaptionForImageID != ""
+				// A blurred backdrop is the SET, not a member: it stays centred
+				// while the strip travels, so the camera move never drags the
+				// background off-canvas.
+				isBackdrop := strings.HasSuffix(layers[i].ID, ":image-backdrop")
+				// A member exists only while the camera can see it (plus the
+				// travel overlap with its neighbour), so Chronon never has to
+				// keep three full-size off-canvas surfaces resident for the
+				// whole chain.
+				imageStart := ri.Start + panStarts[n]
+				imageEnd := ri.Start + panEnds[n]
+				// Members overlap for the whole handoff: the outgoing image is
+				// still on screen while the incoming one travels in, so the
+				// chain never falls back to the bare background. Chain-camera
+				// plans run on the software encoder (see the execution policy),
+				// where two animated full-canvas surfaces are supported.
+				if imageStart < ri.Start {
+					imageStart = ri.Start
+				}
+				if imageEnd > ri.End {
+					imageEnd = ri.End
+				}
+				if imageEnd <= imageStart {
+					imageEnd = imageStart + 1
+				}
+				if !isCaption {
+					layers[i].StartFrame = imageStart
+					layers[i].DurationFrames = imageEnd - imageStart
+				} else {
+					captionStart := segStart
+					captionEnd := segEnd
+					// The caption must be gone before its image's surface is
+					// retired; ending both on the same frame is the native
+					// residency race this trim exists to avoid.
+					if captionEnd > imageEnd {
+						captionEnd = imageEnd
+					}
+					if captionEnd-captionStart > 2 {
+						captionEnd -= 2
+					}
+					if captionEnd <= captionStart {
+						captionEnd = captionStart + 1
+					}
+					layers[i].StartFrame = captionStart
+					layers[i].DurationFrames = captionEnd - captionStart
+				}
+				if !isCaption {
+					if isBackdrop {
+						layers[i].Position = []float64{0, 0}
+						layers[i].Animation = nil
+						layers[i].ChainPanOffset = nil
+					} else {
+						layers[i].Position = offsetChainPosition(layers[i].Position, panSpec.axis, offset)
+						// Chronon evaluates a layer's tracks in layer-local frames; the
+						// shared strip track is authored on the chain timeline, so shift
+						// it back by this member's start before attaching it.
+						layers[i].Animation = rebaseLayerAnimation(
+							chainPanAnimation(pan, chainFrames, panSpec.axis),
+							layers[i].StartFrame,
+						)
+						// Chronon samples a not-yet-started image at local frame 0, so
+						// park incoming members fully off-canvas at that key instead of
+						// one spacing step away (which leaves a visible edge).
+						if n > 0 {
+							for t := range layers[i].Animation.Tracks {
+								track := &layers[i].Animation.Tracks[t]
+								if track.Property == "position_"+panSpec.axis && len(track.Keyframes) > 0 {
+									track.Keyframes[0].Value = panSpacing / 4
+								}
+							}
+						}
+						layers[i].ChainPanOffset = []float64{0, 0}
+						if panSpec.axis == "y" {
+							layers[i].ChainPanOffset[1] = offset
+						} else {
+							layers[i].ChainPanOffset[0] = offset
+						}
+					}
+				} else {
+					// A moving mtsdf text surface can be released late by Chronon
+					// while the composite still samples it. Keep the caption at the
+					// segment's resting slot: it is already centred when the image
+					// arrives and never needs a full-canvas moving text surface.
+					layers[i].Position = append([]float64(nil), layers[i].Position...)
+					// Captions share the strip timeline but must stay invisible
+					// before their own segment: a pre-start layer is sampled at
+					// local frame 0, so gate it with a one-frame opacity ramp.
+					captionLast := layers[i].DurationFrames - 1
+					if captionLast < 1 {
+						captionLast = 1
+					}
+					layers[i].Animation = &LayerAnimation{Tracks: []AnimationTrack{{
+						Property: "opacity",
+						Keyframes: []AnimationKeyframe{
+							{Frame: 0, Value: 0.0},
+							{Frame: 1, Value: 1.0},
+							{Frame: captionLast, Value: 1.0},
+						},
+					}}}
+					layers[i].ChainPanOffset = nil
+					layers[i].CaptionForImageID = ""
+				}
+				layers[i].TextAnimators = nil
+				// A projected image gets a tight producer surface; a flat screen-
+				// space animated image is forced to a full-canvas surface by the
+				// native video lane, and two of those exhaust the graph slots.
+				layers[i].Enable3D = false
+				layers[i].TransitionIn = nil
+			}
 		}
 		// The camera passes under between segments: stamp the fly-under
 		// dip + fade on every non-first segment's layers so the handoff
@@ -380,7 +567,7 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		// A map's own camera_move is its entrance animation. Applying the
 		// generic fly-under transition to its georeferenced layers compounds
 		// a second camera movement and makes the map smear/double during entry.
-		if n > 0 && !isMapKind(segKind) {
+		if !panMode && n > 0 && !isMapKind(segKind) {
 			fadeFrames := int64(12)
 			if fps := int64(src.FPSNum); fps > 0 && int64(src.FPSDen) > 0 {
 				fadeFrames = fps * 12 / 24 / int64(src.FPSDen)
@@ -406,4 +593,230 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		out = append(out, layers...)
 	}
 	return out, nil
+}
+
+// chainPanSpecFor resolves the producer's chain-level camera choice. Only the
+// four certified camera-pan directions switch the chain into strip mode; every
+// other value (including the legacy fly_under_fade) keeps the segment handoff.
+func chainPanSpecFor(params map[string]any) (cameraPanSpec, bool) {
+	raw, ok := params["chain_camera"].(string)
+	if !ok {
+		return cameraPanSpec{}, false
+	}
+	spec, ok := cameraPanSpecs[strings.TrimSpace(raw)]
+	return spec, ok
+}
+
+// chainPanTrack is the shared staircase for a chain camera pan. Arrivals are
+// the segment starts relative to the chain, so each image reaches the centre
+// exactly when its chain segment starts; the last image holds until the end.
+func chainPanTrack(arrivals []int64, count int, spacing float64, duration int64, spec cameraPanSpec) AnimationTrack {
+	property := "position_x"
+	if spec.axis == "y" {
+		property = "position_y"
+	}
+	track := AnimationTrack{Property: property, Easing: "in_out_sine"}
+	if duration <= 0 || count < 2 {
+		track.Keyframes = []AnimationKeyframe{{Frame: 0, Value: 0.0}}
+		return track
+	}
+	keys := []AnimationKeyframe{{Frame: 0, Value: 0.0}}
+	lastFrame := int64(0)
+	step := duration / int64(count)
+	if step < 1 {
+		step = 1
+	}
+	travel := step * 3 / 5
+	if travel < 1 {
+		travel = 1
+	}
+	for index := 1; index < count && index < len(arrivals); index++ {
+		arrival := arrivals[index]
+		gap := arrival - lastFrame
+		if gap < 2 {
+			gap = 2
+		}
+		stepTravel := travel
+		if stepTravel > gap*3/5 {
+			stepTravel = gap * 3 / 5
+		}
+		if stepTravel < 1 {
+			stepTravel = 1
+		}
+		moveStart := arrival - stepTravel
+		if moveStart <= lastFrame {
+			moveStart = lastFrame + 1
+		}
+		if moveStart >= arrival {
+			arrival = moveStart + 1
+		}
+		if arrival >= duration {
+			arrival = duration - 1
+		}
+		if arrival <= moveStart {
+			break
+		}
+		keys = append(keys,
+			AnimationKeyframe{Frame: moveStart, Value: spec.travelSign * float64(index-1) * spacing},
+			AnimationKeyframe{Frame: arrival, Value: spec.travelSign * float64(index) * spacing},
+		)
+		lastFrame = arrival
+	}
+	end := lastValidFrame(duration)
+	if end > lastFrame {
+		keys = append(keys, AnimationKeyframe{Frame: end, Value: spec.travelSign * float64(count-1) * spacing})
+	}
+	track.Keyframes = keys
+	return track
+}
+
+// chainPanAnimation is the single animation every layer of a strip segment
+// shares: the travelling position track on the pan axis, a neutral track on
+// the other axis, and constant opacity. No per-image entrance survives.
+func chainPanAnimation(pan AnimationTrack, duration int64, axis string) *LayerAnimation {
+	last := lastValidFrame(duration)
+	neutral := func(property string, value float64) AnimationTrack {
+		return AnimationTrack{Property: property, Keyframes: []AnimationKeyframe{
+			{Frame: 0, Value: value},
+			{Frame: last, Value: value},
+		}}
+	}
+	positionX := neutral("position_x", 0)
+	positionY := neutral("position_y", 0)
+	if axis == "y" {
+		positionY = pan
+	} else {
+		positionX = pan
+	}
+	return &LayerAnimation{Tracks: []AnimationTrack{
+		positionX,
+		positionY,
+		neutral("opacity", 1),
+	}}
+}
+
+// chainPanWindows keeps only the active image and its incoming neighbour on
+// the timeline. `starts[i]` is when member i begins its travel; `ends[i-1]` is
+// the arrival of member i, so the two overlap exactly for the handoff.
+func chainPanWindows(arrivals []int64, count int, duration int64) ([]int64, []int64) {
+	starts := make([]int64, count)
+	ends := make([]int64, count)
+	if count == 0 {
+		return starts, ends
+	}
+	step := duration / int64(count)
+	if step < 1 {
+		step = 1
+	}
+	travel := step * 3 / 5
+	if travel < 1 {
+		travel = 1
+	}
+	lastArrival := int64(0)
+	for index := 1; index < count; index++ {
+		arrival := arrivals[index]
+		gap := arrival - lastArrival
+		if gap < 2 {
+			gap = 2
+		}
+		stepTravel := travel
+		if stepTravel > gap*3/5 {
+			stepTravel = gap * 3 / 5
+		}
+		if stepTravel < 1 {
+			stepTravel = 1
+		}
+		start := arrival - stepTravel
+		if start <= lastArrival {
+			start = lastArrival + 1
+		}
+		starts[index] = start
+		ends[index-1] = arrival
+		lastArrival = arrival
+	}
+	ends[count-1] = duration
+	return starts, ends
+}
+
+// rebaseLayerAnimation moves a chain-timeline track onto a layer that starts
+// at `start`. Chronon evaluates tracks in layer-local frames and rejects
+// negative keyframes, so the first key is the sampled value at the layer's
+// start and every later key is shifted back by the same amount.
+func rebaseLayerAnimation(anim *LayerAnimation, start int64) *LayerAnimation {
+	if anim == nil || start <= 0 {
+		return anim
+	}
+	for t := range anim.Tracks {
+		track := &anim.Tracks[t]
+		lead := sampleTrackAt(*track, start)
+		keys := []AnimationKeyframe{{Frame: 0, Value: lead}}
+		for _, key := range track.Keyframes {
+			frame := key.Frame - start
+			if frame <= 0 || frame == keys[len(keys)-1].Frame {
+				continue
+			}
+			key.Frame = frame
+			keys = append(keys, key)
+		}
+		track.Keyframes = keys
+	}
+	return anim
+}
+
+// sampleTrackAt linearly interpolates a track at an absolute chain frame.
+// The chain track uses the same easing for every segment, so sampling the
+// endpoints through the eased curve is enough for the layer's first key.
+func sampleTrackAt(track AnimationTrack, frame int64) float64 {
+	keys := track.Keyframes
+	if len(keys) == 0 {
+		return 0
+	}
+	if frame <= keys[0].Frame {
+		return asFloatValue(keys[0].Value)
+	}
+	for i := 1; i < len(keys); i++ {
+		if frame > keys[i].Frame {
+			continue
+		}
+		span := keys[i].Frame - keys[i-1].Frame
+		if span <= 0 {
+			return asFloatValue(keys[i].Value)
+		}
+		progress := float64(frame-keys[i-1].Frame) / float64(span)
+		from, to := asFloatValue(keys[i-1].Value), asFloatValue(keys[i].Value)
+		return from + (to-from)*progress
+	}
+	return asFloatValue(keys[len(keys)-1].Value)
+}
+
+func asFloatValue(value any) float64 {
+	switch v := value.(type) {
+	case float64:
+		return v
+	case float32:
+		return float64(v)
+	case int:
+		return float64(v)
+	case int64:
+		return float64(v)
+	case uint:
+		return float64(v)
+	case uint64:
+		return float64(v)
+	default:
+		return 0
+	}
+}
+
+func offsetChainPosition(position []float64, axis string, offset float64) []float64 {
+	out := append([]float64(nil), position...)
+	for len(out) < 2 {
+		out = append(out, 0)
+	}
+	if axis == "y" {
+		out[1] += offset
+	} else {
+		out[0] += offset
+	}
+	return out
 }

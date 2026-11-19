@@ -46,24 +46,56 @@ func appendFullFrameStages(plan *Plan, src *semanticPlan) error {
 	return nil
 }
 
-// ensureClipGridOnTop pins the clip grid as the final composited layer.
+// ensureClipGridAboveSource pins the clip grid directly above the footage and
+// below every text layer.
 //
-// Chronon composites layers in declaration order, so the grid must come after
-// every visual layer (source, card frame, items, watermark) to sit over the
-// footage instead of only on the margins. The grid is appended in
-// appendFullFrameStages today, but later stages may append layers; moving it
-// here makes the paint order an explicit invariant rather than an accident of
-// call ordering.
-func ensureClipGridOnTop(plan *Plan) {
+// Chronon composites layers in declaration order. A grid appended last sits on
+// top of the card stroke, the item overlays, the subtitles and the watermark,
+// so its lines cut through the typography and the treatment reads as dirt. A
+// grid appended before the source is hidden by the card and shows only on the
+// margins (the R7 defect). The sane paint order is background, source, grid,
+// card stroke, item overlays, subtitles, watermark: the grid belongs to the
+// footage, not to the text.
+func ensureClipGridAboveSource(plan *Plan) {
+	gridIndex := -1
 	for i, layer := range plan.Layers {
-		if layer.ID != "clip__grid" || i == len(plan.Layers)-1 {
-			continue
+		if layer.ID == "clip__grid" {
+			gridIndex = i
+			break
 		}
-		grid := layer
-		plan.Layers = append(plan.Layers[:i], plan.Layers[i+1:]...)
-		plan.Layers = append(plan.Layers, grid)
+	}
+	if gridIndex < 0 {
 		return
 	}
+	grid := plan.Layers[gridIndex]
+	rest := make([]Layer, 0, len(plan.Layers)-1)
+	rest = append(rest, plan.Layers[:gridIndex]...)
+	rest = append(rest, plan.Layers[gridIndex+1:]...)
+	anchor := -1
+	for i, layer := range rest {
+		if layer.ID == "source" {
+			anchor = i
+		}
+	}
+	if anchor < 0 {
+		// No source clip: the blurred background is the footage plate, so the
+		// grid still belongs above it and below the items.
+		for i, layer := range rest {
+			if layer.ID == "background" {
+				anchor = i
+			}
+		}
+	}
+	if anchor < 0 {
+		// Nothing to sit on: keep the grid where it is instead of losing it.
+		plan.Layers = append(rest, grid)
+		return
+	}
+	out := make([]Layer, 0, len(rest)+1)
+	out = append(out, rest[:anchor+1]...)
+	out = append(out, grid)
+	out = append(out, rest[anchor+1:]...)
+	plan.Layers = out
 }
 
 // finalizeLayerDurations makes every full-clip layer span the final canvas.

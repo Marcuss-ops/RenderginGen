@@ -16,7 +16,7 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	if child.CaptionMotionID != "" {
 		captionMotion = EntityCaptionMotionID(child.CaptionMotionID)
 	} else {
-		captionMotion = entityCaptionMotionIDForIdentity("", src.PlanID, src.VideoID, captionIdentity)
+		captionMotion = entityCaptionMotionIDForLayout("", child.CaptionLayout, src.PlanID, src.VideoID, captionIdentity)
 	}
 	// A 3D caption motion is kept as declared: the text lowering derives
 	// enable_3d from the animators it emits, so Chronon receives the camera-
@@ -68,7 +68,7 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	// Caption semantics resolve directly to a role-aware text spec, without
 	// borrowing a phrase template, preset, or phrase-specific motion policy.
 	if !motionAdmitsTarget(captionMotion, TargetCaption) {
-		captionMotion = entityCaptionMotionIDForIdentity("", src.PlanID, src.VideoID, captionIdentity)
+		captionMotion = entityCaptionMotionIDForLayout("", child.CaptionLayout, src.PlanID, src.VideoID, captionIdentity)
 	}
 	if !motionAdmitsTarget(captionMotion, TargetCaption) {
 		return Layer{}, fmt.Errorf("overlay: item %q caption motion %q is not supported for text captions", parent.Item.ID, captionMotion)

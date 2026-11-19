@@ -24,6 +24,16 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 		if !ok {
 			style = entityStyleRegistry.sample(entityStyleRegistry.query(nil), "", src.entityStyleSampleKey(), src.VideoID, ri.Item.ID)
 		}
+		if badgeColor := entityBadgeColorFromStyle(ri.Item.Style); badgeColor != "" {
+			captionColor, err := highContrastCaptionColor(badgeColor)
+			if err != nil {
+				return nil, fmt.Errorf("overlay: entity item %q badge color: %w", ri.Item.ID, err)
+			}
+			style.IsBadge = true
+			style.BadgeColor = badgeColor
+			style.CaptionColor = captionColor
+			ri.Item.CaptionColor = captionColor
+		}
 		// Layout, colour, image motion and caption motion all stay exactly as
 		// the style (or the producer override) declares them. The selected
 		// catalog motion reaches Chronon unchanged so GPU failures stay visible.
@@ -144,5 +154,10 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	if premium != nil && premium.ImageRecipe.RequireCaption && strings.TrimSpace(ri.Item.EntityCaption) == "" {
 		return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
 	}
-	return layers, nil
+	// An entity card is a full-canvas composition with one photo asset, so a
+	// run-level image_backdrop must blur that same photo behind the card. The
+	// composite branch in compileImageItem only covers image_layers items;
+	// without this call the plan carried image_backdrop but the render showed
+	// a bare background (r7 entity card, r10 chain segments).
+	return addSingleImageBackdrop(ri, src, registry, layers)
 }

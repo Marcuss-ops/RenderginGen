@@ -15,7 +15,11 @@ func ValidateEntityCaptionCollisions(layers []Layer, _ ...int) error {
 	}
 	var captions []caption
 	for _, layer := range layers {
-		if layer.CaptionForImageID == "" || len(layer.Position) < 2 || len(layer.Size) < 2 {
+		// A chain camera-pan caption is governed by its strip track, not by its
+		// static slot; the static box would falsely collide with every overlay
+		// that shares the centre before/after the pan. Its spacing is guaranteed
+		// by the strip layout instead.
+		if layer.CaptionForImageID == "" || len(layer.Position) < 2 || len(layer.Size) < 2 || len(layer.ChainPanOffset) == 2 {
 			continue
 		}
 		start := layer.StartFrame

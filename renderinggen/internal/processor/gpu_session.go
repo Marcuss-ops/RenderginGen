@@ -27,7 +27,15 @@ type RenderSessionOutcome struct {
 // condition is re-invented here.
 func (p *Processor) ExecuteRenderSession(ctx context.Context, prepared *PreparedJob, req chronon.RenderRequest, policy RenderExecutionPolicy) (RenderSessionOutcome, error) {
 	started := time.Now()
-	err := p.renderer.Render(ctx, req)
+	renderer := p.renderer
+	if policy.Backend == "software" && p.softwareRenderer != nil && len(req.OutputSegments) == 0 {
+		// Chain camera pans keep overlapping animated full-canvas images and
+		// are intentionally routed to the CLI/libx264 lane; the IPC daemon's
+		// host-export path cannot read those composed frames back.
+		renderer = p.softwareRenderer
+		workerlog.ByJobID(prepared.Job.ID).Infof("rendering on the software CLI lane (libx264) for this plan")
+	}
+	err := renderer.Render(ctx, req)
 	if err == nil {
 		return RenderSessionOutcome{Elapsed: time.Since(started)}, nil
 	}

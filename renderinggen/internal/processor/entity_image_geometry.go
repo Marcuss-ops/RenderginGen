@@ -26,6 +26,14 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error)
 	changed := false
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
+		if layer.DeriveWidthFromAsset && layer.Type == "image" && !layer.EntityImage {
+			changed = true
+			if err := deriveImageWidthFromAsset(root, layer); err != nil {
+				return false, err
+			}
+			layer.DeriveWidthFromAsset = false
+			continue
+		}
 		if !layer.EntityImage {
 			continue
 		}
@@ -102,6 +110,25 @@ func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error)
 	return changed, nil
 }
 
+// deriveImageWidthFromAsset resolves the one part of a standalone card's
+// geometry the author cannot know at payload time: when only the height is
+// authored, the width that preserves the photo's aspect. Without it the plan
+// carries a guessed box and a cover crop eats most of a portrait.
+func deriveImageWidthFromAsset(root string, layer *overlay.Layer) error {
+	if layer.BoxHeight <= 0 {
+		return fmt.Errorf("processor: image layer %q asks for an asset-derived width without a positive height", layer.ID)
+	}
+	sourceWidth, sourceHeight, err := entityImageDimensions(
+		filepath.Join(root, filepath.FromSlash(layer.Asset)))
+	if err != nil {
+		return fmt.Errorf("processor: read image layer %q dimensions: %w", layer.ID, err)
+	}
+	width := max(1, int(float64(layer.BoxHeight)*float64(sourceWidth)/float64(sourceHeight)+0.5))
+	layer.BoxWidth = width
+	layer.Size = []float64{float64(width), float64(layer.BoxHeight)}
+	return nil
+}
+
 // entityImageDimensions reads the verified, materialized image's pixel size.
 // It lives on the processor side of the boundary: the overlay compiler receives
 // the numbers, never a path it would have to open.
@@ -132,15 +159,23 @@ func alignEntityCaptionToFittedImage(plan *overlay.Plan, image *overlay.Layer) e
 		if caption.CaptionForImageID != image.ID {
 			continue
 		}
+		// A chain camera pan keeps every member on its strip slot; fit the pair
+		// in the neutral centre pose, then restore the strip translation so the
+		// group track stays the only owner of the horizontal (or vertical) move.
+		offsetX, offsetY := 0.0, 0.0
+		if len(image.ChainPanOffset) == 2 {
+			offsetX, offsetY = image.ChainPanOffset[0], image.ChainPanOffset[1]
+		}
+		basePosition := []float64{image.Position[0] - offsetX, image.Position[1] - offsetY}
 		bounds := overlay.EntityCardImageBoundsFromCenter(
-			plan.Canvas.Width, plan.Canvas.Height, image.Position, image.Size[0], image.Size[1],
+			plan.Canvas.Width, plan.Canvas.Height, basePosition, image.Size[0], image.Size[1],
 		)
 		layout, err := overlay.ResolveEntityCardLayoutAt(plan.Canvas.Width, plan.Canvas.Height, bounds, caption.Text, caption.CaptionLayout)
 		if err != nil {
 			return err
 		}
-		image.Position[1] = layout.ImageBounds.Y + image.Size[1]/2 - float64(plan.Canvas.Height)/2
-		caption.Position = []float64{layout.CaptionBounds.CenterX, layout.CaptionBounds.CenterY}
+		image.Position[1] = layout.ImageBounds.Y + image.Size[1]/2 - float64(plan.Canvas.Height)/2 + offsetY
+		caption.Position = []float64{layout.CaptionBounds.CenterX + offsetX, layout.CaptionBounds.CenterY + offsetY}
 		caption.Size = []float64{layout.CaptionBounds.Width, layout.CaptionBounds.Height}
 		caption.BoxWidth = int(layout.CaptionBounds.Width)
 		caption.BoxHeight = int(layout.CaptionBounds.Height)

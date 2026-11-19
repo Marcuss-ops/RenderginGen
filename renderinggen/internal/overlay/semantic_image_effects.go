@@ -22,7 +22,12 @@ func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 	if err != nil {
 		return nil, err
 	}
-	layers, err = addSingleImageBackdrop(ri, src, registry, layers)
+	if len(ri.Item.ImageLayers) > 0 {
+		// Co-present entity portraits keep one backdrop per member photo.
+		layers, err = addCompositeImageBackdrops(ri, src, registry, layers)
+	} else {
+		layers, err = addSingleImageBackdrop(ri, src, registry, layers)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -416,3 +416,57 @@ func entityCaptionMotionIDForIdentity(requested, planID, videoID, itemID string)
 	}
 	return entityCaptionMotionPool[styleHash("caption_motion", planID, videoID, itemID, uint64(len(entityCaptionMotionPool)))]
 }
+
+// entityCaptionMotionIDForLayout resolves the automatic caption motion without
+// breaking the caption's layout. A caption below the portrait must enter
+// vertically: `entity_split_side` moves `position_x` from -72px, so selecting it
+// for a below card makes the caption slide in from the left even though the
+// final geometry is centred. An explicit request is authoritative and is never
+// filtered here; this only constrains the automatic fallback.
+func entityCaptionMotionIDForLayout(requested, layout, planID, videoID, itemID string) string {
+	if requested != "" {
+		return requested
+	}
+	pool := entityCaptionMotionPool
+	if layout = strings.TrimSpace(strings.ToLower(layout)); layout == "" || layout == "below" {
+		pool = captionMotionsWithoutHorizontalEntrance(pool)
+	}
+	if len(pool) == 0 {
+		pool = entityCaptionMotionPool
+	}
+	return pool[styleHash("caption_motion", planID, videoID, itemID, uint64(len(pool)))]
+}
+
+func captionMotionsWithoutHorizontalEntrance(pool []string) []string {
+	out := make([]string, 0, len(pool))
+	for _, id := range pool {
+		if !motionMovesHorizontally(id) {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// motionMovesHorizontally reports whether a motion owns a position_x track,
+// on the layer itself or on a text animator. The check reads the certified
+// definition, so a new horizontal motion is excluded automatically instead of
+// needing another id blacklist.
+func motionMovesHorizontally(id string) bool {
+	definition, err := resolveMotionDefinition(id)
+	if err != nil || definition == nil {
+		return false
+	}
+	for _, track := range definition.Tracks {
+		if track.Property == "position_x" {
+			return true
+		}
+	}
+	for _, animator := range definition.TextAnimators {
+		for _, track := range animator.Properties {
+			if track.Property == "position_x" {
+				return true
+			}
+		}
+	}
+	return false
+}

@@ -334,6 +334,16 @@ func resolveItemPresentation(item semanticItem, spec TemplateSpec, kind ItemKind
 		spec.Family = PresetText
 	}
 	params := mergeSemanticParams(item.Params, item.Style)
+	// A chain container has no presentation of its own: its segments do, and a
+	// mixed chain may combine text and image families. PipelineGen mirrors the
+	// FIRST segment's preset and text overrides onto the container for legacy
+	// consumers; validating that mirror against the container kind rejects an
+	// image-first mixed chain as "preset is image, not text". compileChainItem
+	// validates every segment against its own family, so the container stops
+	// here before preset, style and caption resolution.
+	if isChainKind(kind) {
+		return itemPresentation{Params: params}, nil
+	}
 	if _, requested := params["image_backdrop"]; requested && !isImageKind(kind) {
 		return itemPresentation{}, fmt.Errorf("overlay: item %q image_backdrop is valid only for image items", item.ID)
 	}

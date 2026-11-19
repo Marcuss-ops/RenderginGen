@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -147,13 +148,29 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 		t.Fatalf("line grid has no explicit path commands: %+v", grid.Shape)
 	}
 	first, last := grid.Shape.Path[0], grid.Shape.Path[len(grid.Shape.Path)-1]
-	if first.Type != "move_to" || first.Point[0] != 0 || first.Point[1] != 0 {
-		t.Fatalf("line grid must start at the canvas origin: %+v", first)
+	if first.Type != "move_to" || first.Point[0] != 0.5 || first.Point[1] != 0.5 {
+		t.Fatalf("line grid must start at the inset frame corner: %+v", first)
 	}
-	// The last row sits on the last grid multiple, so it must still reach the
-	// canvas width and stop within one spacing of the bottom edge.
-	if last.Type != "line_to" || last.Point[0] != 1280 || last.Point[1] < 720-64 || last.Point[1] > 720 {
-		t.Fatalf("line grid must reach the canvas bottom-right: %+v", last)
+	// The mesh closes on all four edges: border strokes sit half a stroke
+	// inside the box, so their full width stays in frame instead of being
+	// clipped in half, and no cell is left unclosed by the spacing remainder.
+	if last.Type != "line_to" || last.Point[0] != 1279.5 || last.Point[1] != 719.5 {
+		t.Fatalf("line grid must close on the bottom-right corner: %+v", last)
+	}
+	frameRight, frameBottom := false, false
+	for _, command := range grid.Shape.Path {
+		if command.Type != "move_to" {
+			continue
+		}
+		if command.Point[0] == 1279.5 {
+			frameRight = true
+		}
+		if command.Point[1] == 719.5 {
+			frameBottom = true
+		}
+	}
+	if !frameRight || !frameBottom {
+		t.Fatalf("line grid leaves the frame open: right=%v bottom=%v", frameRight, frameBottom)
 	}
 	if grid.Shape.Stroke == nil || grid.Shape.Stroke.Width != 1 || grid.Shape.Stroke.Color != "#33CCDD" {
 		t.Fatalf("grid line width and color must survive lowering: %+v", grid.Shape)
@@ -213,33 +230,52 @@ func TestClipSemanticContractGlobalEffectsLowerToChronon(t *testing.T) {
 	}
 }
 
-// TestEnsureClipGridOnTopMovesGridAboveLaterLayers pins the paint-order
+// TestEnsureClipGridAboveSourceKeepsGridOutOfText pins the paint-order
 // invariant: Chronon composites in declaration order, so a grid that is not
-// last shows only on the margins around the card.
-func TestEnsureClipGridOnTopMovesGridAboveLaterLayers(t *testing.T) {
+// above the source shows only on the margins around the card, while a grid
+// that is last cuts its lines through the card stroke, the item overlays and
+// the burned-in text.
+func TestEnsureClipGridAboveSourceKeepsGridOutOfText(t *testing.T) {
 	plan := &Plan{Layers: []Layer{
 		{ID: "background"},
 		{ID: "clip__grid"},
 		{ID: "source"},
-		{ID: "late-card"},
+		{ID: "source__stroke"},
+		{ID: "subtitles"},
+		{ID: "watermark"},
 	}}
-	ensureClipGridOnTop(plan)
-	if len(plan.Layers) != 4 {
-		t.Fatalf("layer count changed: %d", len(plan.Layers))
+	ensureClipGridAboveSource(plan)
+	want := []string{"background", "source", "clip__grid", "source__stroke", "subtitles", "watermark"}
+	if len(plan.Layers) != len(want) {
+		t.Fatalf("layer count = %d, want %d", len(plan.Layers), len(want))
 	}
-	if last := plan.Layers[len(plan.Layers)-1]; last.ID != "clip__grid" {
-		t.Fatalf("clip grid must be the final composited layer, got %q", last.ID)
+	for i, id := range want {
+		if plan.Layers[i].ID != id {
+			t.Fatalf("paint order = %v, want %v", layerIDs(plan.Layers), want)
+		}
 	}
-	for i, layer := range plan.Layers[:len(plan.Layers)-1] {
-		if layer.ID == "clip__grid" {
-			t.Fatalf("duplicate grid at index %d", i)
+	// Without a source clip the blurred background is the plate the grid sits
+	// on: still above the footage, still below the item overlays.
+	backgroundOnly := &Plan{Layers: []Layer{
+		{ID: "background"},
+		{ID: "clip__grid"},
+		{ID: "fx-item"},
+	}}
+	ensureClipGridAboveSource(backgroundOnly)
+	backgroundWant := []string{"background", "clip__grid", "fx-item"}
+	if len(backgroundOnly.Layers) != len(backgroundWant) {
+		t.Fatalf("background-only layer count = %d, want %d", len(backgroundOnly.Layers), len(backgroundWant))
+	}
+	for i, id := range backgroundWant {
+		if backgroundOnly.Layers[i].ID != id {
+			t.Fatalf("background-only paint order = %v, want %v", layerIDs(backgroundOnly.Layers), backgroundWant)
 		}
 	}
 }
 
-// TestClipGridIsTheFinalLayerAfterCompile proves the compiled plan keeps the
-// grid above the source card and any item layers.
-func TestClipGridIsTheFinalLayerAfterCompile(t *testing.T) {
+// TestClipGridSitsAboveSourceAfterCompile proves the compiled plan keeps the
+// grid above the source card and no longer on top of the plan.
+func TestClipGridSitsAboveSourceAfterCompile(t *testing.T) {
 	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"grid-top","video_id":"clip","width":1280,"height":720,"fps_num":30,"fps_den":1,"duration_ms":3000,"source":{"asset_id":"clip","sha256":"` + clipTestSHA + `"},"clip_grid":{"scope":"full_canvas","spacing_px":64,"line_width_px":1,"color":"#33CCDD","opacity":0.2},"items":[]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
@@ -248,18 +284,17 @@ func TestClipGridIsTheFinalLayerAfterCompile(t *testing.T) {
 	if len(result.Plan.Layers) < 2 {
 		t.Fatalf("expected source and grid layers, got %+v", result.Plan.Layers)
 	}
-	last := result.Plan.Layers[len(result.Plan.Layers)-1]
-	if last.ID != "clip__grid" {
-		t.Fatalf("final layer = %q, want clip__grid", last.ID)
-	}
-	sourceIndex := -1
+	sourceIndex, gridIndex := -1, -1
 	for i, layer := range result.Plan.Layers {
-		if layer.ID == "source" {
+		switch layer.ID {
+		case "source":
 			sourceIndex = i
+		case "clip__grid":
+			gridIndex = i
 		}
 	}
-	if sourceIndex < 0 || sourceIndex >= len(result.Plan.Layers)-1 {
-		t.Fatalf("source index = %d, grid index = %d", sourceIndex, len(result.Plan.Layers)-1)
+	if sourceIndex < 0 || gridIndex != sourceIndex+1 {
+		t.Fatalf("source index = %d, grid index = %d; want grid directly above the source", sourceIndex, gridIndex)
 	}
 }
 
@@ -563,4 +598,23 @@ func TestClipSemanticForegroundScale(t *testing.T) {
 		return
 	}
 	t.Error("foreground_scale FAIL: no source layer found")
+}
+
+// TestClipDotGridRejectsOverlappingAndOversizedGrids pins the two dot-grid
+// guards at the lowerer, which is the only layer that knows the canvas and the
+// effective cell size: a radius wider than half a cell merges the dots into one
+// smudge, and 4 px spacing on a 1080p canvas asks for ~130k circles.
+func TestClipDotGridRejectsOverlappingAndOversizedGrids(t *testing.T) {
+	planContaining := func(grid string) []byte {
+		return []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"dots","video_id":"clip","width":1920,"height":1080,"fps_num":24,"fps_den":1,"duration_ms":1000,"source":{"asset_id":"clip","sha256":"` + clipTestSHA + `"},"clip_grid":` + grid + `,"items":[]}`)
+	}
+	if _, err := CompileSemantic(planContaining(`{"style":"dots","spacing_px":40,"dot_radius_px":30,"color":"#FFFFFF","opacity":0.3}`)); err == nil || !strings.Contains(err.Error(), "half of spacing_px") {
+		t.Fatalf("overlapping dots must fail, got %v", err)
+	}
+	if _, err := CompileSemantic(planContaining(`{"style":"dots","spacing_px":4,"dot_radius_px":2,"color":"#FFFFFF","opacity":0.3}`)); err == nil || !strings.Contains(err.Error(), "dots") {
+		t.Fatalf("oversized dot grid must fail, got %v", err)
+	}
+	if _, err := CompileSemantic(planContaining(`{"style":"dots","spacing_px":48,"dot_radius_px":3,"color":"#FFFFFF","opacity":0.3}`)); err != nil {
+		t.Fatalf("visible dot grid should compile, got %v", err)
+	}
 }

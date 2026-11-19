@@ -12,6 +12,52 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
+// TestDeriveImageWidthFromMaterializedAssetKeepsSourceAspect certifies the
+// height-only card contract: the width the author left out is derived from the
+// materialized photo's aspect instead of the placeholder box, so cover crops
+// the photo rather than squeezing it into the wrong shape.
+func TestDeriveImageWidthFromMaterializedAssetKeepsSourceAspect(t *testing.T) {
+	root := t.TempDir()
+	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")
+	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Create(assetPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1280, 1519))); err != nil {
+		f.Close()
+		t.Fatal(err)
+	}
+	if err := f.Close(); err != nil {
+		t.Fatal(err)
+	}
+	plan := &overlay.Plan{
+		Canvas: overlay.Canvas{Width: 1920, Height: 1080},
+		Layers: []overlay.Layer{{
+			ID: "pin:image", Type: "image", Asset: "assets/semantic/photo.png",
+			BoxWidth: 700, BoxHeight: 700, Size: []float64{700, 700}, Fit: overlay.FitCover,
+			DeriveWidthFromAsset: true,
+		}},
+	}
+	changed, err := fitEntityImageLayersToAssets(root, plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !changed {
+		t.Fatal("deriving the card width must report that the prepared package changed")
+	}
+	layer := plan.Layers[0]
+	if layer.BoxWidth != 590 || layer.BoxHeight != 700 || layer.Size[0] != 590 || layer.Size[1] != 700 {
+		t.Fatalf("derived geometry = box %dx%d size %v, want 590x700 from the 1280x1519 source",
+			layer.BoxWidth, layer.BoxHeight, layer.Size)
+	}
+	if layer.DeriveWidthFromAsset {
+		t.Fatal("transient width-derivation marker survived materialization")
+	}
+}
+
 func TestFitEntityImageLayersToMaterializedAssetRemovesMatteGeometry(t *testing.T) {
 	root := t.TempDir()
 	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")

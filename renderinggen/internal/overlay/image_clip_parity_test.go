@@ -105,3 +105,54 @@ func TestImageClipEffectParity(t *testing.T) {
 		}
 	}
 }
+
+// TestLineGridCommandsCloseTheFrame pins the geometry invariant on real
+// payloads: whatever the spacing, the mesh must end on the same inset on every
+// side (no open right or bottom edge), keep every stroke inside the box, and
+// distribute the cells evenly. 72 px on 1920x1080 used to leave 48 px open on
+// the right and run its bottom line through the frame edge.
+func TestLineGridCommandsCloseTheFrame(t *testing.T) {
+	cases := []struct{ width, height, spacing, lineWidth float64 }{
+		{1920, 1080, 72, 1},
+		{1920, 1080, 64, 1},
+		{1080, 1920, 47.5, 2},
+		{1280, 720, 512, 3},
+		{640, 640, 4096, 1},
+	}
+	for _, tc := range cases {
+		commands, err := lineGridCommands(tc.width, tc.height, tc.spacing, tc.lineWidth)
+		if err != nil {
+			t.Fatalf("%vx%v spacing %v: %v", tc.width, tc.height, tc.spacing, err)
+		}
+		inset := tc.lineWidth / 2
+		verticals := map[float64]bool{}
+		horizontals := map[float64]bool{}
+		for _, command := range commands {
+			x, y := command.Point[0], command.Point[1]
+			if x < inset-1e-9 || x > tc.width-inset+1e-9 || y < inset-1e-9 || y > tc.height-inset+1e-9 {
+				t.Fatalf("%vx%v spacing %v: point (%v,%v) leaves the inset frame", tc.width, tc.height, tc.spacing, x, y)
+			}
+			if command.Type == "move_to" {
+				verticals[x] = true
+				horizontals[y] = true
+			}
+		}
+		for _, edge := range []struct {
+			name string
+			at   float64
+			set  map[float64]bool
+		}{
+			{"left", inset, verticals},
+			{"right", tc.width - inset, verticals},
+			{"top", inset, horizontals},
+			{"bottom", tc.height - inset, horizontals},
+		} {
+			if !edge.set[edge.at] {
+				t.Fatalf("%vx%v spacing %v: %s edge of the frame is open", tc.width, tc.height, tc.spacing, edge.name)
+			}
+		}
+		if len(verticals) < 2 || len(horizontals) < 2 {
+			t.Fatalf("%vx%v spacing %v: mesh has no cells (%d/%d lines)", tc.width, tc.height, tc.spacing, len(verticals), len(horizontals))
+		}
+	}
+}

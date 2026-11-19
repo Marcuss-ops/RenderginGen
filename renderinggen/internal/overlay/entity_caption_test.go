@@ -9,6 +9,12 @@ import (
 
 func compileEntityCaptionForTest(t *testing.T, caption string, frame ...bool) []Layer {
 	t.Helper()
+	useFrame := len(frame) > 0 && frame[0]
+	return compileEntityCaptionPlanForTest(t, caption, useFrame, nil)
+}
+
+func compileEntityCaptionPlanForTest(t *testing.T, caption string, frame bool, style map[string]any) []Layer {
+	t.Helper()
 	item := map[string]any{
 		"id":              "portrait",
 		"entity_id":       "person:ada-lovelace",
@@ -26,10 +32,13 @@ func compileEntityCaptionForTest(t *testing.T, caption string, frame ...bool) []
 			"media_type": "image/png",
 		}},
 	}
-	if len(frame) > 0 && frame[0] {
+	if frame {
 		item["frame"] = map[string]any{"border": map[string]any{
 			"width_px": 4.0, "color": "#FFFFFF", "radius_px": 24.0,
 		}}
+	}
+	if style != nil {
+		item["params"] = map[string]any{"style": style}
 	}
 	plan := map[string]any{
 		"schema_version": "renderinggen.overlay-plan.v1",
@@ -100,6 +109,91 @@ func TestEntityCaptionEmitsImageAndCaptionWithSharedLifetime(t *testing.T) {
 	}
 	if caption.Style.Glow != nil {
 		t.Fatalf("caption glow = %+v; want no full-frame GPU halo", caption.Style.Glow)
+	}
+}
+
+func TestEntityCaptionLowersPayloadCardBackground(t *testing.T) {
+	layers := compileEntityCaptionPlanForTest(t, "Ada Lovelace", false, map[string]any{
+		"background": map[string]any{
+			"color":   "#1B2A3A",
+			"opacity": 0.85,
+			"radius":  12.0,
+			"padding": []any{18.0, 10.0},
+		},
+	})
+	if len(layers) != 3 {
+		t.Fatalf("got %d layers, want image + plate + caption", len(layers))
+	}
+	caption := layers[2]
+	if caption.Type != "text" {
+		t.Fatalf("layer 2 = %q, want the caption text", caption.Type)
+	}
+	if caption.Style == nil || caption.Style.Background != nil {
+		t.Fatalf("caption still carries a text box background: %+v", caption.Style)
+	}
+	plateLayer := layers[1]
+	if plateLayer.Type != "shape" || plateLayer.Shape == nil {
+		t.Fatalf("payload card_background did not lower to a shape plate: %+v", plateLayer)
+	}
+	if plateLayer.ID != caption.ID+":plate" {
+		t.Fatalf("plate id = %q, want %q", plateLayer.ID, caption.ID+":plate")
+	}
+	if plateLayer.StartFrame != caption.StartFrame || plateLayer.DurationFrames != caption.DurationFrames {
+		t.Fatalf("plate lifetime = [%d,%d), caption = [%d,%d)", plateLayer.StartFrame, plateLayer.DurationFrames, caption.StartFrame, caption.DurationFrames)
+	}
+	if plateLayer.Shape.Type != "rounded_rect" || plateLayer.Shape.Radius != 12 {
+		t.Fatalf("plate shape = %+v", plateLayer.Shape)
+	}
+	fill, ok := plateLayer.Shape.Fill.([]float64)
+	if !ok || len(fill) != 4 || math.Abs(fill[0]-float64(0x1B)/255) > 1e-9 || math.Abs(fill[1]-float64(0x2A)/255) > 1e-9 || math.Abs(fill[2]-float64(0x3A)/255) > 1e-9 || fill[3] != 1 {
+		t.Fatalf("plate fill = %#v", plateLayer.Shape.Fill)
+	}
+	if plateLayer.Opacity == nil || *plateLayer.Opacity != 0.85 {
+		t.Fatalf("caption plate opacity = %v, want 0.85", plateLayer.Opacity)
+	}
+	if len(plateLayer.Size) != 2 || plateLayer.Size[0] != caption.Size[0]+36 || plateLayer.Size[1] != caption.Size[1]+20 {
+		t.Fatalf("plate size = %v, want caption size %v plus padding", plateLayer.Size, caption.Size)
+	}
+	if len(plateLayer.Position) != 2 || len(caption.Position) != 2 ||
+		math.Abs(plateLayer.Position[0]-(caption.Position[0]-plateLayer.Size[0]/2)) > 1e-9 ||
+		math.Abs(plateLayer.Position[1]-(caption.Position[1]-plateLayer.Size[1]/2)) > 1e-9 {
+		t.Fatalf("plate top-left = %v, want caption centre %v minus half plate %v", plateLayer.Position, caption.Position, plateLayer.Size)
+	}
+}
+
+func TestEntityCaptionRejectsMalformedCardBackground(t *testing.T) {
+	for name, background := range map[string]any{
+		"missing color": map[string]any{"radius": 8.0},
+		"bad color":     map[string]any{"color": "navy"},
+		"bad opacity":   map[string]any{"color": "#1B2A3A", "opacity": 2.0},
+		"bad radius":    map[string]any{"color": "#1B2A3A", "radius": -1.0},
+		"bad padding":   map[string]any{"color": "#1B2A3A", "padding": []any{1.0, 2.0, 3.0}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			item := map[string]any{
+				"id": "portrait", "kind": "entity_card", "template_id": "PERSON",
+				"preset_id": "phrase_default", "text": "Ada Lovelace",
+				"image_preset_id": "image_scale_in", "entity_caption": "Ada Lovelace",
+				"start_ms": 0, "end_ms": 1000, "duration_ms": 1000,
+				"asset_refs": []any{map[string]any{
+					"asset_id": "portrait", "sha256": strings.Repeat("a", 64),
+					"url": "https://store.example/portrait.png", "media_type": "image/png",
+				}},
+				"params": map[string]any{"style": map[string]any{"background": background}},
+			}
+			plan := map[string]any{
+				"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "bad-plate",
+				"video_id": "bad-plate", "width": 1280, "height": 720,
+				"fps_num": 30, "fps_den": 1, "items": []any{item},
+			}
+			raw, err := json.Marshal(plan)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := CompileSemantic(raw); err == nil {
+				t.Fatal("expected a malformed card background to fail closed")
+			}
+		})
 	}
 }
 

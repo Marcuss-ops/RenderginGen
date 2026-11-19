@@ -272,7 +272,7 @@ func lowerPlan(resolved resolvedPlan) (*Plan, Stats, error) {
 		return nil, zeroStats(), err
 	}
 	finalizeLayerDurations(plan, resolved.SourceLayerIndex)
-	ensureClipGridOnTop(plan)
+	ensureClipGridAboveSource(plan)
 	return plan, stats, nil
 }
 

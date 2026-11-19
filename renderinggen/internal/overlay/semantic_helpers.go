@@ -210,7 +210,7 @@ func imageLayer(ri resolvedItem, asset string) Layer {
 	// would make the certified penta 320px strip indistinguishable from an
 	// absent width and silently inflate it to the preset's 480px box.
 	w, h := intParam(ri.Params, "width", 0), intParam(ri.Params, "height", 0)
-	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
+	return Layer{ID: imageLayerID(ri.Item.ID), Type: "image", Asset: asset, BoxWidth: w, BoxHeight: h, DeriveWidthFromAsset: w <= 0 && h > 0, Size: []float64{float64(w), float64(h)}, Fit: stringParam(ri.Params, "fit", "contain"), Radius: float64(intParam(ri.Params, "radius", 0)), StartFrame: ri.Start, DurationFrames: ri.End - ri.Start}
 }
 
 // defaultImageBox applies the fallback card box only when neither the item nor
@@ -218,7 +218,13 @@ func imageLayer(ri resolvedItem, asset string) Layer {
 // compiler-only Box fields.
 func defaultImageBox(layer *Layer) {
 	if layer.BoxWidth <= 0 {
-		layer.BoxWidth = 320
+		if layer.DeriveWidthFromAsset && layer.BoxHeight > 0 {
+			// Square placeholder until the processor decodes the materialized
+			// asset; the width is never authored, so nothing is guessed on the wire.
+			layer.BoxWidth = layer.BoxHeight
+		} else {
+			layer.BoxWidth = 320
+		}
 	}
 	if layer.BoxHeight <= 0 {
 		layer.BoxHeight = 320

@@ -16,10 +16,16 @@ import (
 // phrase motion into the long one.
 var (
 	typewriterShortIDs = []string{
+		"typewriter_glyph_drift_short",
 		"typewriter_glyph_square_short",
 		"typewriter_impact_push_short",
+		"typewriter_rapid_fire_short",
 		"typewriter_slow_type_short",
+		"typewriter_soft_glide_short",
+		"typewriter_staccato_short",
 		"typewriter_word_burst_short",
+		"typewriter_word_lift_short",
+		"typewriter_word_step_short",
 	}
 	typewriterLongIDs = []string{
 		"typewriter_editorial_line_long",

@@ -36,6 +36,10 @@ short_phrase_embedded="$repo_root/$short_phrase_target"
 # aggregate, so it is a generated copy of the same emitted bytes, never a
 # hand-maintained second source.
 template_aggregate="$template_dir/catalog/chronontemplate_catalog.v1.json"
+# PipelineGen keeps the same artifact as its motion-catalog fixture. It is a
+# third copy of the emitted bytes, so the gate covers it too; a standalone
+# RenderingGen checkout without the sibling repository skips it.
+pipelinegen_target="$repo_root/../refactored/internal/capabilities/overlays/testdata/chronontemplate_catalog.v1.json"
 
 check_only=0
 case "${1:-}" in
@@ -120,6 +124,10 @@ if [[ "$check_only" == "1" ]]; then
         echo "sync_motion_catalog: ChrononTemplate aggregate differs from the emitted catalog; run $0" >&2
         exit 1
     fi
+    if [[ -f "$pipelinegen_target" ]] && ! cmp -s "$pipelinegen_target" "$emitted"; then
+        echo "sync_motion_catalog: PipelineGen catalog fixture differs from the emitted catalog; run $0" >&2
+        exit 1
+    fi
     echo "sync_motion_catalog: both embedded motion catalogs are in sync with $template_dir"
     exit 0
 fi
@@ -128,4 +136,7 @@ mkdir -p "$(dirname "$embedded")"
 cp "$emitted" "$embedded"
 cp "$emitted" "$template_aggregate"
 cp "$short_phrase_emitted" "$short_phrase_embedded"
-echo "sync_motion_catalog: wrote $target, $template_aggregate and $short_phrase_target"
+if [[ -d "$(dirname "$pipelinegen_target")" ]]; then
+    cp "$emitted" "$pipelinegen_target"
+fi
+echo "sync_motion_catalog: wrote $target, $template_aggregate, $short_phrase_target and the PipelineGen fixture"

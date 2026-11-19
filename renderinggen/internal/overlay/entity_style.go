@@ -3,7 +3,9 @@ package overlay
 import (
 	"crypto/sha256"
 	"encoding/binary"
+	"fmt"
 	"log"
+	"math"
 	"strings"
 	"sync"
 )
@@ -23,6 +25,34 @@ type entityStyleVariant struct {
 	IsBadge         bool
 	BadgeColor      string
 	CameraMotionID  string
+}
+
+func entityBadgeColorFromStyle(style map[string]any) string {
+	textStyle, _ := style["style"].(map[string]any)
+	background, _ := textStyle["background"].(map[string]any)
+	color, _ := background["color"].(string)
+	return strings.TrimSpace(color)
+}
+
+func highContrastCaptionColor(background string) (string, error) {
+	rgb, err := parseHexColor(background)
+	if err != nil || len(rgb) < 3 {
+		if err == nil {
+			err = fmt.Errorf("expected #RRGGBB color")
+		}
+		return "", err
+	}
+	linear := func(channel float64) float64 {
+		if channel <= 0.04045 {
+			return channel / 12.92
+		}
+		return math.Pow((channel+0.055)/1.055, 2.4)
+	}
+	luminance := 0.2126*linear(rgb[0]) + 0.7152*linear(rgb[1]) + 0.0722*linear(rgb[2])
+	if luminance > 0.18 {
+		return "#0A0B0E", nil
+	}
+	return "#FFFFFF", nil
 }
 
 // premiumEntityStyles defines the live Apple-style entity card compositions:

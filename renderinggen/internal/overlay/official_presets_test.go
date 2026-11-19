@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"testing"
@@ -128,6 +129,54 @@ func TestCanonicalPhrasePresetCarriesStrokeShadowAndAnimation(t *testing.T) {
 	}
 	if layer.Animation == nil && len(layer.TextAnimators) == 0 {
 		t.Fatal("canonical phrase lost its animation during lowering")
+	}
+}
+
+// A phrase that arrives without motion_id must land on the catalog pool, not on
+// the preset's one hardcoded entrance: otherwise every unassigned phrase in a
+// video renders with the same choreography.
+func TestPhraseDefaultWithoutMotionIDLandsOnTheCertifiedPool(t *testing.T) {
+	src := &semanticPlan{PlanID: "pool-plan", VideoID: "pool-video"}
+	if len(runtimeDefaultPhraseMotionIDs) == 0 {
+		t.Fatal("the catalog phrase motion pool is empty")
+	}
+	seen := make(map[string]bool, 6)
+	for _, itemID := range []string{"phrase-a", "phrase-b", "phrase-c", "phrase-d", "phrase-e", "phrase-f"} {
+		got := runtimeDefaultPhraseMotionID(src, itemID)
+		if !containsString(runtimeDefaultPhraseMotionIDs, got) {
+			t.Fatalf("item %q selected %q outside the certified pool", itemID, got)
+		}
+		if again := runtimeDefaultPhraseMotionID(src, itemID); again != got {
+			t.Fatalf("item %q is not stable: %q then %q", itemID, got, again)
+		}
+		seen[got] = true
+	}
+	if len(seen) < 2 {
+		t.Fatalf("every item id collapsed onto the same entrance: %v", seen)
+	}
+	if got := runtimeDefaultPhraseMotionID(nil, "phrase-a"); got != "" {
+		t.Fatalf("a nil plan selected %q instead of leaving the fallback empty", got)
+	}
+
+	compile := func(itemID, motionField string) Layer {
+		t.Helper()
+		raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"pool-plan","video_id":"pool-video","width":1920,"height":1080,"fps_num":30,"fps_den":1,"items":[{"id":"` + itemID + `","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default"` + motionField + `,"text":"IMPORTANT PHRASE","start_ms":0,"end_ms":3000}]}`)
+		result, err := CompileSemantic(raw)
+		if err != nil {
+			t.Fatalf("compile %s: %v", itemID, err)
+		}
+		for _, layer := range result.Plan.Layers {
+			if layer.Text != "" {
+				return layer
+			}
+		}
+		t.Fatalf("no text layer compiled for %s", itemID)
+		return Layer{}
+	}
+	auto := compile("phrase-auto", "")
+	explicit := compile("phrase-auto", `,"motion_id":"`+runtimeDefaultPhraseMotionID(src, "phrase-auto")+`"`)
+	if !reflect.DeepEqual(auto.Animation, explicit.Animation) || !reflect.DeepEqual(auto.TextAnimators, explicit.TextAnimators) {
+		t.Fatal("an empty motion_id did not lower to the deterministic pool entrance")
 	}
 }
 

@@ -215,6 +215,19 @@ func compileClipGrid(grid *semanticClipGrid, width, height int, duration int64, 
 		if grid.DotRadiusPX != nil && *grid.DotRadiusPX > 0 {
 			dotRadius = *grid.DotRadiusPX
 		}
+		// A dot wider than half a cell merges with its neighbours into one
+		// smudge, so the declared grid stops being a grid.
+		if dotRadius > grid.SpacingPX/2 {
+			return Layer{}, fmt.Errorf("overlay: clip_grid dot_radius_px must not exceed half of spacing_px")
+		}
+		// The procedural dot grid rasterises one circle per cell. A spacing that
+		// packs more than the renderer's generated-grid bound has to fail here
+		// instead of asking the rasteriser for six figures of circles.
+		columns := int(math.Max(1, math.Round(float64(width)/grid.SpacingPX)))
+		rows := int(math.Max(1, math.Round(float64(height)/grid.SpacingPX)))
+		if int64(columns)*int64(rows) > maxBackdropGridDots {
+			return Layer{}, fmt.Errorf("overlay: clip_grid exceeds %d dots; increase spacing_px", maxBackdropGridDots)
+		}
 		params["dot_radius"] = dotRadius
 	} else {
 		if grid.LineWidthPX == nil {

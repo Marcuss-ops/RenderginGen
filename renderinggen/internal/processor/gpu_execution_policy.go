@@ -126,10 +126,26 @@ func ResolveExecutionPolicy(job *queue.Job, plan *overlay.Plan, cfg ProcessorCon
 
 	policy.VideoSourceRequired = planHasVideoSource(plan)
 	policy.CompositionRequired = planHasVisualOverlay(plan)
+	// A chain camera-pan keeps overlapping animated full-canvas image
+	// surfaces, which the native residency gate cannot materialize. Run only
+	// those plans through the software (libx264) lane so the rest of the
+	// worker keeps NVENC. Final composites are excluded: they own the auto
+	// Vulkan contract and are validated below.
+	if !policy.FinalComposite && planHasChainCamera(plan) {
+		policy.Backend = "software"
+		policy.HardwareEncoder = chronon.HardwareEncoderNone
+		policy.EncoderBackend = "pipe"
+		policy.EncodePreset = ""
+		policy.StrictNative = false
+		policy.CPUFallbackAllowed = true
+	}
 	policy.GPURequired = (policy.VideoSourceRequired || policy.CompositionRequired) &&
 		(cfg.StrictNativeBackend || chronon.StrictNativeRequired(cfg.Backend, cfg.HardwareEncoder))
 	if policy.FinalComposite {
 		policy.GPURequired = true
+	}
+	if policy.Backend == "software" {
+		policy.GPURequired = false
 	}
 	// The wire fallback and the worker retry are distinct permissions. A
 	// strict-native job and a segmented session fail closed instead of renaming
@@ -142,6 +158,22 @@ func ResolveExecutionPolicy(job *queue.Job, plan *overlay.Plan, cfg ProcessorCon
 		return RenderExecutionPolicy{}, err
 	}
 	return policy, nil
+}
+
+// planHasChainCamera reports whether the compiled plan carries a chain
+// camera-pan strip. The image layers keep the transient strip offset until
+// the processor resolves captions, so the resolver can see the opt-in without
+// re-parsing the producer document.
+func planHasChainCamera(plan *overlay.Plan) bool {
+	if plan == nil {
+		return false
+	}
+	for _, layer := range plan.Layers {
+		if len(layer.ChainPanOffset) == 2 {
+			return true
+		}
+	}
+	return false
 }
 
 // Validate asserts the invariants the rest of the pipeline relies on.

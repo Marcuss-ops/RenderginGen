@@ -89,7 +89,11 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 				style.Stroke = &LayerStroke{Color: contrastingKeyline(fill), Width: 2.5}
 			}
 		}
-		style.Background = nil
+		// The phrase role stays plate-free unless the payload explicitly asked
+		// for card_background; the plan-level pass then lowers it to a shape.
+		if !runtimeStyleHasBackground(runtimeStyle) {
+			style.Background = nil
+		}
 	case textRoleEntityCaption, textRoleImageCaption:
 		// Cinematic caption treatment: a large warm-white title, a
 		// restrained dark keyline and soft drop shadow keep captions readable
@@ -124,10 +128,15 @@ func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, 
 		if _, chosen := runtimeStyle["glow_size"]; !chosen {
 			style.Glow = nil
 		}
-		// Avoid text background cards here: the native Vulkan text path
-		// lowers those to a text_card node that the strict GPU backend
-		// cannot execute.
-		style.Background = nil
+		// A caption plate is opt-in: the payload's card_background is the
+		// visible rectangle behind the context text, and its colour is the
+		// caller's choice. The role stays plate-free when the plan did not
+		// request one, so a preset's card cannot silently appear under every
+		// entity name. Chronon lowers the requested plate to a measured text
+		// card behind the run.
+		if !runtimeStyleHasBackground(runtimeStyle) {
+			style.Background = nil
+		}
 	case textRoleMetric, textRoleDate:
 		// Data roles keep the catalog/runtime seeded style intact; the resolver
 		// may supply a no-shrink fit policy and larger box, but semantic data
@@ -188,4 +197,16 @@ func hasRuntimeShadowKey(runtimeStyle map[string]any) bool {
 		}
 	}
 	return false
+}
+
+// runtimeStyleHasBackground reports whether the plan explicitly chose a text
+// plate. card_background reaches the layer as the nested style.background block;
+// an absent block means the role default stays plate-free.
+func runtimeStyleHasBackground(runtimeStyle map[string]any) bool {
+	nested, ok := runtimeStyle["style"].(map[string]any)
+	if !ok {
+		return false
+	}
+	_, chosen := nested["background"]
+	return chosen
 }

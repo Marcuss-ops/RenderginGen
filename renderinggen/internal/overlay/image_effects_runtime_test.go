@@ -105,8 +105,15 @@ func TestStandaloneImageBackdropUsesSameImageAndCapsZoom(t *testing.T) {
 	if err != nil {
 		t.Fatalf("composite image backdrop must compile with first-asset default: %v", err)
 	}
-	if len(compositeResult.Plan.Layers) == 0 || compositeResult.Plan.Layers[0].ID != "duo:image-backdrop" {
-		t.Fatalf("composite backdrop layers = %+v; want leading duo:image-backdrop", compositeResult.Plan.Layers)
+	backdrops := map[string]string{}
+	for _, layer := range compositeResult.Plan.Layers {
+		if strings.HasSuffix(layer.ID, ":image-backdrop") {
+			backdrops[layer.Asset] = layer.ID
+		}
+	}
+	if backdrops["assets/semantic/effect-photo.png"] != "duo:left:image-backdrop" ||
+		backdrops["assets/semantic/effect-photo-2.png"] != "duo:right:image-backdrop" {
+		t.Fatalf("composite backdrop layers = %+v; want one backdrop per portrait asset", compositeResult.Plan.Layers)
 	}
 	badAsset := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-backdrop-bad-asset","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{"asset_id":"missing"}}}]}`,
 		imageEffectsAssetRef, imageEffectsSecondAssetRef))

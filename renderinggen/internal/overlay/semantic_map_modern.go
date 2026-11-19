@@ -1084,18 +1084,6 @@ func simplifyModernMapRing(points [][2]float64, limit int) [][2]float64 {
 	return mapgeom.SimplifyRing(points, limit)
 }
 
-func simplifyModernMapPolyline(points [][2]float64, tolerance float64) [][2]float64 {
-	return mapgeom.SimplifyPolyline(points, tolerance)
-}
-
-func modernMapPointSegmentDistanceSquared(point, a, b [2]float64) float64 {
-	return mapgeom.PointSegmentDistanceSquared(point, a, b)
-}
-
-func modernMapDistanceSquared(a, b [2]float64) float64 {
-	return mapgeom.DistanceSquared(a, b)
-}
-
 func decimateModernMapRing(points [][2]float64, limit int) [][2]float64 {
 	return mapgeom.DecimateRing(points, limit)
 }

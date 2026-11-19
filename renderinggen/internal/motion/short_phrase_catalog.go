@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 )
 
 // C++ owns the short phrase recipes. This checked-in generated artifact is
@@ -58,7 +59,25 @@ type ShortPhraseStyle struct {
 	Subcategory string `json:"subcategory"`
 }
 
+var (
+	shortPhraseStylesOnce  sync.Once
+	shortPhraseStylesValue []shortPhraseRecipe
+	shortPhraseStylesError error
+)
+
+// readShortPhraseStyles returns the runtime-enabled short-phrase recipes.
+// The embedded artifact is immutable, so it is decoded and validated exactly
+// once per process in the same way Canonical() handles the motion catalog:
+// re-parsing it on every style query repeated the same work and the same error.
+// Callers must not mutate the returned recipes.
 func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
+	shortPhraseStylesOnce.Do(func() {
+		shortPhraseStylesValue, shortPhraseStylesError = parseShortPhraseStyles()
+	})
+	return shortPhraseStylesValue, shortPhraseStylesError
+}
+
+func parseShortPhraseStyles() ([]shortPhraseRecipe, error) {
 	var catalog shortPhraseCatalog
 	if err := json.Unmarshal(shortPhraseCatalogJSON, &catalog); err != nil {
 		return nil, fmt.Errorf("motion: decode short phrase catalog: %w", err)
@@ -66,10 +85,11 @@ func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
 	if catalog.Schema != "chronontemplate.short-phrase-motion.v1" || catalog.Version != 1 || catalog.CatalogID != "short_phrase_motion_v1" {
 		return nil, fmt.Errorf("motion: unsupported short phrase catalog %q v%d", catalog.Schema, catalog.Version)
 	}
-	var recipes []shortPhraseRecipe
-	seen := map[string]bool{}
+	recipes := make([]shortPhraseRecipe, 0, len(catalog.Recipes))
 	allIDs := make(map[string]bool, len(catalog.Recipes))
 	for _, recipe := range catalog.Recipes {
+		// allIDs already rejects duplicates, so the per-style seen set was a
+		// second copy of the same check.
 		if recipe.ID == "" || allIDs[recipe.ID] {
 			return nil, fmt.Errorf("motion: invalid or duplicate short phrase recipe %q", recipe.ID)
 		}
@@ -83,13 +103,9 @@ func readShortPhraseStyles() ([]shortPhraseRecipe, error) {
 		if !containsMotionString(recipe.Targets, "short_phrase") {
 			return nil, fmt.Errorf("motion: runtime-enabled short phrase recipe %q must declare short_phrase target", recipe.ID)
 		}
-		if seen[recipe.ID] || recipe.Enter <= 0 {
-			return nil, fmt.Errorf("motion: invalid or duplicate short phrase style %q", recipe.ID)
+		if recipe.Enter <= 0 {
+			return nil, fmt.Errorf("motion: invalid short phrase style %q: enter must be positive", recipe.ID)
 		}
-		if !containsMotionString(recipe.Targets, "short_phrase") {
-			return nil, fmt.Errorf("motion: short phrase style %q must declare short_phrase target", recipe.ID)
-		}
-		seen[recipe.ID] = true
 		recipes = append(recipes, recipe)
 	}
 	return recipes, nil

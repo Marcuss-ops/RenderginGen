@@ -576,18 +576,6 @@ func retimeMotionTracks(tracks []AnimationTrack, duration, authoredEnter int64) 
 	return tracks
 }
 
-func clampMotionTracks(tracks []AnimationTrack, duration int64) []AnimationTrack {
-	if duration <= 0 {
-		return tracks
-	}
-	converted := toMotionMathTracks(tracks)
-	result := motionmath.Clamp(converted, duration)
-	for i := range tracks {
-		tracks[i] = fromMotionMathTrack(result[i])
-	}
-	return tracks
-}
-
 func lastValidFrame(duration int64) int64 {
 	return motionmath.LastValidFrame(duration)
 }
@@ -598,15 +586,6 @@ func clampAnimationTrack(track *AnimationTrack, duration int64) {
 	}
 	converted := toMotionMathTrack(*track)
 	motionmath.ClampTrack(&converted, duration)
-	*track = fromMotionMathTrack(converted)
-}
-
-func coalesceDuplicateFrames(track *AnimationTrack) {
-	if track == nil {
-		return
-	}
-	converted := toMotionMathTrack(*track)
-	motionmath.Coalesce(&converted)
 	*track = fromMotionMathTrack(converted)
 }
 
@@ -656,10 +635,6 @@ func sampleTextPropertyTrack(track motion.TrackDefinition) (AnimationTrack, erro
 		return AnimationTrack{}, err
 	}
 	return fromMotionMathTrack(sampled), nil
-}
-
-func numericComponents(value any) ([]float64, error) {
-	return motionmath.NumericComponents(value)
 }
 
 func easingValue(easing string, t float64) (float64, error) {

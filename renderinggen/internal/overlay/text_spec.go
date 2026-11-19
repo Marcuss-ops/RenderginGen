@@ -2,7 +2,10 @@ package overlay
 
 import (
 	"fmt"
+	"sort"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
 // resolvedTextSpec is the fully resolved input of the role-agnostic text compiler:
@@ -98,6 +101,13 @@ func resolveTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, erro
 	spec.StylePolicy = role
 	switch role {
 	case textRoleImportantPhrase:
+		// A phrase that arrives without motion_id still gets a catalog-owned
+		// entrance: the preset must not collapse every such phrase onto its own
+		// single hardcoded motion. Worth it only for the animated phrase preset;
+		// an explicit motion_id stays authoritative.
+		if spec.MotionID == "" && spec.PresetDef.ID == PhraseDefaultPresetID {
+			spec.MotionID = runtimeDefaultPhraseMotionID(src, ri.Item.ID)
+		}
 		// Static text is a first-class official preset (used by pixel and
 		// throughput canaries), so the semantic role must not invent an entry
 		// fade when neither the item nor its preset selected any motion.
@@ -108,6 +118,34 @@ func resolveTextSpec(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, erro
 		spec.FitPolicy = resolvedTextFitPolicy(ri, role)
 	}
 	return resolveTextSpecGeometry(ri, src, spec, lines), nil
+}
+
+// runtimeDefaultPhraseMotionIDs is the catalog-owned phrase entrance pool used
+// when an important phrase arrives without a motion_id. PipelineGen normally
+// assigns the per-word bucket; this is the renderer's last-resort fallback, so
+// an empty id can never collapse every phrase onto the preset's one entrance.
+// IDs are sorted so the choice is stable across builds.
+var runtimeDefaultPhraseMotionIDs = func() []string {
+	ids := motion.PhraseMotionPool()
+	sort.Strings(ids)
+	unique := ids[:0]
+	for _, id := range ids {
+		if len(unique) == 0 || unique[len(unique)-1] != id {
+			unique = append(unique, id)
+		}
+	}
+	return unique
+}()
+
+// runtimeDefaultPhraseMotionID returns a deterministic, plan/item-specific
+// entrance. An explicit motion_id and the planner's own per-word assignment are
+// handled before this fallback and remain authoritative.
+func runtimeDefaultPhraseMotionID(src *semanticPlan, itemID string) string {
+	pool := runtimeDefaultPhraseMotionIDs
+	if len(pool) == 0 || src == nil {
+		return ""
+	}
+	return pool[styleHash("runtime_default_phrase_motion", src.PlanID, src.VideoID, itemID, uint64(len(pool)))]
 }
 
 // resolveTextSpecBase handles role-neutral text validation, wrapping, motion
@@ -317,7 +355,13 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		// This preset opts into its catalog fill and GPU-supported shape-card
 		// lowering; the generic phrase role's fallback fill must not overwrite it.
 		layer.Style.Fill = rgbaHex(spec.PresetDef.Style.Fill)
-		layer.Style.Background = nil
+		// The preset itself is plate-free, but a runtime card_background is an
+		// explicit payload choice and must survive the preset's base style just
+		// like it does for phrase_default. Clearing it unconditionally made the
+		// feature silently disappear only when classic_phrase was selected.
+		if !runtimeStyleHasBackground(spec.StyleParams) {
+			layer.Style.Background = nil
+		}
 	}
 	if spec.MinFontSize > 0 {
 		layer.Style.MinFontSize = spec.MinFontSize
@@ -432,7 +476,7 @@ func cloneLayerStyleBackground(source *LayerBackground) *LayerBackground {
 		value := *source.Opacity
 		opacity = &value
 	}
-	return &LayerBackground{Color: source.Color, Opacity: opacity, Radius: source.Radius, Padding: append([]float64(nil), source.Padding...)}
+	return &LayerBackground{Color: source.Color, Opacity: opacity, Radius: source.Radius, Padding: append([]float64(nil), source.Padding...), LiftToShape: source.LiftToShape}
 }
 
 // resolvedTextFontSize is the role style's base size: an explicitly resolved

@@ -125,6 +125,7 @@ func main() {
 	// "unknown" sentinel, so render_artifacts recorded chronon_version=
 	// 'unknown' for every job even when /opt/chronon3d/VERSION was present.
 	var renderer chronon.Renderer
+	var softwareRenderer chronon.Renderer
 	var assembler chronon.Assembler
 	var assetPrefetcher chronon.AssetPrefetcher
 	chrononVersion := "unknown"
@@ -183,6 +184,22 @@ func main() {
 	// matches the NVENC multi-session baseline on RTX A4000-class hosts).
 	gpuLanes := cfg.Worker.GPULanes
 	renderer = chronon.LimitConcurrency(renderer, gpuLanes)
+	// A separate CLI renderer owns the libx264 lane for chain camera pans. It
+	// stays serialized: software composition is CPU-bound, so running it
+	// beside the GPU lanes would only steal their preparation cores.
+	softwareCLI := &chronon.Client{
+		Home:                cfg.Chronon.Home,
+		BinaryPath:          cfg.Chronon.Binary,
+		Backend:             "software",
+		StrictNativeBackend: false,
+		HardwareEncoder:     chronon.HardwareEncoderNone,
+		StallTimeout:        cfg.Chronon.StallTimeout,
+	}
+	if err := softwareCLI.Verify(); err != nil {
+		log.Printf("WARN: software CLI lane unavailable, chain pans keep the configured renderer: %v", err)
+	} else {
+		softwareRenderer = chronon.LimitConcurrency(softwareCLI, 1)
+	}
 
 	// 3. Connect queue + storage.
 	queueClient := queue.New(cfg.Queue.Endpoint, cfg.Worker.ID)
@@ -260,6 +277,7 @@ func main() {
 		renderer,
 		processor.Options{
 			AssetPrefetcher:           assetPrefetcher,
+			SoftwareRenderer:          softwareRenderer,
 			NativeOutputProfiles:      cfg.Chronon.NativeOutputProfiles,
 			AcceptedCodecConfigSHA256: cfg.Pipeline.NativeAVCCSHA256,
 			StrictNativeBackend:       cfg.Chronon.StrictNative(),

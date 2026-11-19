@@ -42,6 +42,10 @@ type Processor struct {
 	storeURL       string
 	store          *storage.Client
 	renderer       chronon.Renderer
+	// softwareRenderer is the CLI/libx264 lane used by plans that deliberately
+	// opt out of the native residency path (chain camera pans with overlapping
+	// full-canvas images). nil falls back to renderer.
+	softwareRenderer chronon.Renderer
 	// compiler is the consumer-side seam over the semantic lowering. It is
 	// unexported on purpose: only this package dispatches compile work, and a
 	// test in this package can inject a stub without widening the public API.
@@ -214,6 +218,10 @@ type Options struct {
 	// AssetPrefetcher is the optional Chronon daemon warm-up bridge. Warm-up is
 	// best-effort and never changes the semantic plan or render gate.
 	AssetPrefetcher chronon.AssetPrefetcher
+
+	// SoftwareRenderer is the CLI/libx264 lane for plans that opt out of the
+	// native residency path. nil keeps the configured renderer for every plan.
+	SoftwareRenderer chronon.Renderer
 }
 
 // semanticCompiler is the consumer-side contract PrepareJob needs from the
@@ -255,6 +263,7 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		storeURL:                  strings.TrimRight(storeURL, "/"),
 		store:                     store,
 		renderer:                  renderer,
+		softwareRenderer:          opts.SoftwareRenderer,
 		compiler:                  overlaySemanticCompiler{},
 		assetPrefetcher:           opts.AssetPrefetcher,
 		phaseHook:                 opts.PhaseHook,

@@ -229,6 +229,10 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	if err != nil {
 		return CompileResult{}, err
 	}
+	// Chronon decodes a text layer's style.background into box_style but never
+	// draws that box. Lower the plate to a native shape layer here so a
+	// payload's card_background is visible instead of silently dropped.
+	liftTextBackgroundPlates(plan)
 	if err := ValidateEntityCaptionCollisions(plan.Layers, plan.Canvas.Width, plan.Canvas.Height); err != nil {
 		return CompileResult{}, fmt.Errorf("overlay: %w", err)
 	}
@@ -773,6 +777,11 @@ type Layer struct {
 	TextSpans []map[string]any `json:"spans,omitempty"`
 	BoxWidth  int              `json:"-"`
 	BoxHeight int              `json:"-"`
+	// DeriveWidthFromAsset marks a standalone image layer that authored a fixed
+	// height but no width: the processor decodes the materialized asset and
+	// derives the card width from its aspect before the plan reaches Chronon.
+	// A guessed box here would distort the photo.
+	DeriveWidthFromAsset bool `json:"-"`
 	// MapRaster dimensions are transient verification metadata. The processor
 	// compares the staged PNG's decoded dimensions to this georeferenced size.
 	MapRasterWidth  int       `json:"-"`
@@ -785,16 +794,21 @@ type Layer struct {
 	EntityImage bool `json:"-"`
 	// CaptionForImageID links a first-class caption to the image whose final
 	// source-aspect geometry is resolved after asset materialization.
-	CaptionForImageID string          `json:"-"`
-	CaptionLayout     string          `json:"-"`
-	Radius            float64         `json:"radius,omitempty"`
-	Position          []float64       `json:"position,omitempty"`
-	Scale             []float64       `json:"scale,omitempty"`
-	Style             *LayerStyle     `json:"style,omitempty"`
-	StartFrame        int64           `json:"start_frame"`
-	DurationFrames    int64           `json:"duration_frames"`
-	Animation         *LayerAnimation `json:"animation,omitempty"`
-	TextAnimators     []TextAnimator  `json:"text_animators,omitempty"`
+	CaptionForImageID string `json:"-"`
+	CaptionLayout     string `json:"-"`
+	// ChainPanOffset is transient compiler metadata for a chain camera-pan
+	// strip: the canvas-space translation the group track applies to this
+	// layer. The processor subtracts it before fitting a linked caption and
+	// adds it back, so media materialization cannot collapse the strip.
+	ChainPanOffset []float64       `json:"-"`
+	Radius         float64         `json:"radius,omitempty"`
+	Position       []float64       `json:"position,omitempty"`
+	Scale          []float64       `json:"scale,omitempty"`
+	Style          *LayerStyle     `json:"style,omitempty"`
+	StartFrame     int64           `json:"start_frame"`
+	DurationFrames int64           `json:"duration_frames"`
+	Animation      *LayerAnimation `json:"animation,omitempty"`
+	TextAnimators  []TextAnimator  `json:"text_animators,omitempty"`
 	// Derived by the lowering pass from concrete Z/rotation tracks. Motion
 	// authors never need to duplicate this renderer routing bit by hand.
 	Enable3D    bool `json:"enable_3d,omitempty"`
@@ -1075,6 +1089,10 @@ type LayerBackground struct {
 	Opacity *float64  `json:"opacity,omitempty"`
 	Radius  float64   `json:"radius,omitempty"`
 	Padding []float64 `json:"padding,omitempty"`
+	// LiftToShape marks a runtime card_background that must be lowered to a
+	// native shape plate. Preset-authored backgrounds keep their historical
+	// (non-rendered) wire form; only the payload's plate is lifted.
+	LiftToShape bool `json:"-"`
 }
 
 type LayerStroke struct {
