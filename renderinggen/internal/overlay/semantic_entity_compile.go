@@ -38,7 +38,6 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 			ri.Item.CaptionMotionID = captionMotionOverride
 		}
 		ri.Item.CaptionMotionParams = captionMotionParams
-		ri.Item.CaptionLayout = style.CaptionLayout
 		// SSOT typography (typography_ssot.go): the payload's explicit
 		// typeface/color/layout always win over the preset default — same
 		// precedence as the motion overrides above. The preset default only

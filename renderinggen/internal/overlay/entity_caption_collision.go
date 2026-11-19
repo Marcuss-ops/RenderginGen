@@ -3,9 +3,10 @@ package overlay
 import "fmt"
 
 // ValidateEntityCaptionCollisions rejects fitted image-caption boxes that overlap
-// in both canvas space and time. Caption positions are layer centers and sizes
-// are concrete pixel dimensions after image fitting.
-func ValidateEntityCaptionCollisions(layers []Layer, canvas ...int) error {
+// in both canvas space and time. Caption positions are canvas-absolute layer
+// centers and sizes are concrete pixel dimensions after image fitting; 3D
+// captions keep the same absolute placement, so no canvas shift applies here.
+func ValidateEntityCaptionCollisions(layers []Layer, _ ...int) error {
 	type caption struct {
 		id         string
 		layer      Layer
@@ -30,10 +31,8 @@ func ValidateEntityCaptionCollisions(layers []Layer, canvas ...int) error {
 			if sharedStart >= sharedEnd {
 				continue
 			}
-			ax, ay := captionCollisionPosition(a.layer, canvas)
-			bx, by := captionCollisionPosition(b.layer, canvas)
-			dx := ax - bx
-			dy := ay - by
+			dx := a.layer.Position[0] - b.layer.Position[0]
+			dy := a.layer.Position[1] - b.layer.Position[1]
 			if 2*absFloat(dx) >= a.layer.Size[0]+b.layer.Size[0] || 2*absFloat(dy) >= a.layer.Size[1]+b.layer.Size[1] {
 				continue
 			}
@@ -43,14 +42,6 @@ func ValidateEntityCaptionCollisions(layers []Layer, canvas ...int) error {
 	return nil
 }
 
-func captionCollisionPosition(layer Layer, canvas []int) (float64, float64) {
-	x, y := layer.Position[0], layer.Position[1]
-	if !layer.ScreenSpace && len(canvas) >= 2 {
-		x += float64(canvas[0]) / 2
-		y += float64(canvas[1]) / 2
-	}
-	return x, y
-}
 
 func absFloat(value float64) float64 {
 	if value < 0 {

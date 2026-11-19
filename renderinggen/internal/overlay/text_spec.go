@@ -375,15 +375,10 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	// layer instead of contradicting each other.
 	if layer.ScreenSpace && layerUses3D(animation) {
 		layer.ScreenSpace = false
-		// Text geometry is authored in canvas-absolute coordinates, while the
-		// scene-space transform consumed by the 3D motion path is relative to
-		// the canvas centre. Convert the base position at this domain boundary
-		// or a centred phrase (960,540 on a 1920x1080 canvas) is displaced to
-		// the upper-left when Chronon applies the 3D transform.
-		if len(layer.Position) >= 2 && spec.CanvasWidth > 0 && spec.CanvasHeight > 0 {
-			layer.Position[0] -= float64(spec.CanvasWidth) / 2
-			layer.Position[1] -= float64(spec.CanvasHeight) / 2
-		}
+		// Overlay text is authored in canvas-absolute coordinates. Chronon's
+		// 3D text path keeps that base position absolute; subtracting half the
+		// canvas moved a centred caption to x=0 (the left edge) while its 3D
+		// entrance tracks settled, so leave the resolved position untouched.
 	}
 	applyMotionRouting(&layer, animation)
 	return layer, nil

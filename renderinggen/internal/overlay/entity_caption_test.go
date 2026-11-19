@@ -2,6 +2,7 @@ package overlay
 
 import (
 	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 )
@@ -132,6 +133,90 @@ func TestEntityCaptionKeepsLongAndUnicodeNamesInsideSafeArea(t *testing.T) {
 				t.Fatalf("caption bounds escape vertical safe area: y=%v size=%v", captionY, caption.Size)
 			}
 		})
+	}
+}
+
+func TestCaptionedEntityImageChainKeepsCaptionBelowEachPortrait(t *testing.T) {
+	portrait := func(id string) map[string]any {
+		return map[string]any{
+			"asset_id": id, "sha256": strings.Repeat("a", 64),
+			"url": "https://store.example/" + id + ".png", "media_type": "image/png",
+		}
+	}
+	segment := func(id, caption string, startUS, durationUS int64) map[string]any {
+		return map[string]any{
+			"kind": "entity_image", "template_id": "image_popup", "entity_id": id,
+			"entity_caption": caption, "caption_layout": "below",
+			"caption_motion_id": "entity_yaw_caption", "caption_motion_params": map[string]any{"enter_frames": 8},
+			"entity_style_id": "premium_below_random_v1",
+			"motion_id":       "image_focus_reveal", "image_preset_id": "image_scale_in",
+			"start_us": startUS, "duration_us": durationUS,
+			"assets": []any{portrait(id)},
+			"params": map[string]any{
+				"position_x": 0.0, "position_y": 0.0, "width": 820.0, "height": 820.0,
+			},
+		}
+	}
+	item := map[string]any{
+		"id": "entity-chain", "kind": "image_chain", "template_id": "IMAGE_CHAIN",
+		"start_ms": 0, "end_ms": 6000,
+		"asset_refs": []any{portrait("person:ada"), portrait("person:grace")},
+		"params": map[string]any{"chain_segments": []any{
+			segment("person:ada", "Ada Lovelace", 0, 3_000_000),
+			segment("person:grace", "Grace Hopper", 3_400_000, 2_600_000),
+		}},
+	}
+	plan := map[string]any{
+		"schema_version": "renderinggen.overlay-plan.v1",
+		"plan_id":        "entity-chain-caption-plan",
+		"video_id":       "entity-chain-caption-video",
+		"width":          1920, "height": 1080,
+		"fps_num": 24, "fps_den": 1,
+		"items": []any{item},
+	}
+	raw, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("CompileSemantic captioned entity chain: %v", err)
+	}
+	captions := map[string]*Layer{}
+	images := map[string]*Layer{}
+	for i := range result.Plan.Layers {
+		layer := &result.Plan.Layers[i]
+		switch layer.Text {
+		case "Ada Lovelace", "Grace Hopper":
+			captions[layer.Text] = layer
+		}
+		if layer.Type == "image" {
+			images[layer.ID] = layer
+		}
+	}
+	for _, caption := range []string{"Ada Lovelace", "Grace Hopper"} {
+		layer := captions[caption]
+		if layer == nil {
+			t.Fatalf("missing caption %q in entity chain: %+v", caption, result.Plan.Layers)
+		}
+		if layer.CaptionLayout != "below" {
+			t.Fatalf("caption %q layout = %q, want below", caption, layer.CaptionLayout)
+		}
+		if layer.Type != "text" || len(layer.Position) < 2 || len(layer.Size) < 2 {
+			t.Fatalf("caption %q did not lower to a positioned text layer: %+v", caption, layer)
+		}
+		if layer.CaptionForImageID == "" {
+			t.Fatalf("caption %q is not linked to its portrait", caption)
+		}
+		if !layer.Enable3D {
+			t.Fatalf("caption %q did not take the 3D caption-motion path", caption)
+		}
+		if math.Abs(layer.Position[0]-960) > 1e-6 {
+			t.Fatalf("3D caption %q position x = %v, want absolute canvas centre 960", caption, layer.Position[0])
+		}
+	}
+	if len(images) != 2 {
+		t.Fatalf("entity chain lowered %d image layers, want two portraits", len(images))
 	}
 }
 
