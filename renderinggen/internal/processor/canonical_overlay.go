@@ -155,7 +155,7 @@ func (p *Processor) canonicalizeOutputPaths(ctx context.Context, jobID string, p
 			metrics[metricnames.CanonicalizeOverlayUS] = float64(wall.Microseconds())
 			metrics[metricnames.CanonicalizeOverlayMS] = float64(wall.Microseconds()) / 1000
 		}
-		workerlog.ByJobID(jobID).Infof("canonical output emitted: %d/%d artifact(s) re-encoded to the canonical avcC (profile %s, wall=%.0fms)",
+		workerlog.ByJobID(jobID).Infof("canonical output emitted: %d/%d artifact(s) canonicalized to the canonical avcC (profile %s, wall=%.0fms)",
 			encodedCount, len(unique), profileID, float64(wall.Microseconds())/1000)
 	}
 	if len(failures) > 0 {

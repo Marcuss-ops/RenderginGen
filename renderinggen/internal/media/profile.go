@@ -360,6 +360,13 @@ func (p OutputProfile) acceptsProfile(certified string) bool {
 // acceptsCodecConfig reports whether the certified avcC is the canonical one
 // or an explicitly recertified alternative (the NVENC allowlist). The
 // canonical hash remains the default; an empty allowlist changes nothing.
+// AcceptsCodecConfig reports whether the certified avcC is the canonical one
+// or one of the explicitly recertified native identities. A missing certified
+// value never matches: a fact the prober could not read must not pass.
+func (p OutputProfile) AcceptsCodecConfig(certified string) bool {
+	return p.acceptsCodecConfig(certified)
+}
+
 func (p OutputProfile) acceptsCodecConfig(certified string) bool {
 	if certified == p.CodecConfigSHA256 {
 		return true

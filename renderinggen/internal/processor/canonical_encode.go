@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
@@ -114,7 +115,74 @@ func canonicalizeOutputMP4(ctx context.Context, path, profileID string, accepted
 	if err := profile.ValidateProbe(existing); err == nil {
 		return false, nil
 	}
+	// The native lane can already carry the accepted avcC and every stream
+	// fact; what a chunk does not guarantee is the container contract (track
+	// timebase and zero start PTS). Try the packet-copy remux before paying
+	// for a full x264 re-encode. It validates the temp file against the same
+	// profile and returns false when the bytes need a real encode.
+	if isCanonicalOverlayV3(profileID) && profile.AcceptsCodecConfig(existing.CodecConfigSHA256) {
+		remuxed, err := remuxCanonicalV3(ctx, path, profile)
+		if err != nil {
+			return false, err
+		}
+		if remuxed {
+			return true, nil
+		}
+	}
 	return encodeCanonicalOutput(ctx, path, profile, profileID)
+}
+
+// remuxCanonicalV3 rewrites a native V3 artifact's container timing without
+// touching its video packets. NVENC already emits the accepted avcC, closed
+// GOP 48, an IDR first frame and PTS 0 for this lane; the one missing fact on
+// a chunk is the MP4 track timebase (1/12288 from the muxer instead of the
+// certified 1/90000). `-video_track_timescale` rewrites the track, so every
+// decoded frame stays byte-identical while the pass costs milliseconds
+// instead of the ~13.6 s x264 encode measured per 720-frame child. Do NOT
+// rebase timestamps here: `setts=ts=TS-STARTPTS` collapses DTS onto PTS and
+// makes a B-frame chunk fail closed-GOP certification. The temp file is
+// validated against the FULL V3 profile before it replaces the artifact; any
+// failure (unsupported remux, non-zero PTS, wrong GOP cadence, unexpected
+// avcC) returns false and the caller falls back to the x264 recipe.
+func remuxCanonicalV3(ctx context.Context, path string, profile media.OutputProfile) (bool, error) {
+	temp := path + ".canonical-remux.tmp.mp4"
+	_ = os.Remove(temp)
+	defer os.Remove(temp)
+	args := []string{
+		"-hide_banner", "-loglevel", "error", "-y",
+		"-i", path,
+		"-map", "0:v:0", "-an", "-c", "copy",
+		"-video_track_timescale", strconv.Itoa(profile.VideoTimeBaseDen),
+		"-movflags", "+faststart",
+		temp,
+	}
+	if _, err := exec.CommandContext(ctx, "ffmpeg", args...).CombinedOutput(); err != nil {
+		// A remux failure is not fatal: the x264 path is the certified
+		// fallback and still emits the profile.
+		return false, nil
+	}
+	probeStart := time.Now()
+	probe, err := media.ProbeFile(ctx, temp)
+	if err != nil {
+		return false, fmt.Errorf("probe canonical remux: %w", err)
+	}
+	probeMS := float64(time.Since(probeStart).Microseconds()) / 1000
+	if err := profile.ValidateProbe(probe); err != nil {
+		return false, nil
+	}
+	hashStart := time.Now()
+	digest, size, err := hashio.File(temp)
+	if err != nil {
+		return false, fmt.Errorf("hash canonical remux: %w", err)
+	}
+	hashMS := float64(time.Since(hashStart).Microseconds()) / 1000
+	if err := writeCanonicalOverlayReceipt(path, probe, digest, size, probeMS, hashMS); err != nil {
+		return false, err
+	}
+	if err := os.Rename(temp, path); err != nil {
+		return false, fmt.Errorf("publish canonical remux: %w", err)
+	}
+	return true, nil
 }
 
 // encodeCanonicalOutput rewrites one artifact with the exact canonical x264
