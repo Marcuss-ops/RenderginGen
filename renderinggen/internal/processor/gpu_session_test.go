@@ -111,6 +111,40 @@ func TestCertifyAndHandoffCommitsTailAfterNativeGate(t *testing.T) {
 	}
 }
 
+// A chunk child renders only its window. The gate must certify the frames the
+// child actually rendered (720), not the full plan duration (1440), otherwise
+// every segmented composite is rejected before assembly.
+func TestCertifyAndHandoffUsesChunkWindowForNativeGate(t *testing.T) {
+	proc, _, _ := newProcessor(t)
+	plan := policyTestPlan(overlay.Layer{ID: "source", Type: "video"})
+	plan.Canvas.DurationFrames = 1440
+	job := &queue.Job{ID: "chunk", FrameRange: &queue.FrameRange{Start: 720, End: 1440}}
+	policy, err := ResolveExecutionPolicy(job, plan, ProcessorConfig{Backend: "vulkan", HardwareEncoder: "nvenc", StrictNativeBackend: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !policy.FrameRange.Enabled || policy.FrameRange.First != 720 || policy.FrameRange.Last != 1439 {
+		t.Fatalf("policy frame range = %+v, want [720,1439]", policy.FrameRange)
+	}
+	out := filepath.Join(t.TempDir(), "chunk.mp4")
+	sidecar := "{\"schema\": \"chronon3d.frame-timing.v2\", \"version\": 2, \"summary\": {\"render_loop_fps\": 25}, \"job\": {\"execution_path\": \"full_graph_native\", \"surface_handoff_path\": \"direct\", \"gpu\": {\"effective_backend\": \"vulkan\", \"encoder_backend\": \"nvenc\", \"software_fallback_nodes\": 0, \"cpu_readback_frames\": 0, \"software_encode_frames\": 0, \"video_pipe_fallback_frames\": 0, \"nvenc_frames\": 720, \"vulkan_frames\": 720}}}"
+	if err := os.WriteFile(out+chronon.TimingSidecarSuffix, []byte(sidecar), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(out+chronon.MediaReceiptSuffix, []byte(`{}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	prepared := &PreparedJob{Job: job, Plan: plan, OutputPath: out, Metrics: map[string]float64{}}
+	observer := newRenderProgressObserver(job, nil, "vulkan", "nvenc")
+	ownership, err := proc.CertifyAndHandoff(prepared, policy, RenderSessionOutcome{Elapsed: 1}, observer, &stagedUpload{})
+	if err != nil {
+		t.Fatalf("chunk window must certify 720 rendered frames: %v", err)
+	}
+	if !ownership.Commit {
+		t.Fatalf("ownership = %+v, want the tail committed", ownership)
+	}
+}
+
 func TestCertifyAndHandoffFailsNativeGateWithoutCommittingTail(t *testing.T) {
 	proc, _, _ := newProcessor(t)
 	plan := policyTestPlan(overlay.Layer{ID: "source", Type: "video"})

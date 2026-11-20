@@ -136,10 +136,10 @@ func (p *Processor) CertifyAndHandoff(prepared *PreparedJob, policy RenderExecut
 
 	if policy.StrictNative && policy.VideoSourceRequired && !policy.FinalComposite {
 		if len(prepared.Segments) > 0 {
-			if err := requireNativeVulkanTelemetry(prepared.OutputPath, metadata.FrameCount); err != nil {
+			if err := requireNativeVulkanTelemetry(prepared.OutputPath, int(renderedFrames)); err != nil {
 				return TailOwnership{}, fmt.Errorf("processor: gpu-vulkan-native batch gate: %w", err)
 			}
-		} else if err := requireNativeVulkan(prepared.OutputPath, metadata.FrameCount); err != nil {
+		} else if err := requireNativeVulkan(prepared.OutputPath, int(renderedFrames)); err != nil {
 			return TailOwnership{}, fmt.Errorf("processor: gpu-vulkan-native gate: %w", err)
 		}
 		prepared.NativeCertified = true
