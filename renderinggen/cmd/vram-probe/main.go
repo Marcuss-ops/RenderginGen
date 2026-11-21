@@ -37,6 +37,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/vramprobe"
 )
 
@@ -45,7 +46,7 @@ func main() {
 	sourceManifest := flag.String("source-manifest", "", "certified batch manifest to take the probe jobs from (single, required)")
 	probeManifest := flag.String("probe-manifest", "manifest_vram_probe.json", "where to write the perturbed two-job manifest (single)")
 	batchID := flag.String("batch-id", "vram-probe", "batch id that scopes the probe jobs (single)")
-	queueURL := flag.String("queue", "http://localhost:8081", "central queue endpoint (single)")
+	queueURL := flag.String("queue", config.DefaultQueueEndpoint, "central queue endpoint (single)")
 	interval := flag.Duration("interval", 50*time.Millisecond, "nvidia-smi sampling period (single)")
 	timeout := flag.Duration("timeout", 10*time.Minute, "render budget for the probe jobs")
 	out := flag.String("out", "", "probe report to write (required)")

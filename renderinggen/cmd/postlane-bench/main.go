@@ -9,8 +9,8 @@
 //
 // Usage:
 //
-//	postlane-bench -queue http://127.0.0.1:8081 -job canonical-job.json -out report.json
-//	postlane-bench -queue http://127.0.0.1:8081 -job-id postlane-canonical-... -out report.json
+//	postlane-bench -queue <endpoint> -job canonical-job.json -out report.json
+//	postlane-bench -queue <endpoint> -job-id postlane-canonical-... -out report.json
 //
 // The job file is the renderinggen.job.v1 envelope accepted by POST /jobs.
 package main
@@ -26,6 +26,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 )
 
@@ -71,7 +72,7 @@ type report struct {
 
 func main() {
 	var opts options
-	flag.StringVar(&opts.QueueURL, "queue", "http://127.0.0.1:8081", "queue base URL")
+	flag.StringVar(&opts.QueueURL, "queue", config.DefaultQueueEndpoint, "queue base URL")
 	flag.StringVar(&opts.JobPath, "job", "", "renderinggen.job.v1 envelope to submit")
 	flag.StringVar(&opts.JobID, "job-id", "", "existing job ID to observe instead of submitting")
 	flag.StringVar(&opts.OutPath, "out", "", "JSON report path (required)")

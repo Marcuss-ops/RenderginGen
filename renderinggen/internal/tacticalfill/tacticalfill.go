@@ -272,33 +272,15 @@ func Emit(ctx context.Context, emitter, samplePath, planPath string) error {
 	return nil
 }
 
-// ResolveEmitter finds the emitter from an explicit path, the environment or
-// the adjacent ChrononTemplate build trees.
+// ResolveEmitter resolves an explicitly configured emitter. The library does
+// not discover sibling build trees: that is command-level policy, owned by
+// cmd/map-tactical-fill, so an embedded caller cannot inherit a path relative
+// to an unrelated working directory.
 func ResolveEmitter(explicit string) string {
 	if explicit != "" {
 		return explicit
 	}
-	if env := os.Getenv("CHRONONTEMPLATE_EMIT_TACTICAL_FILL"); env != "" {
-		return env
-	}
-	for _, candidate := range []string{
-		"../../ChrononTemplate/build/dev-fast/chronontemplate_emit_tactical_fill",
-		"../ChrononTemplate/build/dev-fast/chronontemplate_emit_tactical_fill",
-		"ChrononTemplate/build/dev-fast/chronontemplate_emit_tactical_fill",
-		"../../ChrononTemplate/build/release/chronontemplate_emit_tactical_fill",
-		"../ChrononTemplate/build/release/chronontemplate_emit_tactical_fill",
-	} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			if absolute, err := filepath.Abs(candidate); err == nil {
-				return absolute
-			}
-			return candidate
-		}
-	}
-	if binary, err := exec.LookPath("chronontemplate_emit_tactical_fill"); err == nil {
-		return binary
-	}
-	return ""
+	return os.Getenv("CHRONONTEMPLATE_EMIT_TACTICAL_FILL")
 }
 
 // Slug turns a place name into a filesystem-safe stem.

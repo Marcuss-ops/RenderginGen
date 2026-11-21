@@ -27,6 +27,7 @@ import (
 
 	queue "github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/batch"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 )
 
 // ReportSchema identifies the probe report.
@@ -101,7 +102,7 @@ func Run(ctx context.Context, opts Options) (*Report, error) {
 		opts.BatchID = "vram-probe"
 	}
 	if opts.QueueURL == "" {
-		opts.QueueURL = "http://localhost:8081"
+		opts.QueueURL = config.DefaultQueueEndpoint
 	}
 	if opts.Interval <= 0 {
 		opts.Interval = 50 * time.Millisecond

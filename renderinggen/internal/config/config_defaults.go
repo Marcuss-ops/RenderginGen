@@ -15,6 +15,11 @@ import (
 // defaults that apply before the YAML file and the environment overlay are
 // applied, plus the workspace/host helpers those defaults need.
 
+// DefaultQueueEndpoint is the loopback queue endpoint used by diagnostic
+// commands before their flags or the environment override it. It lives here,
+// with the other defaults, so no command or library repeats the literal.
+const DefaultQueueEndpoint = "http://127.0.0.1:8081"
+
 func applyDefaults(c *Config) {
 	switch c.Chronon.Profile {
 	case ProfileGPUVulkanNative:

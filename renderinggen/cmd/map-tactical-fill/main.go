@@ -69,7 +69,7 @@ func run(args []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "map-tactical-fill: %v\n", err)
 		return 1
 	}
-	emitter := tacticalfill.ResolveEmitter(*emit)
+	emitter := resolveEmitter(*emit)
 	if emitter == "" {
 		fmt.Fprintln(stderr, "map-tactical-fill: emitter not found; pass -emit or set CHRONONTEMPLATE_EMIT_TACTICAL_FILL")
 		return 1
@@ -149,6 +149,34 @@ func renderPlan(planPath, renderPath, chrononBinary, assetsRoot string, stderr i
 		return fmt.Errorf("render failed: %w", err)
 	}
 	return nil
+}
+
+// resolveEmitter owns the command-level build-tree discovery. The tacticalfill
+// library accepts only an explicit path or CHRONONTEMPLATE_EMIT_TACTICAL_FILL;
+// a relative sibling path is meaningful only for this command's working
+// directory, never for an embedded caller.
+func resolveEmitter(explicit string) string {
+	if resolved := tacticalfill.ResolveEmitter(explicit); resolved != "" {
+		return resolved
+	}
+	for _, candidate := range []string{
+		"../../ChrononTemplate/build/dev-fast/chronontemplate_emit_tactical_fill",
+		"../ChrononTemplate/build/dev-fast/chronontemplate_emit_tactical_fill",
+		"ChrononTemplate/build/dev-fast/chronontemplate_emit_tactical_fill",
+		"../../ChrononTemplate/build/release/chronontemplate_emit_tactical_fill",
+		"../ChrononTemplate/build/release/chronontemplate_emit_tactical_fill",
+	} {
+		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
+			if absolute, err := filepath.Abs(candidate); err == nil {
+				return absolute
+			}
+			return candidate
+		}
+	}
+	if binary, err := exec.LookPath("chronontemplate_emit_tactical_fill"); err == nil {
+		return binary
+	}
+	return ""
 }
 
 func resolveChronon(explicit string) string {
