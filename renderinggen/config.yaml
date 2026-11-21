@@ -54,7 +54,15 @@ chronon:
   # One socket per daemon. List more sockets in socket_paths to spread
   # gpu_lanes round-robin over several daemons; lanes beyond the daemon's
   # execution concurrency only grow renderinggen_worker_lane_wait_seconds.
-  socket_path: /var/run/chronon3d/chronon.sock
+  # The shipped topology is three daemons (chronon3d, -b, -c), one job slot
+  # each, with gpu_lanes == len(socket_paths) == 3. This list is what the live
+  # deployment already runs; keeping it here makes the certified topology
+  # reproducible from the repository instead of only from /etc
+  # (TICKET-FINAL-JOB-SPEEDUP-LEVERS L3).
+  socket_paths:
+    - /var/run/chronon3d/chronon.sock
+    - /run/chronon3d-b/chronon.sock
+    - /run/chronon3d-c/chronon.sock
   encode_preset: p1
   pipe_pixfmt: nv12
   # Disable the dirty-rectangle optimization: it can leave a torn band where
