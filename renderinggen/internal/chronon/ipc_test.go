@@ -4,12 +4,16 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
 	"net"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 )
 
 func writeStrictNativeTestPlan(t *testing.T) string {
@@ -116,6 +120,7 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 
 	client := NewIPCClient(socketPath)
 	err := client.Render(context.Background(), RenderRequest{
+		JobID:      "job-123",
 		PlanPath:   "/jobs/1/plan.json",
 		AssetsRoot: "/jobs/1/assets",
 		OutputPath: "/jobs/1/output/result.mp4",
@@ -131,6 +136,7 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 		t.Fatalf("command = %d", cmd)
 	}
 	var payload struct {
+		JobID               string `json:"job_id"`
 		PlanPath            string `json:"plan_path"`
 		PreparedPackagePath string `json:"prepared_package_path"`
 		AssetsRoot          string `json:"assets_root"`
@@ -142,12 +148,83 @@ func TestIPCClientRenderSuccess(t *testing.T) {
 	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
 		t.Fatalf("payload decode: %v", err)
 	}
-	if payload.PlanPath != "/jobs/1/plan.json" ||
+	if payload.JobID != "job-123" ||
+		payload.PlanPath != "/jobs/1/plan.json" ||
 		payload.PreparedPackagePath != "" ||
 		payload.AssetsRoot != "/jobs/1/assets" ||
 		payload.Output != "/jobs/1/output/result.mp4" ||
 		!payload.Report || payload.FirstFrame != 240 || payload.LastFrame != 359 {
 		t.Fatalf("payload = %+v", payload)
+	}
+}
+
+func TestIPCClientRenderStopsWaitingWhenContextExpires(t *testing.T) {
+	socketPath := filepath.Join(t.TempDir(), "chronon.sock")
+	ln, err := net.Listen("unix", socketPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+	accepted := make(chan struct{})
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		header := make([]byte, ipcHeaderBytes)
+		if _, err := io.ReadFull(conn, header); err != nil {
+			return
+		}
+		payload := make([]byte, binary.BigEndian.Uint32(header[8:12]))
+		if _, err := io.ReadFull(conn, payload); err != nil {
+			return
+		}
+		close(accepted)
+		// Deliberately withhold the daemon reply; the caller context must close
+		// this transport instead of leaving a goroutine blocked in ReadFull.
+		_, _ = io.Copy(io.Discard, conn)
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)
+	defer cancel()
+	err = NewIPCClient(socketPath).Render(ctx, RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1",
+		OutputPath: "/jobs/1/output/result.mp4", RangeEnabled: true,
+		FirstFrame: 0, LastFrame: 0,
+	})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Fatalf("Render error = %v, want context deadline exceeded", err)
+	}
+	select {
+	case <-accepted:
+	case <-time.After(time.Second):
+		t.Fatal("fake daemon did not receive the render request")
+	}
+}
+
+func TestIPCRenderTimeoutScalesWithFrameCountAndCaps(t *testing.T) {
+	tests := []struct {
+		frames int64
+		want   time.Duration
+	}{
+		{frames: 1, want: defaultIPCRenderTimeout},
+		{frames: 180, want: defaultIPCRenderTimeout},
+		{frames: 181, want: 90*time.Second + 500*time.Millisecond},
+		{frames: 100_000, want: maxIPCRenderTimeout},
+	}
+	for _, tt := range tests {
+		ctx, cancel := ipcRenderContextForFrames(context.Background(), tt.frames)
+		deadline, ok := ctx.Deadline()
+		if !ok {
+			cancel()
+			t.Fatalf("frames=%d: missing timeout deadline", tt.frames)
+		}
+		got := time.Until(deadline).Round(100 * time.Millisecond)
+		cancel()
+		if got != tt.want {
+			t.Errorf("frames=%d timeout=%s, want %s", tt.frames, got, tt.want)
+		}
 	}
 }
 
@@ -699,6 +776,128 @@ func TestIPCClientRenderBatchRejectsInvalidShapes(t *testing.T) {
 	}
 	if _, err := client.RenderBatch(context.Background(), []RenderRequest{{}}); err == nil {
 		t.Error("an invalid job inside a batch must fail")
+	}
+}
+
+// startWatchDaemon serves RENDER_JOB (optionally holding the reply) and
+// GET_JOB_STATUS on independent connections, mirroring the real daemon's
+// one-connection-per-command model. It is the deterministic fixture for the
+// IPC-02 watchdog: status is fixed, output bytes are controlled by the test.
+func startWatchDaemon(t *testing.T, state string, holdRender bool) (string, func()) {
+	t.Helper()
+	socketPath := filepath.Join(t.TempDir(), "chronon.sock")
+	ln, err := net.Listen("unix", socketPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	stop := make(chan struct{})
+	releaseCh := make(chan struct{})
+	var releaseOnce sync.Once
+	release := func() { releaseOnce.Do(func() { close(releaseCh) }) }
+	t.Cleanup(func() {
+		_ = ln.Close()
+		close(stop)
+		release()
+	})
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func(conn net.Conn) {
+				defer conn.Close()
+				header := make([]byte, ipcHeaderBytes)
+				if _, err := io.ReadFull(conn, header); err != nil {
+					return
+				}
+				payload := make([]byte, binary.BigEndian.Uint32(header[8:12]))
+				if _, err := io.ReadFull(conn, payload); err != nil {
+					return
+				}
+				switch command := binary.BigEndian.Uint32(header[4:8]); command {
+				case ipcCommandRenderJob, ipcCommandRenderBatch:
+					if holdRender {
+						select {
+						case <-releaseCh:
+						case <-stop:
+							return
+						}
+					}
+					writeWatchReply(conn, ipcStatusOk, `{"status":"ok"}`)
+				case ipcCommandGetJobStatus:
+					writeWatchReply(conn, ipcStatusOk,
+						fmt.Sprintf(`{"job_id":%q,"state":%q}`, string(payload), state))
+				default:
+					writeWatchReply(conn, ipcStatusError, "unexpected command")
+				}
+			}(conn)
+		}
+	}()
+	return socketPath, release
+}
+
+func writeWatchReply(conn net.Conn, status uint32, message string) {
+	reply := make([]byte, ipcHeaderBytes+len(message))
+	binary.BigEndian.PutUint32(reply[0:4], ipcMagic)
+	binary.BigEndian.PutUint32(reply[4:8], status)
+	binary.BigEndian.PutUint32(reply[8:12], uint32(len(message)))
+	copy(reply[ipcHeaderBytes:], message)
+	_, _ = conn.Write(reply)
+}
+
+func TestIPCClient_RenderAbortsOnStall(t *testing.T) {
+	socketPath, _ := startWatchDaemon(t, "running", true)
+	dir := t.TempDir()
+	client := NewIPCClient(socketPath)
+	client.SetStallTimeout(80 * time.Millisecond)
+
+	started := time.Now()
+	err := client.Render(context.Background(), RenderRequest{
+		JobID:      "job-stall",
+		PlanPath:   writeStrictNativeTestPlan(t),
+		AssetsRoot: dir,
+		OutputPath: filepath.Join(dir, "result.mp4"),
+	})
+	if !errors.Is(err, ErrIPCStallTimeout) {
+		t.Fatalf("Render error = %v, want ErrIPCStallTimeout", err)
+	}
+	if elapsed := time.Since(started); elapsed > 3*time.Second {
+		t.Fatalf("stall abort took %v; the configured window is 80ms", elapsed)
+	}
+}
+
+func TestIPCClientRenderKeepsRunningWhileOutputGrows(t *testing.T) {
+	socketPath, release := startWatchDaemon(t, "running", true)
+	dir := t.TempDir()
+	output := filepath.Join(dir, "result.mp4")
+	temp := output + ".chronon.tmp.1.mp4"
+	// Seed the atomic-write sibling before the first tick, then keep it
+	// growing: the watchdog must treat those bytes as frame progress.
+	if err := os.WriteFile(temp, []byte("x"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		for i := 0; i < 12; i++ {
+			if err := os.WriteFile(temp, make([]byte, (i+2)*4096), 0o600); err != nil {
+				return
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+		release()
+	}()
+
+	client := NewIPCClient(socketPath)
+	client.SetStallTimeout(300 * time.Millisecond)
+	err := client.Render(context.Background(), RenderRequest{
+		JobID:      "job-progress",
+		PlanPath:   writeStrictNativeTestPlan(t),
+		AssetsRoot: dir,
+		OutputPath: output,
+	})
+	if err != nil {
+		t.Fatalf("growing output was treated as a stall: %v", err)
 	}
 }
 

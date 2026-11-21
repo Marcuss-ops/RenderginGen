@@ -4,10 +4,13 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -125,6 +128,22 @@ func ipcReplyError(op string, status uint32, message string) error {
 // tight.
 const defaultIPCServiceTimeout = 90 * time.Second
 
+// IPC cannot observe frame milestones today, so it cannot use the CLI
+// no-progress watchdog. Bound each blocking daemon call by a generous budget
+// proportional to the requested frame count. This is a hard render deadline,
+// not a claim that the transport can detect a stalled frame.
+const (
+	defaultIPCRenderTimeout = 90 * time.Second
+	maxIPCRenderTimeout     = 15 * time.Minute
+	ipcRenderBudgetPerFrame = 500 * time.Millisecond
+)
+
+// ErrIPCStallTimeout identifies an IPC render aborted because the daemon made
+// no observable progress. It is a transport-level failure, not a semantic
+// render error: the processor may recover it through SoftwareRetryAllowed
+// instead of failing the job permanently.
+var ErrIPCStallTimeout = errors.New("ipc render stalled")
+
 // IPCClient renders through the persistent Chronon3d render daemon over a
 // UNIX-domain socket. It implements Renderer, so it is a drop-in replacement
 // for the CLI subprocess Client.
@@ -162,12 +181,24 @@ type IPCClient struct {
 	// serviceTimeout bounds Status/PrefetchAsset/Shutdown. Zero uses
 	// defaultIPCServiceTimeout; tests shorten it.
 	serviceTimeout time.Duration
+	// stallTimeout is measured from observable output-file progress. IPC has no
+	// frame stream yet, so a new/unchanged partial output is the transport's
+	// liveness signal.
+	stallTimeout time.Duration
 }
 
 // NewIPCClient creates a Renderer that talks to a Chronon3d daemon listening
 // at socketPath.
 func NewIPCClient(socketPath string) *IPCClient {
-	return &IPCClient{socketPath: socketPath}
+	return &IPCClient{socketPath: socketPath, stallTimeout: DefaultStallTimeout}
+}
+
+// SetStallTimeout configures the maximum time an IPC render may make no
+// observable output-file progress before its request connection is closed.
+func (c *IPCClient) SetStallTimeout(timeout time.Duration) {
+	if timeout > 0 {
+		c.stallTimeout = timeout
+	}
 }
 
 // Status asks the daemon for its engine statistics (frames rendered, total
@@ -242,6 +273,9 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 // is true.  Older daemons ignore the extra keys and keep rendering the whole
 // plan.
 type renderJobPayload struct {
+	// JobID is transport metadata, never part of the render semantics: the
+	// daemon uses it to make GET_JOB_STATUS answer for this render.
+	JobID                 string                `json:"job_id,omitempty"`
 	PlanPath              string                `json:"plan_path"`
 	PreparedPackagePath   string                `json:"prepared_package_path,omitempty"`
 	AssetsRoot            string                `json:"assets_root"`
@@ -351,6 +385,7 @@ func (c *IPCClient) SupportsOutputSegments() bool { return true }
 // single-job and batch commands so the two transports cannot drift.
 func renderJobPayloadFor(req RenderRequest) renderJobPayload {
 	return renderJobPayload{
+		JobID:               req.JobID,
 		PlanPath:            req.PlanPath,
 		PreparedPackagePath: req.PreparedPackagePath,
 		AssetsRoot:          req.AssetsRoot,
@@ -383,7 +418,13 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		return fmt.Errorf("ipc render: marshal payload: %w", err)
 	}
 
-	status, message, err := c.request(ctx, ipcCommandRenderJob, payload)
+	renderCtx, cancel := ipcRenderContext(ctx, req)
+	defer cancel()
+	outputs := []string{req.OutputPath}
+	for _, seg := range req.OutputSegments {
+		outputs = append(outputs, seg.OutputPath)
+	}
+	status, message, err := c.requestRenderWithProgress(renderCtx, ipcCommandRenderJob, payload, []string{req.JobID}, outputs)
 	if err != nil {
 		return err
 	}
@@ -455,7 +496,22 @@ func (c *IPCClient) RenderBatch(ctx context.Context, requests []RenderRequest) (
 	if err != nil {
 		return nil, fmt.Errorf("ipc render batch: marshal payload: %w", err)
 	}
-	status, message, err := c.request(ctx, ipcCommandRenderBatch, payload)
+	frames := int64(0)
+	for _, req := range requests {
+		frames += requestedFrames(req)
+	}
+	renderCtx, cancel := ipcRenderContextForFrames(ctx, frames)
+	defer cancel()
+	outputs := make([]string, 0, len(requests))
+	jobIDs := make([]string, 0, len(requests))
+	for _, req := range requests {
+		outputs = append(outputs, req.OutputPath)
+		for _, seg := range req.OutputSegments {
+			outputs = append(outputs, seg.OutputPath)
+		}
+		jobIDs = append(jobIDs, req.JobID)
+	}
+	status, message, err := c.requestRenderWithProgress(renderCtx, ipcCommandRenderBatch, payload, jobIDs, outputs)
 	if err != nil {
 		return nil, err
 	}
@@ -492,6 +548,218 @@ func (c *IPCClient) RenderBatch(ctx context.Context, requests []RenderRequest) (
 	return results, nil
 }
 
+// ipcRenderContext imposes a hard bound on an IPC render. Existing caller
+// deadlines remain authoritative because context.WithTimeout keeps the earlier
+// deadline.
+func ipcRenderContext(ctx context.Context, req RenderRequest) (context.Context, context.CancelFunc) {
+	return ipcRenderContextForFrames(ctx, requestedFrames(req))
+}
+
+func ipcRenderContextForFrames(ctx context.Context, frames int64) (context.Context, context.CancelFunc) {
+	// Unknown whole-plan duration gets the maximum bounded budget; using the
+	// minimum in that case would punish plans whose duration metadata could
+	// not be read by this client.
+	timeout := maxIPCRenderTimeout
+	maxFrames := int64(maxIPCRenderTimeout / ipcRenderBudgetPerFrame)
+	if frames > 0 {
+		budgetFrames := frames
+		if budgetFrames > maxFrames {
+			budgetFrames = maxFrames
+		}
+		timeout = time.Duration(budgetFrames) * ipcRenderBudgetPerFrame
+		if timeout < defaultIPCRenderTimeout {
+			timeout = defaultIPCRenderTimeout
+		}
+	}
+	return context.WithTimeout(ctx, timeout)
+}
+
+func requestedFrames(req RenderRequest) int64 {
+	if req.RangeEnabled {
+		if req.LastFrame >= req.FirstFrame {
+			return req.LastFrame - req.FirstFrame + 1
+		}
+		return 0
+	}
+	if strings.TrimSpace(req.PlanPath) == "" {
+		return 0
+	}
+	data, err := os.ReadFile(req.PlanPath)
+	if err != nil {
+		return 0
+	}
+	var plan struct {
+		Canvas struct {
+			DurationFrames int64 `json:"duration_frames"`
+		} `json:"canvas"`
+	}
+	if err := json.Unmarshal(data, &plan); err != nil || plan.Canvas.DurationFrames < 0 {
+		return 0
+	}
+	return plan.Canvas.DurationFrames
+}
+
+type ipcRequestResult struct {
+	status  uint32
+	message string
+	err     error
+}
+
+type outputStamp struct {
+	size    int64
+	modTime time.Time
+	valid   bool
+}
+
+const ipcStatusPollTimeout = 5 * time.Second
+
+// requestRenderWithProgress keeps the non-idempotent render request on its own
+// connection while a second connection observes liveness. The signals are the
+// daemon lifecycle (GET_JOB_STATUS) and the bytes the daemon writes to the
+// output or its .chronon.tmp sibling. The daemon does not expose a frame
+// counter today, so output growth is the frame-progress proxy; a running job
+// that produces neither is aborted with ErrIPCStallTimeout.
+func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint32, payload []byte, jobIDs, outputs []string) (uint32, string, error) {
+	stallTimeout := c.stallTimeout
+	if stallTimeout <= 0 {
+		stallTimeout = DefaultStallTimeout
+	}
+	result := make(chan ipcRequestResult, 1)
+	go func() {
+		status, message, err := c.request(ctx, command, payload)
+		result <- ipcRequestResult{status: status, message: message, err: err}
+	}()
+	lastProgress := time.Now()
+	stamps := make([]outputStamp, len(outputs))
+	states := make(map[string]string, len(jobIDs))
+	sawStatus := false
+	running := false
+	pollInterval := 2 * time.Second
+	if stallTimeout < pollInterval {
+		pollInterval = stallTimeout
+	}
+	ticker := time.NewTicker(pollInterval)
+	defer ticker.Stop()
+	for {
+		select {
+		case response := <-result:
+			return response.status, response.message, response.err
+		case <-ctx.Done():
+			return 0, "", fmt.Errorf("ipc render request ended: %w", ctx.Err())
+		case now := <-ticker.C:
+			progress := outputFilesChanged(outputs, stamps)
+			running = false
+			for _, jobID := range jobIDs {
+				if strings.TrimSpace(jobID) == "" {
+					continue
+				}
+				state, ok := c.ipcJobState(ctx, jobID)
+				if !ok {
+					continue
+				}
+				sawStatus = true
+				if states[jobID] != state {
+					states[jobID] = state
+					progress = true
+				}
+				// prepared is a live admission wait, not a render stall.
+				if state == "prepared" || state == "completed" || state == "failed" {
+					progress = true
+				}
+				if state == "running" {
+					running = true
+				}
+			}
+			if progress {
+				lastProgress = now
+				continue
+			}
+			// With a job id, a prepared admission wait is live and must not be
+			// mistaken for a stall; only a running job is held to the window.
+			// Without a job id (legacy callers) there is no lifecycle signal,
+			// so output growth is the only observable and silence still aborts.
+			if (!sawStatus || running) && now.Sub(lastProgress) >= stallTimeout {
+				return 0, "", fmt.Errorf("%w: job(s) %s made no observable progress for %s", ErrIPCStallTimeout, jobIDList(jobIDs), stallTimeout)
+			}
+		}
+	}
+}
+
+// ipcJobState reads one daemon lifecycle record on its own connection. A
+// missing/expired job or an older daemon is not a stall signal: the err/ok
+// result keeps that distinction available to the watchdog.
+func (c *IPCClient) ipcJobState(ctx context.Context, jobID string) (string, bool) {
+	pollCtx, cancel := context.WithTimeout(ctx, ipcStatusPollTimeout)
+	defer cancel()
+	status, message, err := c.request(pollCtx, ipcCommandGetJobStatus, []byte(jobID))
+	if err != nil || status != ipcStatusOk {
+		return "", false
+	}
+	var reply struct {
+		State string `json:"state"`
+	}
+	if err := json.Unmarshal([]byte(message), &reply); err != nil || reply.State == "" {
+		return "", false
+	}
+	return reply.State, true
+}
+
+func jobIDList(jobIDs []string) string {
+	ids := make([]string, 0, len(jobIDs))
+	for _, id := range jobIDs {
+		if strings.TrimSpace(id) != "" {
+			ids = append(ids, id)
+		}
+	}
+	if len(ids) == 0 {
+		return "untracked"
+	}
+	return strings.Join(ids, ",")
+}
+
+// outputFilesChanged reports whether the bytes visible for any output changed.
+// It includes the daemon's atomic-write sibling (output + ".chronon.tmp.*")
+// because the final path does not exist until the mux is published.
+func outputFilesChanged(paths []string, previous []outputStamp) bool {
+	changed := false
+	for i, path := range paths {
+		if i >= len(previous) {
+			break
+		}
+		current := outputStampFor(path)
+		if current != previous[i] {
+			previous[i] = current
+			changed = true
+		}
+	}
+	return changed
+}
+
+func outputStampFor(path string) outputStamp {
+	if strings.TrimSpace(path) == "" {
+		return outputStamp{}
+	}
+	var stamp outputStamp
+	record := func(candidate string) {
+		info, err := os.Stat(candidate)
+		if err != nil || !info.Mode().IsRegular() {
+			return
+		}
+		stamp.size += info.Size()
+		if info.ModTime().After(stamp.modTime) {
+			stamp.modTime = info.ModTime()
+		}
+		stamp.valid = true
+	}
+	record(path)
+	if matches, err := filepath.Glob(path + ".chronon.tmp.*"); err == nil {
+		for _, match := range matches {
+			record(match)
+		}
+	}
+	return stamp
+}
+
 // serviceContext bounds a service operation. An existing context deadline is
 // preserved (context.WithTimeout keeps the earlier of the two).
 func (c *IPCClient) serviceContext(ctx context.Context) (context.Context, context.CancelFunc) {
@@ -510,6 +778,8 @@ func (c *IPCClient) request(ctx context.Context, command uint32, payload []byte)
 		return 0, "", fmt.Errorf("ipc dial %s: %w", c.socketPath, err)
 	}
 	defer conn.Close()
+	stopClose := context.AfterFunc(ctx, func() { _ = conn.Close() })
+	defer stopClose()
 	if deadline, ok := ctx.Deadline(); ok {
 		// The deadline IS the bound of this transport (see
 		// defaultIPCServiceTimeout): a connection whose deadline could not be
@@ -523,11 +793,17 @@ func (c *IPCClient) request(ctx context.Context, command uint32, payload []byte)
 
 	frame := encodeIPCRequest(command, payload)
 	if _, err := conn.Write(frame); err != nil {
+		if ctx.Err() != nil {
+			return 0, "", fmt.Errorf("ipc request canceled: %w", ctx.Err())
+		}
 		return 0, "", fmt.Errorf("ipc write request: %w", err)
 	}
 
 	status, message, err := readIPCReply(conn)
 	if err != nil {
+		if ctx.Err() != nil {
+			return 0, "", fmt.Errorf("ipc request canceled: %w", ctx.Err())
+		}
 		return 0, "", fmt.Errorf("ipc read reply: %w", err)
 	}
 	return status, message, nil

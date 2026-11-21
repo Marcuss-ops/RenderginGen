@@ -32,6 +32,7 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
+	"time"
 )
 
 // LanesPerSocket splits totalLanes worker lanes over socketCount sockets. A
@@ -57,6 +58,13 @@ func LanesPerSocket(totalLanes, socketCount int) int {
 // than a degradation: each socket is one daemon, so spreading lanes over a path
 // that is not a daemon halves throughput silently.
 func SpreadAcrossSockets(sockets []string, totalLanes int) (Renderer, error) {
+	return SpreadAcrossSocketsWithStallTimeout(sockets, totalLanes, DefaultStallTimeout)
+}
+
+// SpreadAcrossSocketsWithStallTimeout is the configured form used by the
+// worker composition root. The compatibility constructor above keeps callers
+// on the package default.
+func SpreadAcrossSocketsWithStallTimeout(sockets []string, totalLanes int, stallTimeout time.Duration) (Renderer, error) {
 	if len(sockets) == 0 {
 		return nil, fmt.Errorf("chronon socket spread: at least one daemon socket is required")
 	}
@@ -72,7 +80,9 @@ func SpreadAcrossSockets(sockets []string, totalLanes int) (Renderer, error) {
 			return nil, fmt.Errorf("chronon socket spread: socket %q is listed twice; each socket is one daemon", trimmed)
 		}
 		seen[trimmed] = struct{}{}
-		lanes = append(lanes, LimitConcurrency(NewIPCClient(trimmed), perSocket))
+		client := NewIPCClient(trimmed)
+		client.SetStallTimeout(stallTimeout)
+		lanes = append(lanes, LimitConcurrency(client, perSocket))
 	}
 	return spreadAcrossLanes(lanes), nil
 }

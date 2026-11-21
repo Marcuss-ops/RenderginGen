@@ -25,6 +25,7 @@ func (p *Processor) BuildChrononRequest(prepared *PreparedJob, policy RenderExec
 	}
 	metadata := planMetadataOf(prepared.Plan)
 	return chronon.RenderRequest{
+		JobID:               prepared.Job.ID,
 		PlanPath:            prepared.Workspace.PlanPath(),
 		PreparedPackagePath: prepared.Workspace.PreparedPackagePath(),
 		// Plans use the canonical assets/<file> namespace, so the workspace

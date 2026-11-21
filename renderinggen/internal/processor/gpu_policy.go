@@ -1,8 +1,11 @@
 package processor
 
 import (
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
+	"errors"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
 
 // isFinalJobComposite recognizes the local scene-composite jobs emitted by
@@ -31,6 +34,12 @@ func encodePresetForJob(configured string, finalComposite bool) string {
 func softwareRetryableGPUFailure(err error) bool {
 	if err == nil {
 		return false
+	}
+	// A transport stall is recoverable: the daemon session is aborted and the
+	// same plan can be retried on the software lane instead of freezing the
+	// job until the hard deadline. This is the IPC-02 recovery path.
+	if errors.Is(err, chronon.ErrIPCStallTimeout) {
+		return true
 	}
 	message := strings.ToLower(err.Error())
 	for _, marker := range []string{

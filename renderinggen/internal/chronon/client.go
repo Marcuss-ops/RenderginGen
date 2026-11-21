@@ -76,6 +76,10 @@ func ValidateEncodePreset(preset string) error {
 // are already materialized under AssetsRoot, and OutputPath is where the
 // rendered file must be written.
 type RenderRequest struct {
+	// JobID is queue correlation metadata, not render semantics: the IPC
+	// transport sends it to the daemon so the progress watchdog can query
+	// GET_JOB_STATUS for this render. Empty keeps the legacy untracked job.
+	JobID    string
 	PlanPath string // path to the render-plan document the worker wrote (plan.json)
 	// PreparedPackagePath is the immutable overlay preparation sidecar written
 	// beside PlanPath. Empty keeps compatibility for callers that only submit a

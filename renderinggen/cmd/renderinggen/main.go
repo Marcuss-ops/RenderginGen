@@ -147,11 +147,12 @@ func main() {
 		// Assembly and asset warm-up are serialized parent-side operations and
 		// stay on the first socket — spreading them would buy nothing and would
 		// make the parent's ordering depend on which daemon answered.
-		spread, spreadErr := chronon.SpreadAcrossSockets(renderSockets, cfg.Worker.GPULanes)
+		spread, spreadErr := chronon.SpreadAcrossSocketsWithStallTimeout(renderSockets, cfg.Worker.GPULanes, cfg.Chronon.StallTimeout)
 		if spreadErr != nil {
 			log.Fatalf("chronon: %v", spreadErr)
 		}
 		ipc := chronon.NewIPCClient(renderSockets[0])
+		ipc.SetStallTimeout(cfg.Chronon.StallTimeout)
 		renderer = spread
 		assembler = ipc
 		assetPrefetcher = ipc

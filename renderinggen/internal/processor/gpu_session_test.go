@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
@@ -19,6 +20,50 @@ func sessionPolicy(t *testing.T, plan *overlay.Plan, cfg ProcessorConfig) Render
 		t.Fatal(err)
 	}
 	return policy
+}
+
+// contextBlockingRenderer blocks inside Render until the session context is
+// cancelled. It makes the cancellation path observable while the renderer is
+// active, not merely before the call starts.
+type contextBlockingRenderer struct{ entered chan struct{} }
+
+func (r *contextBlockingRenderer) Render(ctx context.Context, _ chronon.RenderRequest) error {
+	close(r.entered)
+	<-ctx.Done()
+	return ctx.Err()
+}
+
+// The worker wraps RunGPU in withLeaseVoid (cmd/renderinggen/worker_pools.go),
+// so losing the queue lease cancels the job context. This test pins the other
+// half of that contract: ExecuteRenderSession must pass the cancellation into
+// the active renderer instead of waiting for it to return on its own.
+func TestExecuteRenderSessionStopsWhenContextIsCanceled(t *testing.T) {
+	proc, _, _ := newProcessor(t)
+	renderer := &contextBlockingRenderer{entered: make(chan struct{})}
+	proc.renderer = renderer
+	plan := policyTestPlan(overlay.Layer{ID: "source", Type: "video"})
+	policy := sessionPolicy(t, plan, ProcessorConfig{Backend: "vulkan", HardwareEncoder: "nvenc"})
+	prepared := &PreparedJob{Job: &queue.Job{ID: "cancel"}, Plan: plan, OutputPath: filepath.Join(t.TempDir(), "out.mp4"), Metrics: map[string]float64{}}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() {
+		_, err := proc.ExecuteRenderSession(ctx, prepared, chronon.RenderRequest{OutputPath: prepared.OutputPath}, policy)
+		done <- err
+	}()
+	select {
+	case <-renderer.entered:
+	case <-time.After(5 * time.Second):
+		t.Fatal("the renderer was never entered")
+	}
+	cancel()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.Canceled) {
+			t.Fatalf("session error = %v, want context.Canceled", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("ExecuteRenderSession did not return after cancellation")
+	}
 }
 
 func TestExecuteRenderSessionSuccess(t *testing.T) {

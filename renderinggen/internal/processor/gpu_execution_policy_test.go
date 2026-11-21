@@ -99,6 +99,9 @@ func TestResolveExecutionPolicyMatrix(t *testing.T) {
 				if !softwareRetryableGPUFailure(errors.New("Vulkan device lost during vkWaitForFences")) {
 					t.Fatal("classifier must recognize the recoverable failure")
 				}
+				if !softwareRetryableGPUFailure(chronon.ErrIPCStallTimeout) {
+					t.Fatal("classifier must route an IPC stall to the software retry")
+				}
 				if !p.CPUFallbackAllowed || !p.SoftwareRetryAllowed {
 					t.Fatalf("policy = %+v, the non-strict GPU policy must admit the retry", p)
 				}
