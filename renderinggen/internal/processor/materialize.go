@@ -93,6 +93,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err := ws.WritePlan(planBytes); err != nil {
 		return queue.Artifact{}, err
 	}
+	dumpCompiledPlan(ws.Root(), planBytes)
 	hash := storage.Hash(planBytes)
 	if err := p.store.Put(ctx, hash, planBytes); err != nil {
 		return queue.Artifact{}, fmt.Errorf("processor: store prepared plan: %w", err)

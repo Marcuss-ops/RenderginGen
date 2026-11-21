@@ -51,6 +51,29 @@ import (
 // the start fails.
 const DaemonStartupTimeout = 60 * time.Second
 
+// DefaultLanesPerDaemon is the render-lane count a pool uses when the caller
+// does not declare one.
+//
+// Two, not one. The daemon releases its execution lock BEFORE running the
+// deferred receipt step (probe + sha256 + full-decode gate, ~0.9 s per item),
+// precisely so the next job can render while the previous one is verified — but
+// with a single lane no second RENDER_JOB is ever in flight to take that slot,
+// and the worker sits blocked on the reply. The second lane is NOT a second GPU
+// session: the daemon's m_render_job_mutex still serializes execution, so a
+// daemon that is rendering queues the peer and the overlap it wins is the
+// receipt window. Measured on the overlay path: ~1.5 s/item of the ~1.4 s
+// reply tail was receipt work the next job could have been using.
+const DefaultLanesPerDaemon = 2
+
+// lanesPerDaemon resolves the configured lane cap: an explicit positive value
+// wins, zero/negative means DefaultLanesPerDaemon.
+func lanesPerDaemon(requested int) int {
+	if requested < 1 {
+		return DefaultLanesPerDaemon
+	}
+	return requested
+}
+
 // daemonProbeInterval is the readiness poll period. Polling is unavoidable
 // without a filesystem-watch dependency; what matters is that each poll is a
 // real liveness question and that the loop reacts to cancellation and child exit
@@ -63,7 +86,9 @@ type DaemonOptions struct {
 	SocketBase string
 	// Count is how many daemons to run. Values below 1 mean one.
 	Count int
-	// LanesPerDaemon caps concurrent RENDER_JOBs per daemon.
+	// LanesPerDaemon caps concurrent RENDER_JOBs per daemon. Zero uses
+	// DefaultLanesPerDaemon, which keeps one lane rendering while the peer is
+	// in the receipt step; the daemon still serializes execution itself.
 	LanesPerDaemon int
 	// Binary is the chronon3d_cli executable.
 	Binary string
@@ -200,7 +225,7 @@ func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, erro
 				return nil, fmt.Errorf("chronon daemon pool: existing socket %s is not serving: %w", socketPath, err)
 			}
 			pool.handles = append(pool.handles, daemonHandle{socketPath: socketPath})
-			pool.lanes = append(pool.lanes, pooledLane{renderer: LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon)})
+			pool.lanes = append(pool.lanes, pooledLane{renderer: LimitConcurrency(NewIPCClient(socketPath), lanesPerDaemon(opts.LanesPerDaemon))})
 			continue
 		}
 		if !os.IsNotExist(statErr) {
@@ -213,7 +238,7 @@ func StartDaemonPool(ctx context.Context, opts DaemonOptions) (*DaemonPool, erro
 			return nil, err
 		}
 		pool.handles = append(pool.handles, handle)
-		pool.lanes = append(pool.lanes, pooledLane{renderer: LimitConcurrency(NewIPCClient(socketPath), opts.LanesPerDaemon)})
+		pool.lanes = append(pool.lanes, pooledLane{renderer: LimitConcurrency(NewIPCClient(socketPath), lanesPerDaemon(opts.LanesPerDaemon))})
 	}
 	return pool, nil
 }

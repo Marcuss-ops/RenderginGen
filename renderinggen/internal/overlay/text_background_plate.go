@@ -46,7 +46,12 @@ func liftTextBackgroundPlates(plan *Plan) {
 }
 
 func textBackgroundPlate(layer Layer, canvas Canvas, usedIDs map[string]struct{}) (Layer, bool) {
-	if layer.Type != "text" || layer.Style == nil || layer.Style.Background == nil || !layer.ScreenSpace {
+	// A captioned entity can select a camera-backed caption motion. That text
+	// layer is still a text card and still owns style.background; skipping it
+	// here left the first 3D captions with the dead box_style field while the
+	// flat captions after them showed their plate. Lift both, preserving the
+	// layer's space and camera requirement on the plate.
+	if layer.Type != "text" || layer.Style == nil || layer.Style.Background == nil {
 		return Layer{}, false
 	}
 	background := layer.Style.Background
@@ -103,7 +108,8 @@ func textBackgroundPlate(layer Layer, canvas Canvas, usedIDs map[string]struct{}
 		Position:       position,
 		StartFrame:     layer.StartFrame,
 		DurationFrames: layer.DurationFrames,
-		ScreenSpace:    true,
+		ScreenSpace:    layer.ScreenSpace,
+		Enable3D:       layer.Enable3D,
 		Opacity:        floatPointer(opacity),
 		Shape:          &LayerShape{Type: shapeType, Fill: []float64{color[0], color[1], color[2], color[3]}, Radius: radius},
 		Parent:         layer.Parent,

@@ -24,6 +24,9 @@ chronon:
   strict_native_backend: true
   encode_preset: p1
   pipe_pixfmt: nv12
+  # The dirty-rectangle optimization can leave a torn band where overlapping
+  # full-canvas layers share no static pixels (visible in chain pans).
+  no_dirty_rects: true
 gpu:
   device: 0
 health:

@@ -197,15 +197,55 @@ func resolveTextSpecBase(ri resolvedItem, src *semanticPlan) (resolvedTextSpec, 
 		boxWidth = float64(src.Width)
 	}
 	fontSize := 64.0
+	authoredFontSize := false
 	if value, ok := numericValue(ri.Params["font_size_px"]); ok && value > 0 {
 		fontSize = value
+		authoredFontSize = true
 	} else if spec.Style != nil && spec.Style.FontSize > 0 {
 		fontSize = spec.Style.FontSize
 	} else if spec.Style != nil && spec.Style.MaxFontSize > 0 {
 		fontSize = spec.Style.MaxFontSize
 	}
+	authoredHeight := 0.0
+	if value, ok := numericValue(ri.Params["height"]); ok && value > 0 {
+		authoredHeight = value
+	}
+	// A box that cannot hold two lines is an authored single-line band: a row of a
+	// stacked layout, a caption slot, a per-line 3D card. Stacking text there
+	// grows the box past its own row and onto the next band, so the band keeps
+	// its authored geometry and the line is fitted instead: first against the
+	// full authored width (the comfort margin would split a line the band still
+	// holds, and the per-rune estimator is already conservative), then by
+	// shrinking the type like the canvas guard does.
+	wrapBudget := boxWidth * textWrapComfortRatio
+	singleLineBand := authoredHeight > 0 && authoredHeight < 2*(fontSize*textLineSpacingFactor)+textEffectPaddingPX
+	if singleLineBand {
+		wrapBudget = boxWidth
+	}
+	unwrapped := spec.Text
 	var lines int
-	spec.Text, lines = wrapPhraseByPixelBudget(spec.Text, boxWidth*0.9, fontSize)
+	spec.Text, lines = wrapPhraseByPixelBudget(unwrapped, wrapBudget, fontSize)
+	// A producer that pins font_size_px owns the size (the date/metric no-shrink
+	// policy): shrinking it here would silently override that decision. Authored
+	// hard breaks are the producer's line plan and are never reflowed.
+	if singleLineBand && lines > 1 && !authoredFontSize && !strings.Contains(unwrapped, "\n") {
+		if fitted, ok := fitPhraseFontToWidth(unwrapped, boxWidth, fontSize); ok {
+			if spec.Style == nil {
+				spec.Style = &LayerStyle{}
+			}
+			spec.Text, lines = unwrapped, 1
+			// Cap the range at the fitted size but keep the preset's floor: the
+			// estimate is conservative, and the renderer may still need to shrink
+			// a glyph wider than this table predicts.
+			spec.Style.FontSize = fitted
+			if spec.Style.MaxFontSize <= 0 || spec.Style.MaxFontSize > fitted {
+				spec.Style.MaxFontSize = fitted
+			}
+			if spec.Style.MinFontSize > fitted {
+				spec.Style.MinFontSize = fitted
+			}
+		}
+	}
 	return spec, lines, nil
 }
 
@@ -245,7 +285,7 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 	}
 	if lines > 1 {
 		fontSize := estimatedSpecFontSize(spec)
-		needed := int(float64(lines)*fontSize*1.45) + 16 // line spacing and effect padding
+		needed := int(float64(lines)*fontSize*textLineSpacingFactor) + textEffectPaddingPX // line spacing and effect padding
 		if needed > src.Height {
 			// A text box cannot be taller than the canvas. Before clipping,
 			// shrink the authored font to the largest size whose wrapped lines
@@ -255,7 +295,7 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 			if available < 16 {
 				available = float64(src.Height)
 			}
-			maxFont := available / (float64(lines) * 1.45)
+			maxFont := available / (float64(lines) * textLineSpacingFactor)
 			if maxFont < 8 {
 				maxFont = 8
 			}
@@ -272,7 +312,7 @@ func resolveTextSpecGeometry(ri resolvedItem, src *semanticPlan, spec resolvedTe
 					spec.Style.MaxFontSize = maxFont
 				}
 				fontSize = maxFont
-				needed = int(float64(lines)*fontSize*1.45) + 16
+				needed = int(float64(lines)*fontSize*textLineSpacingFactor) + textEffectPaddingPX
 			}
 			if needed > src.Height {
 				needed = src.Height

@@ -377,6 +377,7 @@ func (p *Processor) preparePlanOutput(st *prepareState) error {
 	if err := st.ws.WritePlan(renderPlan); err != nil {
 		return err
 	}
+	dumpCompiledPlan(st.job.ID, renderPlan)
 	preparedBytes, err := json.Marshal(st.preparedPackage)
 	if err != nil {
 		return fmt.Errorf("processor: encode prepared overlay package: %w", err)

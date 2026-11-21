@@ -26,6 +26,8 @@ chronon:
   socket_path: /var/run/chronon3d/chronon.sock
   encode_preset: p1
   pipe_pixfmt: nv12
+  # Dirty rects can tear moving layer boundaries (see the native config).
+  no_dirty_rects: true
 
 gpu:
   device: 0

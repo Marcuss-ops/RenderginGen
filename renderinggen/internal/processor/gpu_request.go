@@ -38,6 +38,7 @@ func (p *Processor) BuildChrononRequest(prepared *PreparedJob, policy RenderExec
 		HardwareEncoder:       policy.HardwareEncoder,
 		EncoderBackend:        policy.EncoderBackend,
 		ReceiptVerify:         p.chrononReceiptRequest(),
+		NoDirtyRects:          p.noDirtyRects,
 		LaneTiming: func(idle time.Duration) {
 			prepared.Metrics[metricnames.DaemonLaneIdleUS] = float64(idle.Microseconds())
 		},

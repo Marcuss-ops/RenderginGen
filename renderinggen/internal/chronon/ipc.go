@@ -39,6 +39,10 @@ const (
 	ipcCommandShutdown                = 5
 	ipcCommandRenderJob               = 6
 	ipcCommandAssembleSegments        = 7
+	ipcCommandGetJobStatus            = 8
+	ipcCommandRenderBatch             = 9
+	ipcCommandCacheStats              = 10
+	ipcMaxBatchJobs                   = 64
 	ipcStatusOk                       = 0
 	ipcStatusError                    = 1
 	ipcStatusNotFound                 = 2
@@ -68,6 +72,9 @@ var ipcCommandNames = map[uint32]string{
 	ipcCommandShutdown:         "Shutdown",
 	ipcCommandRenderJob:        "RenderJob",
 	ipcCommandAssembleSegments: "AssembleSegments",
+	ipcCommandGetJobStatus:     "GetJobStatus",
+	ipcCommandRenderBatch:      "RenderBatch",
+	ipcCommandCacheStats:       "CacheStats",
 }
 
 // ipcStatusNames is the reply-status enum by value.
@@ -226,6 +233,8 @@ func (c *IPCClient) Shutdown(ctx context.Context) error {
 //	encode_preset (native NVENC tier)
 //	receipt_verify (per-job verification policy; the daemon reads the same
 //	  policy the CLI subprocess receives through CHRONON_RECEIPT_VERIFY)
+//	no_dirty_rects (per-job opt-out of the dirty-rectangle optimization; the
+//	  daemon applies it as the CLI flag of the same name)
 //	execution_requirements / output_spec (semantic, backend-neutral)
 //
 // first_frame/last_frame are marshaled unconditionally (no omitempty) so 0
@@ -246,6 +255,7 @@ type renderJobPayload struct {
 	AudioTargetSampleRate int                   `json:"audio_target_sample_rate,omitempty"`
 	EncodePreset          string                `json:"encode_preset,omitempty"`
 	ReceiptVerify         string                `json:"receipt_verify,omitempty"`
+	NoDirtyRects          bool                  `json:"no_dirty_rects,omitempty"`
 	ExecutionRequirements ExecutionRequirements `json:"execution_requirements"`
 	OutputSpec            OutputSpec            `json:"output_spec"`
 }
@@ -337,12 +347,10 @@ func outputSpecForTransport(req RenderRequest) OutputSpec {
 // in output_spec.output_segments (P4 batch superjob).
 func (c *IPCClient) SupportsOutputSegments() bool { return true }
 
-// Render sends a RENDER_JOB command to the daemon and waits for its reply.
-func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
-	if err := validateRenderRequest(req); err != nil {
-		return err
-	}
-	payload, err := json.Marshal(renderJobPayload{
+// renderJobPayloadFor is the single RENDER_JOB body builder, shared by the
+// single-job and batch commands so the two transports cannot drift.
+func renderJobPayloadFor(req RenderRequest) renderJobPayload {
+	return renderJobPayload{
 		PlanPath:            req.PlanPath,
 		PreparedPackagePath: req.PreparedPackagePath,
 		AssetsRoot:          req.AssetsRoot,
@@ -359,9 +367,18 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		AudioTargetSampleRate: req.AudioTargetSampleRate,
 		EncodePreset:          req.EncodePreset,
 		ReceiptVerify:         req.ReceiptVerify,
+		NoDirtyRects:          req.NoDirtyRects,
 		ExecutionRequirements: req.Requirements,
 		OutputSpec:            outputSpecForTransport(req),
-	})
+	}
+}
+
+// Render sends a RENDER_JOB command to the daemon and waits for its reply.
+func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
+	if err := validateRenderRequest(req); err != nil {
+		return err
+	}
+	payload, err := json.Marshal(renderJobPayloadFor(req))
 	if err != nil {
 		return fmt.Errorf("ipc render: marshal payload: %w", err)
 	}
@@ -393,6 +410,86 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 		return fmt.Errorf("ipc render: %s", reply.Status)
 	}
 	return nil
+}
+
+// BatchRenderResult is one job's outcome inside a RENDER_BATCH reply.
+//
+// The daemon executes the jobs in order over ONE connection and reports every
+// entry, including the failed ones: a batch is not atomic, and a caller must be
+// able to attribute a failure to the request that caused it.
+type BatchRenderResult struct {
+	Index   int
+	Status  string
+	Message string
+}
+
+// RenderBatch sends N RENDER_JOB bodies in one RENDER_BATCH frame.
+//
+// Why it is a separate method instead of a loop of Render calls: the daemon
+// keeps the connection, the render domain and the encoder warm for the whole
+// sequence, and the client pays one dial/teardown instead of N. The daemon
+// still serializes execution per socket (m_render_job_mutex) and still gates
+// VRAM through its own admission, so batching does not multiply GPU sessions.
+//
+// Results are returned whenever the reply parsed, even when the daemon answered
+// with an error status, because the per-job outcomes are the actionable part.
+// The error then names the failed indices. Transport, validation and body-shape
+// failures return no results.
+func (c *IPCClient) RenderBatch(ctx context.Context, requests []RenderRequest) ([]BatchRenderResult, error) {
+	if len(requests) == 0 {
+		return nil, fmt.Errorf("ipc render batch: at least one request is required")
+	}
+	if len(requests) > ipcMaxBatchJobs {
+		return nil, fmt.Errorf("ipc render batch: %d requests exceed the daemon limit of %d", len(requests), ipcMaxBatchJobs)
+	}
+	jobs := make([]renderJobPayload, 0, len(requests))
+	for i, req := range requests {
+		if err := validateRenderRequest(req); err != nil {
+			return nil, fmt.Errorf("ipc render batch: request %d: %w", i, err)
+		}
+		jobs = append(jobs, renderJobPayloadFor(req))
+	}
+	payload, err := json.Marshal(struct {
+		Jobs []renderJobPayload `json:"jobs"`
+	}{Jobs: jobs})
+	if err != nil {
+		return nil, fmt.Errorf("ipc render batch: marshal payload: %w", err)
+	}
+	status, message, err := c.request(ctx, ipcCommandRenderBatch, payload)
+	if err != nil {
+		return nil, err
+	}
+	var reply struct {
+		Results []struct {
+			Index   int    `json:"index"`
+			Status  string `json:"status"`
+			Message string `json:"message"`
+		} `json:"results"`
+	}
+	if err := json.Unmarshal([]byte(message), &reply); err != nil {
+		return nil, fmt.Errorf("ipc render batch: unparsable reply body under status %d: %w", status, err)
+	}
+	if len(reply.Results) != len(requests) {
+		return nil, fmt.Errorf("ipc render batch: daemon reported %d result(s) for %d request(s)", len(reply.Results), len(requests))
+	}
+	results := make([]BatchRenderResult, 0, len(reply.Results))
+	failures := make([]string, 0)
+	for _, entry := range reply.Results {
+		results = append(results, BatchRenderResult{
+			Index: entry.Index, Status: entry.Status, Message: entry.Message,
+		})
+		if entry.Status != "ok" {
+			failures = append(failures, fmt.Sprintf("#%d: %s", entry.Index, entry.Message))
+		}
+	}
+	if status != ipcStatusOk && len(failures) == 0 {
+		return results, ipcReplyError("render batch", status, message)
+	}
+	if len(failures) > 0 {
+		return results, fmt.Errorf("ipc render batch: %d/%d job(s) failed: %s",
+			len(failures), len(requests), strings.Join(failures, "; "))
+	}
+	return results, nil
 }
 
 // serviceContext bounds a service operation. An existing context deadline is

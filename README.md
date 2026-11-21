@@ -83,6 +83,16 @@ raggruppamento per chi crea il video; non è un renderer, né implica un nuovo
 | Mappe | `map` | ChrononPlugin è l'unica fonte del rendering mappe. Il renderer nativo (`maps_dynamic_map_render`) pubblica il vocabolario in `ChrononPlugin/plugins/maps/maps-renderer-catalog.v1.json` (25 composizioni documentary + base flyover, camera `slow_approach`/`exponential_dive`, basemap `chronon_editorial`/`esri_sat`); RenderingGen incorpora quello stesso catalogo e rifiuta per nome ogni `map_animation` fuori da esso, incluse le vecchie famiglie Python (`region_zoom`, `pulse_marker`, `ed_*`). |
 | Altri elementi | `important_word`, `quote`, entità testuali, `product`, `logo`, `shape`, `video_overlay`, ecc. | Rimangono classi supportate dal compilatore; non vanno mescolate alle sezioni principali dell’editor. |
 
+Per i job generati da script che invocano il renderer dinamico nativo,
+`maps_dynamic_map_render` accetta il campo top-level `map_preset`. I 12 ID
+descrittivi sono elencati in
+[`ChrononPlugin/plugins/maps/map-presets-catalog.v1.json`](../ChrononPlugin/plugins/maps/map-presets-catalog.v1.json);
+il preset sceglie la composizione e la basemap abbinate, e usa Italy come
+`map_place` predefinito. Un esempio completo è
+[`map_preset_script_example.json`](../ChrononPlugin/plugins/maps/showcases/map_preset_script_example.json).
+La selezione è documentata anche in
+[`showcases/README.md`](../ChrononPlugin/plugins/maps/showcases/README.md).
+
 ### ModernMap1 — placca editoriale vettoriale
 
 Un map item sceglie la famiglia con `params.map_type`: `classic` è il default

@@ -57,6 +57,11 @@ chronon:
   socket_path: /var/run/chronon3d/chronon.sock
   encode_preset: p1
   pipe_pixfmt: nv12
+  # Disable the dirty-rectangle optimization: it can leave a torn band where
+  # overlapping full-canvas layers share no static pixels (visible in chain
+  # pans). Per-job override: `no_dirty_rects` on the RENDER_JOB payload or
+  # `--no-dirty-rects` on the CLI.
+  no_dirty_rects: true
   # Abort a render that produced no output at all for this long. The legacy
   # CHRONON_STALL_TIMEOUT variable is still honored as an alias of this setting.
   stall_timeout: 3m

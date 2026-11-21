@@ -38,11 +38,35 @@ func blackAndWhiteEffect(amount float64) LayerEffect {
 	}}
 }
 
+// scanlineReferenceHeightPx is the frame height the public scanlines wavelength
+// is authored against. The public field is normalized (bounds 0.002..1), while
+// Chronon's native scanline pitch is in pixels; both lowering surfaces use this
+// one reference so a clip preset and an image effect cannot disagree on the
+// look. A 1080p plan therefore gets the authored pitch verbatim.
+const scanlineReferenceHeightPx = 1080.0
+
+// scanlinesEffect lowers the public scanlines pseudo-type to Chronon's native
+// scanline modulation (a per-axis triangle wave over RGB). The old wave-warp
+// lowering passed a normalized amount as an amplitude in pixels, which moved
+// the image by a fraction of a pixel and survived as a no-op.
+func scanlinesEffect(params map[string]any) LayerEffect {
+	amount, _ := toFloat(params["amount"])
+	wavelength, _ := toFloat(params["wavelength"])
+	pitch := math.Round(wavelength * scanlineReferenceHeightPx)
+	pitch = math.Max(1, math.Min(64, pitch))
+	return LayerEffect{Type: "scanlines", Params: map[string]any{
+		"axis":       "horizontal",
+		"spacing_px": pitch,
+		"amount":     amount,
+		"phase":      0.0,
+	}}
+}
+
 // resolveClipEffects lowers the clip-level adjustment stack. Parameter names,
 // bounds, required fields and surface availability all come from the shared
 // effect catalog; this function only decides how a public type becomes
-// Chronon primitives (glitch fans out into three effects, scanlines become a
-// wave warp, and so on).
+// Chronon primitives (glitch fans out into three effects, scanlines become the
+// renderer's native scanline modulation, and so on).
 func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 	out := make([]LayerEffect, 0, len(raw))
 	for i, spec := range raw {
@@ -79,9 +103,7 @@ func resolveClipEffects(raw []semanticClipEffect) ([]LayerEffect, error) {
 			out = append(out, LayerEffect{Type: "chromatic_aberration", Params: map[string]any{"red_offset": 8 * amount, "blue_offset": -8 * amount}})
 			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": 0.12 * amount, "seed": seed, "animated": true, "color_mode": "rgb", "size": 1.0}})
 		case "scanlines":
-			amount := params["amount"].(float64)
-			wavelength := params["wavelength"].(float64)
-			out = append(out, LayerEffect{Type: "wave_warp", Params: map[string]any{"amplitude": amount, "wavelength": wavelength, "speed": 0.0, "direction": []float64{0, 1}, "wave_type": "square"}})
+			out = append(out, scanlinesEffect(params))
 		case "chromatic_aberration":
 			amount := params["amount"].(float64)
 			out = append(out, LayerEffect{Type: typ, Params: map[string]any{"red_offset": amount, "blue_offset": -amount}})
@@ -367,9 +389,7 @@ func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": 0.12 * amount, "seed": seed, "animated": true, "color_mode": "monochrome", "size": 1.0}})
 			continue
 		case "scanlines":
-			amount, _ := toFloat(params["amount"])
-			wavelength, _ := toFloat(params["wavelength"])
-			out = append(out, LayerEffect{Type: "wave_warp", Params: map[string]any{"amplitude": amount, "wavelength": wavelength, "speed": 0.0, "direction": []float64{0, 1}, "wave_type": "square"}})
+			out = append(out, scanlinesEffect(params))
 			continue
 		case "banded_grain":
 			intensity, _ := toFloat(params["intensity"])

@@ -46,7 +46,6 @@ func ValidateEntityCaptionCollisions(layers []Layer, _ ...int) error {
 	return nil
 }
 
-
 func absFloat(value float64) float64 {
 	if value < 0 {
 		return -value

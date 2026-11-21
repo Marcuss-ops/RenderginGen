@@ -68,6 +68,7 @@ type Processor struct {
 	encoderBackend            string
 	encodePreset              string
 	pipePixFmt                string
+	noDirtyRects              bool
 	nativeOutputProfiles      bool
 	acceptedCodecConfigSHA256 []string
 	strictNativeBackend       bool
@@ -191,6 +192,12 @@ type Options struct {
 	// for GPU composition jobs. Empty preserves Chronon's default.
 	PipePixFmt string
 
+	// NoDirtyRects disables dirty-rectangle invalidation for every render this
+	// worker performs. The optimization can leave a torn band where an outgoing
+	// and an incoming layer share no static pixels (visible on overlapping
+	// full-canvas pans), so deployments that render those shapes opt out.
+	NoDirtyRects bool
+
 	// NativeOutputProfiles enables passing output.profile_id to Chronon. Keep
 	// disabled for legacy runtimes that reject unknown output properties.
 	NativeOutputProfiles bool
@@ -274,6 +281,7 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		encoderBackend:            opts.EncoderBackend,
 		encodePreset:              opts.EncodePreset,
 		pipePixFmt:                opts.PipePixFmt,
+		noDirtyRects:              opts.NoDirtyRects,
 		nativeOutputProfiles:      opts.NativeOutputProfiles,
 		acceptedCodecConfigSHA256: opts.AcceptedCodecConfigSHA256,
 		strictNativeBackend:       opts.StrictNativeBackend,

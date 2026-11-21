@@ -58,6 +58,7 @@ func (p *Processor) RunGPU(ctx context.Context, prepared *PreparedJob) error {
 	if err != nil {
 		return err
 	}
+	prepared.EffectiveBackend = policy.Backend
 	if policy.CompositionRequired && !policy.VideoSourceRequired {
 		// Chronon owns the physical choice: Vulkan composition followed by a
 		// host-frame pipe handoff, distinct from the native source/NVENC lane.

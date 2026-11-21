@@ -166,7 +166,7 @@ func TestTailUploadFallbackToPutReaderOnStagedFailure(t *testing.T) {
 	sum := sha256.Sum256(data)
 	artifact, err := p.storeArtifact(context.Background(), "job-fallback", path,
 		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
-		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, false, nil)
+		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, "vulkan", false, nil)
 	if err != nil {
 		t.Fatalf("storeArtifact with failed staging: %v", err)
 	}
@@ -195,7 +195,7 @@ func TestTailUploadDigestMismatchFailsClosed(t *testing.T) {
 	wrong := sha256.Sum256([]byte("different bytes"))
 	_, err := p.storeArtifact(context.Background(), "job-mismatch", path,
 		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(wrong[:]), Source: "receipt", Proven: true}},
-		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, false, nil)
+		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, "vulkan", false, nil)
 	if err == nil {
 		t.Fatal("storeArtifact accepted a staged digest that contradicts the receipt identity")
 	}
@@ -224,5 +224,28 @@ func TestStagingSessionIDMatchesStoreGrammar(t *testing.T) {
 	}
 	if stagingSessionID("") == "" {
 		t.Fatal("an empty job id must still produce a valid session")
+	}
+}
+
+// TestStoreArtifactPublishesTheEffectiveBackend pins the chain camera-pan
+// fix: the artifact ledger must name the backend the execution policy ran
+// (software for a pan strip), not the worker's configured default (vulkan).
+func TestStoreArtifactPublishesTheEffectiveBackend(t *testing.T) {
+	backend := newStagingMem()
+	p := &Processor{store: storage.New(backend, storage.Options{})}
+	path := filepath.Join(t.TempDir(), "out.mp4")
+	data := []byte("software-lane-bytes")
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(data)
+	artifact, err := p.storeArtifact(context.Background(), "job-software", path,
+		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
+		nil, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, "software", false, nil)
+	if err != nil {
+		t.Fatalf("storeArtifact: %v", err)
+	}
+	if artifact.Backend != "software" {
+		t.Fatalf("artifact backend = %q, want the effective software backend", artifact.Backend)
 	}
 }

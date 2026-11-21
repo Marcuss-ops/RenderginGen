@@ -215,6 +215,33 @@ func TestIPCClientRenderUsesSemanticContract(t *testing.T) {
 	}
 }
 
+func TestIPCClientRenderCarriesNoDirtyRects(t *testing.T) {
+	socketPath, _, gotPayload := startFakeDaemon(t, ipcStatusOk, `{"status":"ok"}`)
+	planPath := writeStrictNativeTestPlan(t)
+
+	client := NewIPCClient(socketPath)
+	err := client.Render(context.Background(), RenderRequest{
+		PlanPath:     planPath,
+		AssetsRoot:   "/jobs/1/assets",
+		OutputPath:   "/jobs/1/output/result.mp4",
+		NoDirtyRects: true,
+		Requirements: ExecutionRequirements{
+			Backend: "software", CompositionRequired: true,
+		},
+	})
+	if err != nil {
+		t.Fatalf("render: %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("payload decode: %v", err)
+	}
+	if got, ok := payload["no_dirty_rects"]; !ok || got != true {
+		t.Fatalf("no_dirty_rects = %v (present=%v), want true: %v", got, ok, payload)
+	}
+}
+
 // TestIPCClientRenderCarriesStrictNativeSelectionInOutputSpec pins the fix for
 // the strict-native IPC black hole. The daemon resolves
 // hardware_encoder/encoder_backend/gpu_hot_path_mode from output_spec via
@@ -587,3 +614,93 @@ func TestRequiresStructuredReply(t *testing.T) {
 		}
 	}
 }
+
+// TestIPCClientRenderBatchSendsCommandNine pins the wire: a batch is ONE frame
+// with the header's RenderBatch command (9) and {"jobs":[RENDER_JOB, ...]}, so
+// N overlays cost one dial and one connection instead of N.
+func TestIPCClientRenderBatchSendsCommandNine(t *testing.T) {
+	socketPath, gotCmd, gotPayload := startFakeDaemon(t, ipcStatusOk,
+		`{"results":[{"index":0,"status":"ok","message":""},{"index":1,"status":"ok","message":""}]}`)
+
+	client := NewIPCClient(socketPath)
+	results, err := client.RenderBatch(context.Background(), []RenderRequest{
+		{PlanPath: "/jobs/0/plan.json", OutputPath: "/jobs/0/out.mp4"},
+		{PlanPath: "/jobs/1/plan.json", OutputPath: "/jobs/1/out.mp4", RangeEnabled: true, FirstFrame: 3, LastFrame: 9},
+	})
+	if err != nil {
+		t.Fatalf("RenderBatch: %v", err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("results = %d, want 2", len(results))
+	}
+	if ipcCommandRenderBatch != 9 {
+		t.Fatalf("ipcCommandRenderBatch = %d, want the header's RenderBatch = 9", ipcCommandRenderBatch)
+	}
+	if cmd := <-gotCmd; cmd != ipcCommandRenderBatch {
+		t.Fatalf("command = %d, want RenderBatch (%d)", cmd, ipcCommandRenderBatch)
+	}
+	var payload struct {
+		Jobs []struct {
+			PlanPath     string `json:"plan_path"`
+			Output       string `json:"output"`
+			RangeEnabled bool   `json:"range_enabled"`
+			FirstFrame   int64  `json:"first_frame"`
+			LastFrame    int64  `json:"last_frame"`
+		} `json:"jobs"`
+	}
+	if err := json.Unmarshal([]byte(<-gotPayload), &payload); err != nil {
+		t.Fatalf("decode batch payload: %v", err)
+	}
+	if len(payload.Jobs) != 2 {
+		t.Fatalf("jobs = %d, want 2", len(payload.Jobs))
+	}
+	if payload.Jobs[1].PlanPath != "/jobs/1/plan.json" || payload.Jobs[1].Output != "/jobs/1/out.mp4" {
+		t.Fatalf("second job body drifted: %+v", payload.Jobs[1])
+	}
+	if !payload.Jobs[1].RangeEnabled || payload.Jobs[1].FirstFrame != 3 || payload.Jobs[1].LastFrame != 9 {
+		t.Fatalf("second job range drifted: %+v", payload.Jobs[1])
+	}
+}
+
+// TestIPCClientRenderBatchReportsPerJobFailures pins the failure contract: the
+// daemon answers Error for a partly failed batch, and the caller still receives
+// every per-job outcome plus an error that names the failed index.
+func TestIPCClientRenderBatchReportsPerJobFailures(t *testing.T) {
+	socketPath, _, _ := startFakeDaemon(t, ipcStatusError,
+		`{"results":[{"index":0,"status":"ok","message":""},{"index":1,"status":"error","message":"render failed: boom"}]}`)
+
+	client := NewIPCClient(socketPath)
+	results, err := client.RenderBatch(context.Background(), []RenderRequest{
+		{PlanPath: "/jobs/0/plan.json"},
+		{PlanPath: "/jobs/1/plan.json"},
+	})
+	if err == nil {
+		t.Fatal("a partly failed batch must return an error")
+	}
+	if !strings.Contains(err.Error(), "#1") || !strings.Contains(err.Error(), "boom") {
+		t.Fatalf("error does not attribute the failure: %v", err)
+	}
+	if len(results) != 2 || results[0].Status != "ok" || results[1].Status != "error" {
+		t.Fatalf("per-job results lost: %+v", results)
+	}
+}
+
+// TestIPCClientRenderBatchRejectsInvalidShapes fails closed before dialing: the
+// daemon accepts 1..64 jobs (RENDER_BATCH contract), and a request that the
+// single-job path would reject must not become valid by being batched.
+func TestIPCClientRenderBatchRejectsInvalidShapes(t *testing.T) {
+	client := NewIPCClient(filepath.Join(t.TempDir(), "never-dialed.sock"))
+	if _, err := client.RenderBatch(context.Background(), nil); err == nil {
+		t.Error("an empty batch must fail")
+	}
+	tooMany := make([]RenderRequest, ipcMaxBatchJobs+1)
+	if _, err := client.RenderBatch(context.Background(), tooMany); err == nil {
+		t.Error("a batch above the daemon limit must fail")
+	}
+	if _, err := client.RenderBatch(context.Background(), []RenderRequest{{}}); err == nil {
+		t.Error("an invalid job inside a batch must fail")
+	}
+}
+
+// Compile-time check: the daemon transport is the batch-capable transport.
+var _ BatchRenderer = (*IPCClient)(nil)

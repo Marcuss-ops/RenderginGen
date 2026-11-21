@@ -278,13 +278,16 @@ func TestIPCWireContractValuesArePinnedToV1(t *testing.T) {
 		t.Errorf("ipcMaxPayload = %d, want %d", ipcMaxPayload, 64*1024*1024)
 	}
 	wantCommands := map[uint32]string{
-		1: "PrefetchAsset",
-		2: "PreparePlan",
-		3: "RenderOverlay",
-		4: "Status",
-		5: "Shutdown",
-		6: "RenderJob",
-		7: "AssembleSegments",
+		1:  "PrefetchAsset",
+		2:  "PreparePlan",
+		3:  "RenderOverlay",
+		4:  "Status",
+		5:  "Shutdown",
+		6:  "RenderJob",
+		7:  "AssembleSegments",
+		8:  "GetJobStatus",
+		9:  "RenderBatch",
+		10: "CacheStats",
 	}
 	assertStatusTable(t, "command", wantCommands, ipcCommandNames)
 	wantStatuses := map[uint32]string{

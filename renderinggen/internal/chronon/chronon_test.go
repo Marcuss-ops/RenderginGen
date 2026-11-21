@@ -294,6 +294,20 @@ func TestRenderArgsForwardsPipePixelFormat(t *testing.T) {
 	}
 }
 
+func TestRenderArgsForwardsNoDirtyRects(t *testing.T) {
+	base := RenderRequest{
+		PlanPath: "/jobs/1/plan.json", AssetsRoot: "/jobs/1", OutputPath: "/jobs/1/output.mp4",
+		Requirements: ExecutionRequirements{Backend: "software", CompositionRequired: true},
+	}
+	if joined := strings.Join(renderArgs(base), " "); strings.Contains(joined, "--no-dirty-rects") {
+		t.Fatalf("renderArgs=%q, dirty rects must stay enabled by default", joined)
+	}
+	base.NoDirtyRects = true
+	if joined := strings.Join(renderArgs(base), " "); !strings.Contains(joined, "--no-dirty-rects") {
+		t.Fatalf("renderArgs=%q, want --no-dirty-rects for an opted-out job", joined)
+	}
+}
+
 func TestRenderArgsForwardsEncodePresetOnNativeImageComposition(t *testing.T) {
 	got := renderArgs(RenderRequest{
 		PlanPath:     "/jobs/1/plan.json",

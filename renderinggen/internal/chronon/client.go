@@ -131,6 +131,13 @@ type RenderRequest struct {
 	// env inheritance). Empty leaves the CLI's own default in place for
 	// callers outside the worker pipeline.
 	ReceiptVerify string
+	// NoDirtyRects disables dirty-rectangle invalidation for this render. The
+	// dirty-rect optimization is a performance feature, not a semantic one; a
+	// software-composed plan whose layers overlap can leave a torn band at a
+	// layer boundary, so a worker can opt out for those jobs. It travels on
+	// both transports (--no-dirty-rects on the CLI, no_dirty_rects in the
+	// RENDER_JOB payload) because the production hot path is the daemon.
+	NoDirtyRects bool
 	// Progress, when non-nil, receives a milestone snapshot every time the
 	// renderer reports a frame position. It is invoked from the output
 	// streaming goroutines and must be cheap and concurrency-safe.
@@ -244,6 +251,16 @@ type Renderer interface {
 type OutputSegmentRenderer interface {
 	Renderer
 	SupportsOutputSegments() bool
+}
+
+// BatchRenderer is the transport capability behind RENDER_BATCH: N independent
+// RENDER_JOBs carried by one connection, one render domain. Callers type-assert
+// it and fall back to per-job Render when the transport (the CLI subprocess
+// adapter) has no batch spelling. Wrappers that forward other transport
+// capabilities must forward this one too.
+type BatchRenderer interface {
+	Renderer
+	RenderBatch(context.Context, []RenderRequest) ([]BatchRenderResult, error)
 }
 
 // SupportsOutputSegments: the CLI subprocess adapter has no spelling for

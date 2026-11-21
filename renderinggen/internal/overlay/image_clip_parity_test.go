@@ -77,7 +77,7 @@ func TestImageClipEffectParity(t *testing.T) {
 		want  []string
 	}{
 		{"glitch fans out", `{"type":"glitch","params":{"amount":0.5,"seed":7}}`, []string{"wave_warp", "chromatic_aberration", "noise"}},
-		{"scanlines become wave warp", `{"type":"scanlines","params":{"amount":0.1,"wavelength":0.05}}`, []string{"wave_warp"}},
+		{"scanlines stay native scanlines", `{"type":"scanlines","params":{"amount":0.1,"wavelength":0.05}}`, []string{"scanlines"}},
 		{"banded grain becomes noise", `{"type":"banded_grain","params":{"intensity":1.2,"speed":2}}`, []string{"noise"}},
 		{"lens distortion passes through", `{"type":"lens_distortion","params":{"curvature":0.3}}`, []string{"lens_distortion"}},
 	} {

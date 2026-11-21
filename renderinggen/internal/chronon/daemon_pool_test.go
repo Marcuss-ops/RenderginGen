@@ -317,3 +317,24 @@ func TestStartDaemonPoolRejectsNonSocketAndStaleSocketPaths(t *testing.T) {
 		t.Fatalf("stale socket error = %v, want fail-closed readiness error", err)
 	}
 }
+
+// TestDaemonPoolDefaultLanesCoverReceiptOverlap pins the default lane count:
+// zero means two lanes per daemon, so the next RENDER_JOB is already in flight
+// while the daemon verifies the previous receipt. An explicit value still wins,
+// and the daemon (not the lane) remains the execution serializer.
+func TestDaemonPoolDefaultLanesCoverReceiptOverlap(t *testing.T) {
+	cases := []struct{ requested, want int }{
+		{0, 2},
+		{-1, 2},
+		{1, 1},
+		{3, 3},
+	}
+	for _, tc := range cases {
+		if got := lanesPerDaemon(tc.requested); got != tc.want {
+			t.Errorf("lanesPerDaemon(%d) = %d, want %d", tc.requested, got, tc.want)
+		}
+	}
+	if DefaultLanesPerDaemon != 2 {
+		t.Fatalf("DefaultLanesPerDaemon = %d, want 2", DefaultLanesPerDaemon)
+	}
+}

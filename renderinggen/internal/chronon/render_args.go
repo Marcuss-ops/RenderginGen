@@ -213,6 +213,12 @@ func renderArgs(req RenderRequest) []string {
 		// cache_hits/misses) used by the performance benchmark.
 		args = append(args, "--report")
 	}
+	if req.NoDirtyRects {
+		// The worker can turn the dirty-rect optimization off per job. Keeping
+		// the flag on the shared request means the CLI and IPC transports
+		// cannot disagree about it.
+		args = append(args, "--no-dirty-rects")
+	}
 	if selection, ok := resolveNativeEncodeSelection(req); ok {
 		if selection.HardwareEncoder != "" {
 			args = append(args, "--hardware", selection.HardwareEncoder)

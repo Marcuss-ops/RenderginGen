@@ -26,6 +26,7 @@ chronon:
   native_output_profiles: false
   encode_preset: p1
   pipe_pixfmt: nv12
+  no_dirty_rects: true
 
 gpu:
   device: 0

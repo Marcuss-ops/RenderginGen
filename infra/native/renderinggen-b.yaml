@@ -34,6 +34,8 @@ chronon:
   strict_native_backend: true
   encode_preset: p1
   pipe_pixfmt: nv12
+  # See renderinggen-native.yaml: dirty rects can tear moving layer boundaries.
+  no_dirty_rects: true
 gpu:
   device: 0
 health:

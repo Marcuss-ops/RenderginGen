@@ -283,5 +283,5 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 		return queue.Artifact{}, err
 	}
 	return p.storeArtifact(ctx, job.ID, outputPath, outcome, prepared.TailUpload, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
-		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.NativeCertified, segmentEntries)
+		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.EffectiveBackend, prepared.NativeCertified, segmentEntries)
 }

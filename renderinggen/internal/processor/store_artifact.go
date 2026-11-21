@@ -27,7 +27,7 @@ import (
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, tail *stagedUpload, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, nativeCertified bool, segmentEntries []SegmentArtifact) (queue.Artifact, error) {
+func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, tail *stagedUpload, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, effectiveBackend string, nativeCertified bool, segmentEntries []SegmentArtifact) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
 		phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
@@ -155,6 +155,14 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
 	}
 	metadata := planMetadataOf(plan)
+	// The configured backend is only a fallback for callers that never
+	// resolved a policy (imports, prepare artifacts). A render must publish
+	// the backend the policy actually executed, or a software chain-pan job
+	// is mislabeled as vulkan in the queue ledger.
+	publishedBackend := effectiveBackend
+	if publishedBackend == "" {
+		publishedBackend = p.backend
+	}
 	artifact := queue.Artifact{
 		Kind:           "segment",
 		StorageKey:     hash,
@@ -168,7 +176,7 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		FPSDen:         metadata.FPSDen,
 		FrameCount:     metadata.FrameCount,
 		DurationUS:     metadata.DurationUS,
-		Backend:        publishedRenderBackend(p.backend, nativeCertified),
+		Backend:        publishedRenderBackend(publishedBackend, nativeCertified),
 		ChrononVersion: p.chrononVersion,
 		Metrics:        phaseMetrics,
 		ProfileID:      metadata.ProfileID,

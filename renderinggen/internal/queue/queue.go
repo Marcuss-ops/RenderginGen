@@ -140,6 +140,17 @@ func (c *Client) Claim(ctx context.Context) (*Job, error) {
 	return c.q.Claim(ctx, c.workerID)
 }
 
+// ClaimBatch claims up to limit jobs in one queue transaction. The jobs keep
+// their own leases and fencing generations: a batch is a claim window, not a
+// shared lease, so a worker that dies loses only the jobs it claimed, each when
+// its own lease elapses. It is the collection half of RENDER_BATCH, which can
+// carry 1-64 jobs in a single IPC frame; callers must still send the jobs to
+// the daemon as a batch to amortise the dial, and fall back to per-job claims
+// when the batch transport is unavailable.
+func (c *Client) ClaimBatch(ctx context.Context, limit int) ([]*Job, error) {
+	return c.q.ClaimBatch(ctx, c.workerID, limit)
+}
+
 // ClaimWait performs one bounded long-poll claim for any claimable state
 // (pending AND rendered). Rendered jobs carry their durable artifact on claim
 // so the worker skips rendering and retries only the external publication.

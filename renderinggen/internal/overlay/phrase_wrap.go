@@ -4,11 +4,25 @@
 package overlay
 
 import (
+	"math"
 	"strings"
 	"unicode/utf8"
 )
 
 const phraseWrapCols = 25
+
+// textWrapComfortRatio leaves a wrapped line short of the box edge. The
+// per-rune advances below are estimates, so the margin absorbs the difference
+// between the estimate and the font the renderer actually resolves.
+const textWrapComfortRatio = 0.9
+
+// textLineSpacingFactor and textEffectPaddingPX are the line pitch and the
+// glow/shadow padding shared by the wrapper's height guard, the single-line
+// band test and the geometry pass that grows a stacked box.
+const (
+	textLineSpacingFactor = 1.45
+	textEffectPaddingPX   = 16
+)
 
 func wrapPhraseAt25(text string) (string, int) {
 	if utf8.RuneCountInString(strings.TrimSpace(text)) <= phraseWrapCols {
@@ -119,6 +133,30 @@ func wrapPhraseByPixelBudget(text string, maxWidth, fontSize float64) (string, i
 		return text, 1
 	}
 	return strings.Join(lines, "\n"), len(lines)
+}
+
+// minFittedFontSize is the floor below which a single-line band is allowed to
+// overflow its authored height instead of shrinking the type to an unreadable
+// size. The caller then keeps the stacked text and lets the box grow.
+const minFittedFontSize = 8.0
+
+// fitPhraseFontToWidth returns the largest type size that keeps text on ONE
+// line inside maxWidth. It refuses when the line already fits or when fitting
+// would go below the legibility floor, so the caller can fall back to stacking
+// the text.
+func fitPhraseFontToWidth(text string, maxWidth, fontSize float64) (float64, bool) {
+	if maxWidth <= 0 || fontSize <= 0 {
+		return 0, false
+	}
+	unitWidth := estimatedTextWidth(text, 1)
+	if unitWidth <= 0 {
+		return 0, false
+	}
+	fitted := math.Floor(maxWidth / unitWidth)
+	if fitted < minFittedFontSize || fitted >= fontSize {
+		return 0, false
+	}
+	return fitted, true
 }
 
 func estimatedTextWidth(text string, fontSize float64) float64 {

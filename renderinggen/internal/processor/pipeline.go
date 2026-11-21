@@ -55,6 +55,13 @@ type PreparedJob struct {
 	// may use the GPU compositor, but their host-frame pipe handoff is not the
 	// native-surface contract.
 	NativeCertified bool
+	// EffectiveBackend is the backend the resolved execution policy actually
+	// used for this job ("software" for the chain camera-pan lane, "vulkan"
+	// or "auto" otherwise). It is distinct from the worker's configured
+	// backend: the artifact ledger must describe the bytes that were produced,
+	// not the deployment default. Empty means the render never resolved a
+	// policy, so publication falls back to the configured backend.
+	EffectiveBackend string
 	// FragmentedMP4 mirrors the OutputSpec flag RunGPU renders with: the
 	// artifact is a silent video-only intermediate whose bytes are final while
 	// appended. It is the gate for the tail-upload lane (a classic MP4's

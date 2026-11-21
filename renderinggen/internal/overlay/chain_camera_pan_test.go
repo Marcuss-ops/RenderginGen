@@ -39,7 +39,12 @@ func TestCompileImageChainCameraPanLowersOneStrip(t *testing.T) {
 	}
 	layers := result.Plan.Layers
 	if len(layers) != 6 {
-		t.Fatalf("want 3 images + 3 captions, got %d layers: %+v", len(layers), layers)
+		t.Fatalf("want 3 images + 3 captions and no backdrop, got %d layers: %+v", len(layers), layers)
+	}
+	for _, layer := range layers {
+		if strings.HasSuffix(layer.ID, ":image-backdrop") {
+			t.Fatalf("pan chain emitted a backdrop, which the software blur pass cannot compose safely: %+v", layer)
+		}
 	}
 	for index, id := range []string{"ada", "grace", "alan"} {
 		image := findChainPanLayer(t, layers, "seg"+fmt.Sprint(index), "image")
@@ -99,6 +104,26 @@ func TestCompileImageChainCameraPanLowersOneStrip(t *testing.T) {
 		if last.Value != float64(-2560) {
 			t.Fatalf("segment %s position_x ends at %v, want -2560 (two canvas steps left)", id, last.Value)
 		}
+		// The strip must stay glued: at its first visible frame the member is
+		// exactly one canvas step to the right of the previous member, never
+		// an extra fraction of a step that would make it catch up faster.
+		wantFirst := -float64(index-1) * 1280
+		if index == 0 {
+			wantFirst = 0
+		}
+		if got := pan.Keyframes[0].Value; got != wantFirst {
+			t.Fatalf("segment %s first position_x = %v, want glued strip slot %v", id, got, wantFirst)
+		}
+		// Easing is baked because Chronon's typed sampler ignores the track
+		// easing: a sparse two-key move would be linear and jerky.
+		if len(pan.Keyframes) < 40 {
+			t.Fatalf("segment %s position_x has %d keys, want eased per-frame keys", id, len(pan.Keyframes))
+		}
+		// A moving image must not carry an opacity animation: two live tracks
+		// make the software dirty-rect pass tear the card across the move.
+		if gate := animationTrack(image.Animation, "opacity"); gate != nil {
+			t.Fatalf("segment %s has an opacity track on a moving image: %+v", id, gate)
+		}
 	}
 }
 
@@ -123,9 +148,13 @@ func panTestSegment(id, caption string, startUS int64) string {
 func findChainPanLayer(t *testing.T, layers []Layer, segment, layerType string) *Layer {
 	t.Helper()
 	for i := range layers {
-		if strings.Contains(layers[i].ID, segment) && layers[i].Type == layerType {
-			return &layers[i]
+		if !strings.Contains(layers[i].ID, segment) || layers[i].Type != layerType {
+			continue
 		}
+		if layerType == "image" && strings.HasSuffix(layers[i].ID, ":image-backdrop") {
+			continue
+		}
+		return &layers[i]
 	}
 	t.Fatalf("no %s layer for %s in %+v", layerType, segment, layers)
 	return nil

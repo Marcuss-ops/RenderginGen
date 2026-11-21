@@ -21,6 +21,22 @@ import (
 // family the resolver advertises must be stageable by the worker, and now that
 // is a test failure instead of a render failure.
 func TestMaterializeBuiltinFontsStagesEveryRuntimeFontAsset(t *testing.T) {
+	// The worker can be launched from any directory (systemd, containers and
+	// developer shells use different working directories). The font bundle is
+	// embedded, so staging must not depend on the checkout being cwd.
+	originalWD, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(t.TempDir()); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := os.Chdir(originalWD); err != nil {
+			t.Errorf("restore working directory: %v", err)
+		}
+	})
+
 	assets := overlay.RuntimeFontAssets()
 	if len(assets) < 5 {
 		t.Fatalf("runtime font assets = %v, want the whole resolver surface", assets)

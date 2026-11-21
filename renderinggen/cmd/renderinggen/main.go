@@ -286,6 +286,7 @@ func main() {
 			EncoderBackend:            cfg.Chronon.EncoderBackend,
 			EncodePreset:              cfg.Chronon.EncodePreset,
 			PipePixFmt:                cfg.Chronon.PipePixFmt,
+			NoDirtyRects:              cfg.Chronon.NoDirtyRects,
 			WorkspaceLeaseTTL:         timings.WorkspaceLeaseTTL,
 			// Verification policy, deep visual validation and workspace
 			// retention come from configuration, so the post pool (the
