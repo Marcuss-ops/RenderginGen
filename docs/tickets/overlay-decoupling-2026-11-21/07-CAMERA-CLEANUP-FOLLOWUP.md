@@ -11,6 +11,11 @@ registra la decisione su `scene_camera`.
 
 ## 1. Sequence camera: conflitti fail-closed (P0)
 
+> **Aggiornamento OVL-08:** questo percorso è stato ritirato end-to-end. I
+> conflitti fail-closed restano validi per le tre authority rimaste
+> (`scene_camera`, map, entity); `TestSequenceCameraRejectsEveryCompetingController`
+> è stato rimosso insieme ai file sequence.
+
 ### Evidenza
 
 `semantic_camera_controllers.observe` accettava il primo `CameraMotionID` e
@@ -24,9 +29,10 @@ sequence. Le foto oltre la prima restavano fuori schermo, senza errore.
 
 - `observe` rifiuta un secondo controller sequence, sia esso un item con
   `camera_motion_id` sia una chain con `chain_camera` camera-sequence.
-- `validate` tratta le quattro authority come mutuamente esclusive:
+- `validate` trattava le quattro authority come mutuamente esclusive:
   `scene_camera`, map camera, entity-style camera e sequence camera. La
-  sequence non è più un fallback silenzioso.
+  sequence non era più un fallback silenzioso. (Storico: dopo OVL-08 restano
+  tre authority e il percorso sequence non esiste più.)
 - Il piano non viene sigillato: `lowerPlan` chiama `apply` prima di
   `sealPlan`, quindi nessun layout con foto parcheggiate può uscire dal
   compiler.
@@ -82,9 +88,13 @@ avere authority diverse.
 
 ### Esito
 
-- Nuovo `overlay.CompileOptions{AssetSizes, CameraBaker}` e nuovo entry point
-  `CompileSemanticWithOptions`. `CompileSemantic` e
+- Nuovo `overlay.CompileOptions{AssetSizes, CameraBaker, SkipCameraBake}` e
+  nuovo entry point `CompileSemanticWithOptions`. `CompileSemantic` e
   `CompileSemanticWithAssetSizes` sono wrapper che passano opzioni vuote/sized.
+- `SkipCameraBake` è usato dal pass A di `PrepareJob`/`materialize.Prepare`:
+  il piano transitorio conserva le track ma non invoca il baker, quindi un
+  piano animato non viene cotto due volte. Il pass B resta l'unico a produrre
+  `camera_samples`.
 - `sealPlan` riceve il baker per parametro; `bakeResolvedCameraSamples(plan,
   baker)` non legge più stato di package.
 - Baker `nil` seleziona `referenceCameraBaker`, l'evaluator Go deterministico
@@ -122,10 +132,13 @@ Chronon sa eseguirlo via `camera_samples`.
 **Freeze, non rimozione.** Il blocco resta nel contratto e nel lowering, ma non
 è promosso né esteso finché non esiste un producer attivo. Rimuoverlo ora
 sarebbe una decisione di prodotto e romperebbe un contratto pubblicato senza un
-sostituto verificato. La sequence camera resta supportata per lo stesso motivo:
-la sua unificazione con lo strip richiede la migrazione dei producer a
-`group_motion_id`, fuori da questo repository. La duplicazione concettuale è
-dichiarata qui e non può più produrre il bug silenzioso del punto 1.
+sostituto verificato.
+
+La sequence camera, invece, è stata **ritirata** in
+[OVL-08](08-SEQUENCE-CAMERA-RETIRED.md): nessun producer la emetteva, lo schema
+esponeva un campo non costruibile e i caroselli reali usano `group_motion_id`
+con la famiglia camera-pan. La duplicazione concettuale del punto 1 non esiste
+più perché il percorso è stato rimosso, non solo reso fail-closed.
 
 ### Criteri di accettazione
 
@@ -134,6 +147,8 @@ dichiarata qui e non può più produrre il bug silenzioso del punto 1.
    indeboliti.
 3. **PASS** — la decisione di freeze è registrata in questo ticket e
    nell'indice della wave.
+4. **PASS** — la sequence camera è ritirata in OVL-08; il freeze resta limitato
+   a `scene_camera`.
 
 ## Verifica
 
@@ -142,27 +157,27 @@ Eseguita dopo l'ultima modifica della wave:
 ```
 go build ./...                                            → OK
 go vet ./internal/overlay ./internal/processor            → OK
-go test ./internal/overlay/ ./internal/processor/ -count=1 → ok (2,8 s / 51,3 s)
-go test ./internal/architecture/ -count=1                 → ok (29,6 s)
+go test ./internal/overlay/ ./internal/processor/ -count=1 → ok (2,608 s / 38,911 s)
+go test ./internal/architecture/ -count=1                 → ok (38,7 s)
 go test ./... -count=1                                    → exit 0 (verificato con pipefail)
 ```
 
 Test mirati:
 
 ```
-go test ./internal/overlay/ -run 'SequenceCameraRejectsEveryCompetingController' -count=1
+go test ./internal/overlay/ -run 'SceneCameraRejectsMultipleControllers' -count=1
 go test ./internal/overlay/ -run 'CameraPan|PanStrip|ChainPan' -count=1
-go test ./internal/overlay/ -run 'BakeResolvedCameraSamples|CompileOptionsUseTheInjectedCameraBaker|CameraBaker' -count=1
+go test ./internal/overlay/ -run 'BakeResolvedCameraSamples|CompileOptionsUseTheInjectedCameraBaker|CompileOptionsSkipCameraBakeDefersTheRenderPass|CameraBaker' -count=1
+go test ./internal/processor/ -run 'CompileSemanticForPrepare' -count=1
 ```
 
 ## Rischio residuo
 
-- Il pass A di `PrepareJob` continua a compilare il piano prima del probe; se
-  il piano ha una camera animata, il bake può essere pagato due volte. Non è
-  un difetto di correttezza: il piano del pass A è scartato. Un eventuale
-  `CompileOptions.SkipCameraBake` per il solo pass A è il prossimo
-  miglioramento misurabile.
-- La sequence camera e lo strip restano due meccanismi finché i producer non
-  migrano a `group_motion_id`; il conflitto è però fail-closed.
+- **Risolto:** il pass A di `PrepareJob` non cuoce più la camera; usa
+  `SkipCameraBake` e lascia il bake al pass B. La copertura è
+  `TestCompileOptionsSkipCameraBakeDefersTheRenderPass` e
+  `TestCompileSemanticForPrepareUsesTheOptionalSeam`.
+- **Risolto (OVL-08):** la sequence camera non è più un secondo meccanismo;
+  campo wire, lowering, test e golden sono stati rimossi.
 - `scene_camera` resta codice dormiente: va rimosso solo insieme a un
   sostituto di prodotto, non per igiene isolata.

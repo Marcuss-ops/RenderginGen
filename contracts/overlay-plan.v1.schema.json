@@ -1574,6 +1574,11 @@
           "type": "number",
           "minimum": 0,
           "maximum": 256
+        },
+        "zoom": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 10
         }
       }
     },

@@ -208,6 +208,12 @@ type semanticBackground struct {
 	// full-frame, and this effect makes it a soft backdrop instead of a sharp
 	// second copy of the foreground.
 	BlurPX float64 `json:"blur_px,omitempty"`
+	// Zoom scales the plate before compositing (1.0 = cover, no extra crop).
+	// It is the companion of BlurPX: a blurred full-frame plate samples
+	// outside the frame at its edges, and a small zoom keeps those samples
+	// inside real pixels. Absent means no scaling, so older plans compile to
+	// the exact same layer.
+	Zoom float64 `json:"zoom,omitempty"`
 }
 
 // semanticEntityRef is the producer's WHO-correlation metadata for an overlay

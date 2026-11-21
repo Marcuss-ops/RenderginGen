@@ -26,3 +26,20 @@ func TestRetiredSequenceCameraFieldIsRejected(t *testing.T) {
 		t.Fatalf("retirement error = %v, want it to name camera_motion_id", err)
 	}
 }
+
+// TestRetiredSequenceCameraFieldIsRejectedInChainSegments keeps the nested
+// decode as strict as the item decode: a stale segment field must fail the
+// chain, not be dropped while the rest of the segment renders unchanged.
+func TestRetiredSequenceCameraFieldIsRejectedInChainSegments(t *testing.T) {
+	params := map[string]any{"chain_segments": []any{
+		map[string]any{"text": "one", "start_us": 0, "duration_us": 900000, "camera_motion_id": "entity_sequence_camera"},
+		map[string]any{"text": "two", "start_us": 1000000, "duration_us": 900000},
+	}}
+	_, err := decodeChainSegments(params, "retired-chain")
+	if err == nil {
+		t.Fatal("chain segment with the retired camera_motion_id decoded, want an error")
+	}
+	if !strings.Contains(err.Error(), "camera_motion_id") {
+		t.Fatalf("chain retirement error = %v, want it to name camera_motion_id", err)
+	}
+}

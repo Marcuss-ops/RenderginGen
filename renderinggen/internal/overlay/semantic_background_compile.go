@@ -16,6 +16,10 @@ import (
 // schema accepts can never be rejected by the effect resolver.
 const maxBackgroundBlur = 256.0
 
+// maxBackgroundZoom bounds the plate scale. It matches the clip-render
+// contract's own ceiling, so a request accepted there is always renderable.
+const maxBackgroundZoom = 10.0
+
 // compileBackgroundLayer returns the background plate when the plan declares
 // one. Fit is validated against the closed render contract and never silently
 // downgraded.
@@ -46,6 +50,15 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 	}
 	if layerKind == "color" && bg.BlurPX > 0 {
 		return Layer{}, false, fmt.Errorf("overlay: background blur_px is only valid for image/video plates")
+	}
+	if !finite(bg.Zoom) || bg.Zoom < 0 || bg.Zoom > maxBackgroundZoom {
+		return Layer{}, false, fmt.Errorf("overlay: background zoom must be within [0,%g]", maxBackgroundZoom)
+	}
+	if bg.Zoom > 0 && bg.Zoom < 1 {
+		return Layer{}, false, fmt.Errorf("overlay: background zoom must be >= 1 when declared")
+	}
+	if layerKind == "color" && bg.Zoom > 0 {
+		return Layer{}, false, fmt.Errorf("overlay: background zoom is only valid for image/video plates")
 	}
 	for _, ref := range bg.AssetRefs {
 		if _, err := registry.Register(ref); err != nil {
@@ -95,6 +108,12 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 			layer.Asset = registry.Path(ref.ID)
 		}
 		layer.Loop = bg.Loop
+		if bg.Zoom > 0 {
+			// Scale is the renderer's transform for a plate anchored at the
+			// canvas top-left, exactly like the verified image_backdrop path.
+			// Without it a zoomed request would render invisibly unchanged.
+			layer.Scale = []float64{bg.Zoom, bg.Zoom}
+		}
 		if bg.BlurPX > 0 {
 			// `blur_source` is expressed as the source plate plus this real
 			// compositor effect. Without it the plate is a sharp, differently

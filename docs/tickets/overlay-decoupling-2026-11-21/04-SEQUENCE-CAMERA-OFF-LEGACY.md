@@ -1,6 +1,11 @@
 # OVL-04 — Camera sequence fuori da `compileLegacyCompositeImageLayers`
 
-**Stato:** PASS · **Priorità:** P2
+> **SUPERSEDED da [OVL-08](08-SEQUENCE-CAMERA-RETIRED.md) (2026-11-21).** La
+> sequence camera è stata ritirata end-to-end: questo ticket resta come
+> cronologia dell'estrazione, ma i file, il golden e i test citati non
+> esistono più nell'albero corrente.
+
+**Stato:** PASS (storico) · **Priorità:** P2
 
 ## Evidenza iniziale
 

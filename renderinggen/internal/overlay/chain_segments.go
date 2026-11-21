@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -47,7 +48,9 @@ type chainSegment struct {
 // decodeChainSegments extracts the producer's segment list from the merged
 // params (item.Params + item.Style). Params arrive as map[string]any from
 // JSON, so decode via round-trip instead of assuming concrete Go types — a
-// failed decode is a producer bug and fails closed.
+// failed decode is a producer bug and fails closed. The decoder also rejects
+// unknown segment keys, so a retired field cannot be silently dropped here
+// after the item-level decoder has already rejected it.
 //
 // This is the ONLY place the blob is decoded. resolveSemanticItems calls it
 // once and stores the typed list on the item; the lowering and the camera
@@ -62,7 +65,9 @@ func decodeChainSegments(params map[string]any, itemID string) ([]chainSegment, 
 		return nil, fmt.Errorf("overlay: chain item %q segments are not serializable: %w", itemID, err)
 	}
 	var segments []chainSegment
-	if err := json.Unmarshal(data, &segments); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&segments); err != nil {
 		return nil, fmt.Errorf("overlay: chain item %q chain_segments decode: %w", itemID, err)
 	}
 	if len(segments) < 2 {
