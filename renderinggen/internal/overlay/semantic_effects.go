@@ -328,104 +328,138 @@ func resolveLayerEffects(raw any, itemID string) ([]LayerEffect, error) {
 		if !supported {
 			return nil, fmt.Errorf("overlay: item %q unsupported effect type %q", itemID, effType)
 		}
-		params := make(map[string]any)
-		if rawParams, exists := m["params"]; exists {
-			pMap, ok := rawParams.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("overlay: item %q effect %s params must be an object", itemID, effType)
-			}
-			for key, value := range pMap {
-				params[key] = value
-			}
+		params, err := mergeEffectParams(m, effType, itemID)
+		if err != nil {
+			return nil, err
 		}
-		for key, value := range m {
-			if key == "type" || key == "params" {
-				continue
-			}
-			if _, duplicate := params[key]; duplicate {
-				return nil, fmt.Errorf("overlay: item %q effect %s repeats parameter %s", itemID, effType, key)
-			}
-			params[key] = value
-		}
-		for key := range m {
-			if !layerEffectProperty(key) {
-				return nil, fmt.Errorf("overlay: item %q effect %s has unsupported property %q", itemID, effType, key)
-			}
-		}
-		if intensity, ok := params["intensity"]; ok {
-			value, err := toFloat(intensity)
-			if err != nil {
-				return nil, fmt.Errorf("overlay: item %q effect %s intensity must be a number: %w", itemID, effType, err)
-			}
-			switch effType {
-			case "noise", "vignette":
-				if _, has := params["amount"]; !has {
-					params["amount"] = value
-				}
-			case "fractal_noise":
-				if _, has := params["amplitude"]; !has {
-					params["amplitude"] = value
-				}
-			case "bloom", "glow":
-				params["intensity"] = value
-			}
+		if err := applyEffectIntensityAlias(effType, params, itemID); err != nil {
+			return nil, err
 		}
 		if err := validateEffectParams(definition, effType, params, subject); err != nil {
 			return nil, err
 		}
 		// Clip/image parity: pseudo-types lower to the same renderer-native
 		// stack on both surfaces so a clip preset replays 1:1 on an image.
-		switch effType {
-		case "glitch":
-			amount, _ := toFloat(params["amount"])
-			seed := 0
-			if value, present := params["seed"]; present {
-				if n, err := toInt(value); err == nil {
-					seed = n
-				}
-			}
-			out = append(out, LayerEffect{Type: "wave_warp", Params: map[string]any{"amplitude": 0.025 * amount, "wavelength": 0.035, "speed": 0.0, "direction": []float64{0, 1}, "wave_type": "square"}})
-			out = append(out, LayerEffect{Type: "chromatic_aberration", Params: map[string]any{"red_offset": 8 * amount, "blue_offset": -8 * amount}})
-			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": 0.12 * amount, "seed": seed, "animated": true, "color_mode": "monochrome", "size": 1.0}})
+		if lowered, pseudo := lowerPseudoEffect(effType, params); pseudo {
+			out = append(out, lowered...)
 			continue
-		case "scanlines":
-			out = append(out, scanlinesEffect(params))
-			continue
-		case "banded_grain":
-			intensity, _ := toFloat(params["intensity"])
-			speed := 0.0
-			if value, present := params["speed"]; present {
-				if f, err := toFloat(value); err == nil {
-					speed = f
-				}
-			}
-			seed := 0
-			if value, present := params["seed"]; present {
-				if n, err := toInt(value); err == nil {
-					seed = n
-				}
-			}
-			out = append(out, LayerEffect{Type: "noise", Params: map[string]any{"amount": math.Min(1, intensity/4), "size": 1.0, "seed": seed, "animated": speed > 0, "color_mode": "monochrome"}})
-			continue
-		case "black_and_white":
-			amount := 1.0
-			if value, present := params["amount"]; present {
-				if f, err := toFloat(value); err == nil {
-					amount = f
-				}
-			}
-			out = append(out, blackAndWhiteEffect(amount))
-			continue
-		case "chromatic_aberration":
-			if _, has := params["red_offset"]; !has {
-				if amount, ok := params["amount"]; ok {
-					if f, err := toFloat(amount); err == nil {
-						params = map[string]any{"red_offset": f, "blue_offset": -f}
-					}
-				}
-			}
 		}
 		out = append(out, LayerEffect{Type: effType, Params: params})
 	}
 	return out, nil
+}
+
+// mergeEffectParams flattens the entry-level shorthand (`radius`, `amount`, …)
+// into one params map and rejects the ambiguous shapes: a non-object params
+// block, a key declared twice, or a property the catalog does not own.
+func mergeEffectParams(m map[string]any, effType, itemID string) (map[string]any, error) {
+	params := make(map[string]any)
+	if rawParams, exists := m["params"]; exists {
+		pMap, ok := rawParams.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("overlay: item %q effect %s params must be an object", itemID, effType)
+		}
+		for key, value := range pMap {
+			params[key] = value
+		}
+	}
+	for key, value := range m {
+		if key == "type" || key == "params" {
+			continue
+		}
+		if _, duplicate := params[key]; duplicate {
+			return nil, fmt.Errorf("overlay: item %q effect %s repeats parameter %s", itemID, effType, key)
+		}
+		params[key] = value
+	}
+	for key := range m {
+		if !layerEffectProperty(key) {
+			return nil, fmt.Errorf("overlay: item %q effect %s has unsupported property %q", itemID, effType, key)
+		}
+	}
+	return params, nil
+}
+
+// applyEffectIntensityAlias rewrites the legacy `intensity` spelling into the
+// parameter each effect family actually reads. bloom/glow keep the name, so the
+// converted number still has to pass validation.
+func applyEffectIntensityAlias(effType string, params map[string]any, itemID string) error {
+	intensity, present := params["intensity"]
+	if !present {
+		return nil
+	}
+	value, err := toFloat(intensity)
+	if err != nil {
+		return fmt.Errorf("overlay: item %q effect %s intensity must be a number: %w", itemID, effType, err)
+	}
+	switch effType {
+	case "noise", "vignette":
+		if _, has := params["amount"]; !has {
+			params["amount"] = value
+		}
+	case "fractal_noise":
+		if _, has := params["amplitude"]; !has {
+			params["amplitude"] = value
+		}
+	case "bloom", "glow":
+		params["intensity"] = value
+	}
+	return nil
+}
+
+// lowerPseudoEffect expands the pseudo-types that compile to a renderer-native
+// stack, or normalizes the shorthand a native effect reads. pseudo=false means
+// the effect lowers as itself.
+func lowerPseudoEffect(effType string, params map[string]any) ([]LayerEffect, bool) {
+	switch effType {
+	case "glitch":
+		amount := effectFloat(params, "amount", 0)
+		seed := effectSeedValue(params)
+		return []LayerEffect{
+			{Type: "wave_warp", Params: map[string]any{"amplitude": 0.025 * amount, "wavelength": 0.035, "speed": 0.0, "direction": []float64{0, 1}, "wave_type": "square"}},
+			{Type: "chromatic_aberration", Params: map[string]any{"red_offset": 8 * amount, "blue_offset": -8 * amount}},
+			{Type: "noise", Params: map[string]any{"amount": 0.12 * amount, "seed": seed, "animated": true, "color_mode": "monochrome", "size": 1.0}},
+		}, true
+	case "scanlines":
+		return []LayerEffect{scanlinesEffect(params)}, true
+	case "banded_grain":
+		intensity := effectFloat(params, "intensity", 0)
+		speed := effectFloat(params, "speed", 0)
+		seed := effectSeedValue(params)
+		return []LayerEffect{{Type: "noise", Params: map[string]any{"amount": math.Min(1, intensity/4), "size": 1.0, "seed": seed, "animated": speed > 0, "color_mode": "monochrome"}}}, true
+	case "black_and_white":
+		return []LayerEffect{blackAndWhiteEffect(effectFloat(params, "amount", 1))}, true
+	case "chromatic_aberration":
+		// `amount` is the shorthand for a symmetric split; an explicit
+		// red_offset keeps full control and is lowered as authored.
+		if _, has := params["red_offset"]; !has {
+			if raw, ok := params["amount"]; ok {
+				if amount, err := toFloat(raw); err == nil {
+					return []LayerEffect{{Type: effType, Params: map[string]any{"red_offset": amount, "blue_offset": -amount}}}, true
+				}
+			}
+		}
+	}
+	return nil, false
+}
+
+// effectFloat reads an optional numeric effect param, keeping the catalog's
+// documented fallback when the entry omits it or carries a non-number.
+func effectFloat(params map[string]any, key string, fallback float64) float64 {
+	if value, present := params[key]; present {
+		if n, err := toFloat(value); err == nil {
+			return n
+		}
+	}
+	return fallback
+}
+
+func effectSeedValue(params map[string]any) int {
+	seed := 0
+	if value, present := params["seed"]; present {
+		if n, err := toInt(value); err == nil {
+			seed = n
+		}
+	}
+	return seed
 }

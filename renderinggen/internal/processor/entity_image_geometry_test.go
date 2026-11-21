@@ -1,257 +1,87 @@
 package processor
 
 import (
-	"encoding/json"
 	"image"
 	"image/png"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
-// TestDeriveImageWidthFromMaterializedAssetKeepsSourceAspect certifies the
-// height-only card contract: the width the author left out is derived from the
-// materialized photo's aspect instead of the placeholder box, so cover crops
-// the photo rather than squeezing it into the wrong shape.
-func TestDeriveImageWidthFromMaterializedAssetKeepsSourceAspect(t *testing.T) {
-	root := t.TempDir()
-	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")
-	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
+func writeTestPNG(t *testing.T, path string, width, height int) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	f, err := os.Create(assetPath)
+	file, err := os.Create(path)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1280, 1519))); err != nil {
-		f.Close()
+	if err := png.Encode(file, image.NewRGBA(image.Rect(0, 0, width, height))); err != nil {
+		file.Close()
 		t.Fatal(err)
 	}
-	if err := f.Close(); err != nil {
+	if err := file.Close(); err != nil {
 		t.Fatal(err)
-	}
-	plan := &overlay.Plan{
-		Canvas: overlay.Canvas{Width: 1920, Height: 1080},
-		Layers: []overlay.Layer{{
-			ID: "pin:image", Type: "image", Asset: "assets/semantic/photo.png",
-			BoxWidth: 700, BoxHeight: 700, Size: []float64{700, 700}, Fit: overlay.FitCover,
-			DeriveWidthFromAsset: true,
-		}},
-	}
-	changed, err := fitEntityImageLayersToAssets(root, plan)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !changed {
-		t.Fatal("deriving the card width must report that the prepared package changed")
-	}
-	layer := plan.Layers[0]
-	if layer.BoxWidth != 590 || layer.BoxHeight != 700 || layer.Size[0] != 590 || layer.Size[1] != 700 {
-		t.Fatalf("derived geometry = box %dx%d size %v, want 590x700 from the 1280x1519 source",
-			layer.BoxWidth, layer.BoxHeight, layer.Size)
-	}
-	if layer.DeriveWidthFromAsset {
-		t.Fatal("transient width-derivation marker survived materialization")
 	}
 }
 
-func TestFitEntityImageLayersToMaterializedAssetRemovesMatteGeometry(t *testing.T) {
+// TestProbePlanImageSizesReadsMaterializedAssets certifies the processor half
+// of the sized compile: the plan carries logical asset paths, and the probe
+// returns the decoded pixel size for every image layer that needs a source
+// aspect — exactly the table the overlay compiler expects, keyed the same way.
+func TestProbePlanImageSizesReadsMaterializedAssets(t *testing.T) {
 	root := t.TempDir()
-	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")
-	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
-		t.Fatal(err)
+	writeTestPNG(t, filepath.Join(root, "assets", "semantic", "photo.png"), 1280, 1519)
+	writeTestPNG(t, filepath.Join(root, "assets", "semantic", "wide.png"), 1600, 900)
+	plan := &overlay.Plan{
+		Canvas: overlay.Canvas{Width: 1920, Height: 1080},
+		Layers: []overlay.Layer{
+			{ID: "pin:image", Type: "image", Asset: "assets/semantic/photo.png", DeriveWidthFromAsset: true},
+			{ID: "card:image", Type: "image", Asset: "assets/semantic/wide.png", EntityImage: true},
+			// A fixed-size image needs no probe: its box is already final.
+			{ID: "logo", Type: "image", Asset: "assets/semantic/photo.png", Size: []float64{96, 96}},
+		},
 	}
-	f, err := os.Create(assetPath)
+	sizes, err := probePlanImageSizes(root, plan)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1600, 900))); err != nil {
-		f.Close()
-		t.Fatal(err)
+	if got := sizes["assets/semantic/photo.png"]; got.Width != 1280 || got.Height != 1519 {
+		t.Fatalf("probed photo = %+v, want 1280x1519", got)
 	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
+	if got := sizes["assets/semantic/wide.png"]; got.Width != 1600 || got.Height != 900 {
+		t.Fatalf("probed wide = %+v, want 1600x900", got)
 	}
+	if len(sizes) != 2 {
+		t.Fatalf("probed %d assets, want 2 (fixed-size layers must not be read)", len(sizes))
+	}
+}
+
+// TestProbePlanImageSizesFailsClosed proves a missing or unreadable source can
+// never silently compile at the blind geometry: the probe returns the error
+// before any second compile runs.
+func TestProbePlanImageSizesFailsClosed(t *testing.T) {
+	root := t.TempDir()
 	plan := &overlay.Plan{Layers: []overlay.Layer{{
-		ID: "portrait:image", Type: "image", Asset: "assets/semantic/photo.png",
-		BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain,
-		EntityImage: true,
+		ID: "card:image", Type: "image", Asset: "assets/semantic/missing.png", EntityImage: true,
 	}}}
-	changed, err := fitEntityImageLayersToAssets(root, plan)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !changed {
-		t.Fatal("fitting an entity image must report that the plan changed: the prepared package is invalidated by the new geometry")
-	}
-	layer := plan.Layers[0]
-	if layer.BoxWidth != 480 || layer.BoxHeight != 270 || layer.Size[0] != 480 || layer.Size[1] != 270 {
-		t.Fatalf("layer geometry = box %dx%d size %v, want 480x270", layer.BoxWidth, layer.BoxHeight, layer.Size)
-	}
-	if layer.EntityImage {
-		t.Fatal("transient entity-image marker survived after materialization")
-	}
-	if layer.Fit != overlay.FitCover {
-		t.Fatalf("entity image fit = %q, want cover to remove contain matte", layer.Fit)
+	if _, err := probePlanImageSizes(root, plan); err == nil {
+		t.Fatal("probing a missing materialized asset was accepted")
 	}
 }
 
-// TestFitEntityImageCaptionPinsChrononFitContract certifies the decoded-plan
-// contract for a fitted entity card: the alignment pass pins the caption's
-// resolved size as BOTH fit limits, and Chronon rejects font size limits that
-// travel without a non-none fit mode ("text font size limits require a
-// non-none fit_mode"). The emitted style must therefore declare shrink_only,
-// otherwise every entity card with a caption fails at plan preparation.
-func TestFitEntityImageCaptionPinsChrononFitContract(t *testing.T) {
-	root := t.TempDir()
-	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")
-	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	f, err := os.Create(assetPath)
+func TestProbePlanImageSizesAlwaysReturnsATable(t *testing.T) {
+	sizes, err := probePlanImageSizes(t.TempDir(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1600, 900))); err != nil {
-		f.Close()
-		t.Fatal(err)
+	if sizes == nil {
+		t.Fatal("nil size table would let the caller fall back to the blind compile")
 	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
-	}
-	plan := &overlay.Plan{
-		Canvas: overlay.Canvas{Width: 1920, Height: 1080},
-		Layers: []overlay.Layer{
-			{
-				ID: "portrait:image", Type: "image", Asset: "assets/semantic/photo.png",
-				BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain,
-				EntityImage: true, Position: []float64{0, 0}, StartFrame: 0, DurationFrames: 120,
-			},
-			{
-				ID: "portrait:caption", Type: "text", Text: "Friuli Venezia Giulia",
-				Style:    &overlay.LayerStyle{Font: "assets/fonts/Poppins-Bold.ttf", FontSize: 42, Fill: "#F8F5EA"},
-				Position: []float64{0, 300}, Size: []float64{300, 80},
-				CaptionForImageID: "portrait:image", CaptionLayout: "below",
-				StartFrame: 0, DurationFrames: 120,
-			},
-		},
-	}
-	if _, err := fitEntityImageLayersToAssets(root, plan); err != nil {
-		t.Fatal(err)
-	}
-	caption := plan.Layers[1]
-	if caption.Style == nil {
-		t.Fatal("fit pass dropped the caption style")
-	}
-	if caption.Style.MinFontSize <= 0 || caption.Style.MaxFontSize != caption.Style.MinFontSize {
-		t.Fatalf("caption fit limits = %v/%v, want the pinned size as both limits (font %v)",
-			caption.Style.MinFontSize, caption.Style.MaxFontSize, caption.Style.FontSize)
-	}
-	if caption.Style.MinFontSize != caption.Style.FontSize {
-		t.Fatalf("caption limits %v do not pin the resolved size %v", caption.Style.MinFontSize, caption.Style.FontSize)
-	}
-	if caption.Style.FitMode != overlay.FitModeShrinkOnly {
-		t.Fatalf("caption fit_mode = %q with limits %v/%v, want %q: Chronon rejects limits without a non-none fit mode",
-			caption.Style.FitMode, caption.Style.MinFontSize, caption.Style.MaxFontSize, overlay.FitModeShrinkOnly)
-	}
-	raw, err := json.Marshal(caption)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, want := range []string{"\"fit_mode\":\"shrink_only\"", "\"min_font_size\"", "\"max_font_size\""} {
-		if !strings.Contains(string(raw), want) {
-			t.Fatalf("emitted caption layer is missing %s: %s", want, raw)
-		}
-	}
-}
-
-func TestFitEntityImageLayersToAssetsRejectsCaptionCollisionAfterAspectFit(t *testing.T) {
-	root := t.TempDir()
-	for _, asset := range []string{"a", "b"} {
-		assetPath := filepath.Join(root, "assets", "semantic", asset+".png")
-		if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
-			t.Fatal(err)
-		}
-		f, err := os.Create(assetPath)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1600, 900))); err != nil {
-			f.Close()
-			t.Fatal(err)
-		}
-		if err := f.Close(); err != nil {
-			t.Fatal(err)
-		}
-	}
-	plan := &overlay.Plan{
-		Canvas: overlay.Canvas{Width: 1280, Height: 720},
-		Layers: []overlay.Layer{
-			{ID: "a:image", Type: "image", Asset: "assets/semantic/a.png", BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain, EntityImage: true, Position: []float64{0, 0}, StartFrame: 0, DurationFrames: 120},
-			{ID: "a:caption", Type: "text", Text: "First", Position: []float64{640, 600}, Size: []float64{300, 80}, CaptionForImageID: "a:image", StartFrame: 0, DurationFrames: 120},
-			{ID: "b:image", Type: "image", Asset: "assets/semantic/b.png", BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain, EntityImage: true, Position: []float64{0, 0}, StartFrame: 0, DurationFrames: 120},
-			{ID: "b:caption", Type: "text", Text: "Second", Position: []float64{640, 600}, Size: []float64{300, 80}, CaptionForImageID: "b:image", StartFrame: 0, DurationFrames: 120},
-		},
-	}
-	if _, err := fitEntityImageLayersToAssets(root, plan); err == nil {
-		t.Fatal("caption overlap after materialized aspect-ratio fitting was accepted")
-	}
-	if err := overlay.ValidateEntityCaptionCollisions(plan.Layers); err == nil {
-		t.Fatal("fitted caption geometry still overlaps but the post-fit validation missed it")
-	}
-}
-
-func TestFitEntityImageResizesLinkedPremiumFrameAndMorphMask(t *testing.T) {
-	root := t.TempDir()
-	assetPath := filepath.Join(root, "assets", "semantic", "photo.png")
-	if err := os.MkdirAll(filepath.Dir(assetPath), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	f, err := os.Create(assetPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := png.Encode(f, image.NewRGBA(image.Rect(0, 0, 1600, 900))); err != nil {
-		f.Close()
-		t.Fatal(err)
-	}
-	if err := f.Close(); err != nil {
-		t.Fatal(err)
-	}
-
-	imageLayer := overlay.Layer{
-		ID: "portrait:image", Type: "image", Asset: "assets/semantic/photo.png",
-		BoxWidth: 480, BoxHeight: 480, Size: []float64{480, 480}, Fit: overlay.FitContain,
-		EntityImage: true, Enable3D: true, Position: []float64{0, 0, 12},
-		Animation:       &overlay.LayerAnimation{Tracks: []overlay.AnimationTrack{{Property: "position_z", Keyframes: []overlay.AnimationKeyframe{{Frame: 0, Value: 4.0}, {Frame: 20, Value: 0.0}}}}},
-		PremiumWipeMask: true,
-		Masks:           []overlay.LayerMask{{Type: "path", Path: []overlay.LayerPathCommand{{Type: "move_to", Point: []float64{0, 0}}}, TargetPath: []overlay.LayerPathCommand{{Type: "move_to", Point: []float64{1, 1}}}}},
-	}
-	frame := overlay.Layer{
-		ID: "portrait:image:premium:frame", Type: "shape", Size: []float64{480, 480},
-		PremiumParentImageID: "portrait:image", PremiumParentSize: []float64{480, 480},
-		PremiumSizeScale: []float64{1.06, 1.06}, PremiumZOffset: -20,
-		PremiumPathKind: "rounded_rect", PremiumShapeKind: "path", PremiumSyncTransform: true,
-		Shape: &overlay.LayerShape{Type: "path", Path: []overlay.LayerPathCommand{{Type: "move_to", Point: []float64{0, 0}}}},
-	}
-	plan := &overlay.Plan{Canvas: overlay.Canvas{Width: 1280, Height: 720}, Layers: []overlay.Layer{imageLayer, frame}}
-	if _, err := fitEntityImageLayersToAssets(root, plan); err != nil {
-		t.Fatal(err)
-	}
-	gotImage, gotFrame := plan.Layers[0], plan.Layers[1]
-	if gotFrame.Size[0] != 480*1.06 || gotFrame.Size[1] != 270*1.06 {
-		t.Fatalf("linked frame size = %v, want [508.8 286.2]", gotFrame.Size)
-	}
-	if gotFrame.Position[2] != -8 || !gotFrame.Enable3D || gotFrame.Animation == nil {
-		t.Fatalf("linked frame transform = pos %v enable3d %v animation %+v", gotFrame.Position, gotFrame.Enable3D, gotFrame.Animation)
-	}
-	if gotFrame.Animation.Tracks[0].Keyframes[0].Value != -16.0 {
-		t.Fatalf("frame Z animation did not include its authored offset: %+v", gotFrame.Animation.Tracks[0])
-	}
-	if len(gotImage.Masks) != 1 || len(gotImage.Masks[0].Path) != 5 || len(gotImage.Masks[0].TargetPath) != 5 {
-		t.Fatalf("fitted image mask was not rebuilt at final source geometry: %+v", gotImage.Masks)
+	if len(sizes) != 0 {
+		t.Fatalf("empty plan probed %d assets, want 0", len(sizes))
 	}
 }

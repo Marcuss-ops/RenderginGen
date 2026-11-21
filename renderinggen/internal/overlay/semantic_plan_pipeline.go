@@ -273,12 +273,15 @@ func lowerPlan(resolved resolvedPlan) (*Plan, Stats, error) {
 	}
 	finalizeLayerDurations(plan, resolved.SourceLayerIndex)
 	ensureClipGridAboveSource(plan)
+	// Seal the capabilities the lowering recorded. Every item has compiled by
+	// now, so this is the complete set for the plan.
+	plan.Features = src.features.export()
 	return plan, stats, nil
 }
 
 // sealPlan performs the final duration/SFX/camera/schema seal and returns the
 // public compile tuple.
-func sealPlan(plan *Plan, stats Stats, resolved resolvedPlan) (*Plan, []Asset, Stats, []string, error) {
+func sealPlan(plan *Plan, stats Stats, resolved resolvedPlan, opts CompileOptions) (*Plan, []Asset, Stats, []string, error) {
 	if plan == nil || resolved.Registry == nil {
 		return nil, nil, zeroStats(), nil, fmt.Errorf("overlay: sealPlan requires a lowered plan")
 	}
@@ -303,8 +306,10 @@ func sealPlan(plan *Plan, stats Stats, resolved resolvedPlan) (*Plan, []Asset, S
 		}
 		plan.Audio.Clips = append(plan.Audio.Clips, clip)
 	}
-	if err := bakeResolvedCameraSamples(plan); err != nil {
-		return nil, nil, zeroStats(), nil, err
+	if !opts.SkipCameraBake {
+		if err := bakeResolvedCameraSamples(plan, opts.CameraBaker); err != nil {
+			return nil, nil, zeroStats(), nil, err
+		}
 	}
 	plan.Schema, plan.Version = RenderPlanWireVersion(plan)
 	return plan, resolved.Registry.Assets(), stats, resolved.Unknown, nil

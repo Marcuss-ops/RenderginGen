@@ -9,124 +9,38 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
-// fitEntityImageLayersToAssets runs after workspace materialization so image
-// metadata is read from the verified, content-addressed bytes rather than a
-// logical path that does not exist during semantic compilation.
+// probePlanImageSizes is the I/O half of the sized compile: it reads the
+// decoded pixel size of every image layer that still awaits its source
+// geometry and returns them keyed by the plan's logical asset path.
 //
-// It reports whether it changed the plan. A fitted image box changes the layer
-// size and its premium components' sizes, and those sizes are part of the
-// prepared package's asset/text preparation identity — so the caller rebuilds
-// the package from the final plan exactly when this reports true, instead of
-// guessing both ways (rebuilding on every job, or shipping a sidecar that
-// describes the pre-fit geometry).
-func fitEntityImageLayersToAssets(root string, plan *overlay.Plan) (bool, error) {
+// The processor owns the file access because it has already verified and
+// materialized the content-addressed bytes; overlay owns the geometry. The
+// returned map is ALWAYS non-nil, so an empty plan still selects the sized
+// compile and can never silently fall back to a guessed box.
+func probePlanImageSizes(root string, plan *overlay.Plan) (map[string]overlay.ImageSize, error) {
+	sizes := make(map[string]overlay.ImageSize)
 	if plan == nil {
-		return false, nil
+		return sizes, nil
 	}
-	changed := false
 	for i := range plan.Layers {
 		layer := &plan.Layers[i]
-		if layer.DeriveWidthFromAsset && layer.Type == "image" && !layer.EntityImage {
-			changed = true
-			if err := deriveImageWidthFromAsset(root, layer); err != nil {
-				return false, err
-			}
-			layer.DeriveWidthFromAsset = false
+		if layer.Type != "image" || (!layer.DeriveWidthFromAsset && !layer.EntityImage) {
 			continue
 		}
-		if !layer.EntityImage {
+		if layer.Asset == "" {
+			return nil, fmt.Errorf("processor: image layer %q needs source dimensions but declares no asset", layer.ID)
+		}
+		if _, probed := sizes[layer.Asset]; probed {
 			continue
 		}
-		changed = true
-		assetPath := filepath.Join(root, filepath.FromSlash(layer.Asset))
-		sourceWidth, sourceHeight, err := entityImageDimensions(assetPath)
+		sourceWidth, sourceHeight, err := entityImageDimensions(
+			filepath.Join(root, filepath.FromSlash(layer.Asset)))
 		if err != nil {
-			return false, fmt.Errorf("processor: read entity image layer %q dimensions: %w", layer.ID, err)
+			return nil, fmt.Errorf("processor: read image layer %q dimensions: %w", layer.ID, err)
 		}
-		if float64(sourceWidth)/float64(sourceHeight) >= 1.2 {
-			// Use the authored contain box, not the render canvas: the box is
-			// already in the canonical design space, so a 1280x720 job and a
-			// 1920x1080 job settle on the same 16:9 card. Scaling by canvas
-			// width made the card shrink with the preview/output size and broke
-			// the linked premium frame geometry.
-			width := layer.BoxWidth
-			if width <= 0 {
-				return false, fmt.Errorf("processor: invalid box width %d for entity image layer %q", layer.BoxWidth, layer.ID)
-			}
-			height := max(1, width*9/16)
-			layer.BoxWidth, layer.BoxHeight = width, height
-			layer.Size = []float64{float64(width), float64(height)}
-			layer.Fit = overlay.FitCover
-		} else if err := overlay.FitEntityImageLayerToAsset(layer, sourceWidth, sourceHeight); err != nil {
-			return false, fmt.Errorf("processor: fit entity image layer %q to source aspect: %w", layer.ID, err)
-		}
-		if err := overlay.ResizePremiumImageMask(layer); err != nil {
-			return false, fmt.Errorf("processor: resize premium image mask for %q: %w", layer.ID, err)
-		}
-		if err := alignEntityCaptionToFittedImage(plan, layer); err != nil {
-			return false, fmt.Errorf("processor: align entity caption for %q: %w", layer.ID, err)
-		}
-		layer.EntityImage = false
-		for j := range plan.Layers {
-			component := &plan.Layers[j]
-			if component.PremiumParentImageID != layer.ID {
-				continue
-			}
-			if component.PremiumCanvasSize {
-				component.Size = []float64{float64(plan.Canvas.Width), float64(plan.Canvas.Height)}
-				component.Position = []float64{0, 0}
-				continue
-			}
-			if len(component.PremiumSizeScale) == 2 {
-				component.Size = []float64{layer.Size[0] * component.PremiumSizeScale[0], layer.Size[1] * component.PremiumSizeScale[1]}
-			} else if len(component.PremiumParentSize) == 2 {
-				component.Size = append([]float64(nil), component.PremiumParentSize...)
-			}
-			if len(layer.Position) >= 2 {
-				component.Position = []float64{layer.Position[0], layer.Position[1]}
-				if len(component.PremiumPositionOffset) == 2 {
-					component.Position[0] += component.PremiumPositionOffset[0]
-					component.Position[1] += component.PremiumPositionOffset[1]
-				}
-			}
-			if component.PremiumSyncTransform {
-				overlay.SyncPremiumComponentTransform(layer, component)
-			}
-			if component.PremiumPathKind == "rounded_rect" && component.Shape != nil {
-				radius := layer.Radius * component.PremiumRadiusScale
-				if radius == 0 {
-					radius = layer.Radius
-				}
-				component.Shape.Path = overlay.RoundedPremiumRectPath(component.Size[0], component.Size[1], radius)
-				if component.PremiumShapeKind == "rounded_rect" {
-					component.Shape.Radius = radius
-				}
-			}
-		}
+		sizes[layer.Asset] = overlay.ImageSize{Width: sourceWidth, Height: sourceHeight}
 	}
-	if err := overlay.ValidateEntityCaptionCollisions(plan.Layers, plan.Canvas.Width, plan.Canvas.Height); err != nil {
-		return false, fmt.Errorf("processor: fitted entity caption layout: %w", err)
-	}
-	return changed, nil
-}
-
-// deriveImageWidthFromAsset resolves the one part of a standalone card's
-// geometry the author cannot know at payload time: when only the height is
-// authored, the width that preserves the photo's aspect. Without it the plan
-// carries a guessed box and a cover crop eats most of a portrait.
-func deriveImageWidthFromAsset(root string, layer *overlay.Layer) error {
-	if layer.BoxHeight <= 0 {
-		return fmt.Errorf("processor: image layer %q asks for an asset-derived width without a positive height", layer.ID)
-	}
-	sourceWidth, sourceHeight, err := entityImageDimensions(
-		filepath.Join(root, filepath.FromSlash(layer.Asset)))
-	if err != nil {
-		return fmt.Errorf("processor: read image layer %q dimensions: %w", layer.ID, err)
-	}
-	width := max(1, int(float64(layer.BoxHeight)*float64(sourceWidth)/float64(sourceHeight)+0.5))
-	layer.BoxWidth = width
-	layer.Size = []float64{float64(width), float64(layer.BoxHeight)}
-	return nil
+	return sizes, nil
 }
 
 // entityImageDimensions reads the verified, materialized image's pixel size.
@@ -143,53 +57,4 @@ func entityImageDimensions(path string) (int, int, error) {
 		return 0, 0, err
 	}
 	return config.Width, config.Height, nil
-}
-
-// alignEntityCaptionToFittedImage recomputes caption anchoring after the image
-// box has been fitted to the verified source aspect ratio. Semantic lowering
-// only knows the requested contain box; without this pass a wide source can
-// shrink vertically while its name stays at the old box bottom, leaving an
-// oversized gap between portrait and label.
-func alignEntityCaptionToFittedImage(plan *overlay.Plan, image *overlay.Layer) error {
-	if plan == nil || image == nil || len(image.Size) < 2 || len(image.Position) < 2 {
-		return nil
-	}
-	for i := range plan.Layers {
-		caption := &plan.Layers[i]
-		if caption.CaptionForImageID != image.ID {
-			continue
-		}
-		// A chain camera pan keeps every member on its strip slot; fit the pair
-		// in the neutral centre pose, then restore the strip translation so the
-		// group track stays the only owner of the horizontal (or vertical) move.
-		offsetX, offsetY := 0.0, 0.0
-		if len(image.ChainPanOffset) == 2 {
-			offsetX, offsetY = image.ChainPanOffset[0], image.ChainPanOffset[1]
-		}
-		basePosition := []float64{image.Position[0] - offsetX, image.Position[1] - offsetY}
-		bounds := overlay.EntityCardImageBoundsFromCenter(
-			plan.Canvas.Width, plan.Canvas.Height, basePosition, image.Size[0], image.Size[1],
-		)
-		layout, err := overlay.ResolveEntityCardLayoutAt(plan.Canvas.Width, plan.Canvas.Height, bounds, caption.Text, caption.CaptionLayout)
-		if err != nil {
-			return err
-		}
-		image.Position[1] = layout.ImageBounds.Y + image.Size[1]/2 - float64(plan.Canvas.Height)/2 + offsetY
-		caption.Position = []float64{layout.CaptionBounds.CenterX + offsetX, layout.CaptionBounds.CenterY + offsetY}
-		caption.Size = []float64{layout.CaptionBounds.Width, layout.CaptionBounds.Height}
-		caption.BoxWidth = int(layout.CaptionBounds.Width)
-		caption.BoxHeight = int(layout.CaptionBounds.Height)
-		if caption.Style != nil {
-			caption.Style.FontSize = layout.CaptionBounds.FontSize
-			caption.Style.MinFontSize = layout.CaptionBounds.FontSize
-			caption.Style.MaxFontSize = layout.CaptionBounds.FontSize
-			// The pinned size is also the fit interval's floor and ceiling. Chronon
-			// rejects font size limits without a non-none fit mode, so the interval
-			// must travel with shrink_only (min == max renders the pinned size
-			// verbatim); emitting the limits alone failed every fitted entity card.
-			caption.Style.FitMode = overlay.FitModeShrinkOnly
-		}
-		return nil
-	}
-	return nil
 }

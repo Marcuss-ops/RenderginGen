@@ -182,14 +182,15 @@ func TestCameraPanDirectionsHoldThenTravelToTheNextImage(t *testing.T) {
 					t.Errorf("image %d strip layer must stay flat", index)
 				}
 				pan := cameraPanLayerTrack(t, layer, "position_"+tc.axis)
-				if pan.Easing != "in_out_sine" {
-					t.Errorf("image %d pan easing = %q, want the softer in_out_sine", index, pan.Easing)
-				}
-				if len(pan.Keyframes) != 6 {
-					t.Fatalf("image %d pan keyframes = %+v, want the shared six-key staircase", index, pan.Keyframes)
+				// The sine is baked into the keys and the track declares linear:
+				// Chronon's component-position compiler rejects a non-linear axis
+				// track that does not share its keyframes with the neutral axis.
+				if pan.Easing != "linear" {
+					t.Errorf("image %d pan easing = %q, want the baked linear curve", index, pan.Easing)
 				}
 				// 96 frames / 3 members = 32-frame steps; 60% travel is 19
-				// frames, leaving a 13-frame hold before each arrival.
+				// frames, leaving a 13-frame hold before each arrival. The bake
+				// keeps every boundary value and adds the intermediate frames.
 				want := []struct {
 					frame int64
 					value float64
@@ -197,14 +198,25 @@ func TestCameraPanDirectionsHoldThenTravelToTheNextImage(t *testing.T) {
 					{0, 0}, {13, 0}, {32, -tc.sign * spacing},
 					{45, -tc.sign * spacing}, {64, -tc.sign * 2 * spacing}, {95, -tc.sign * 2 * spacing},
 				}
-				for keyIndex, pair := range want {
-					key := pan.Keyframes[keyIndex]
-					if key.Frame != pair.frame {
-						t.Errorf("image %d pan key %d frame = %d, want %d", index, keyIndex, key.Frame, pair.frame)
+				byFrame := make(map[int64]float64, len(pan.Keyframes))
+				for _, key := range pan.Keyframes {
+					value, ok := numericValue(key.Value)
+					if !ok {
+						t.Fatalf("image %d pan key at frame %d is not numeric: %v", index, key.Frame, key.Value)
 					}
-					value, _ := numericValue(key.Value)
+					byFrame[key.Frame] = value
+				}
+				if len(pan.Keyframes) <= len(want) {
+					t.Fatalf("image %d pan has %d keys, want the per-frame bake (> %d)", index, len(pan.Keyframes), len(want))
+				}
+				for _, pair := range want {
+					value, ok := byFrame[pair.frame]
+					if !ok {
+						t.Errorf("image %d pan has no boundary key at frame %d", index, pair.frame)
+						continue
+					}
 					if value != pair.value {
-						t.Errorf("image %d pan key %d value = %v, want %v", index, keyIndex, value, pair.value)
+						t.Errorf("image %d pan value at frame %d = %v, want %v", index, pair.frame, value, pair.value)
 					}
 				}
 				scale := cameraPanLayerTrack(t, layer, "scale")
@@ -289,6 +301,37 @@ func TestCameraPanDirectionsApplyToASingleImage(t *testing.T) {
 			}
 			if !scaled {
 				t.Fatalf("single-image push-in has no frame-59 settle key: %+v", scale.Keyframes)
+			}
+		})
+	}
+}
+
+// TestCameraPanPlansUseOneRendererComposableTrackShape pins the Chronon
+// contract that motivated baking: a component track may not declare a
+// non-linear easing while its axis siblings keep different keyframes, or the
+// renderer rejects the plan ("component tracks with per-key timing must share
+// keyframes and track easing"). Both strip consumers therefore publish linear
+// component tracks with the curve baked into the keys.
+func TestCameraPanPlansUseOneRendererComposableTrackShape(t *testing.T) {
+	componentProperties := map[string]bool{
+		"position_x": true, "position_y": true, "position_z": true,
+		"scale_x": true, "scale_y": true, "scale_z": true,
+	}
+	for _, tc := range cameraPanCases {
+		t.Run(tc.id, func(t *testing.T) {
+			for _, layer := range cameraPanImages(t, 3, tc.id) {
+				if layer.Animation == nil {
+					t.Fatalf("image layer %q has no animation", layer.ID)
+				}
+				for _, track := range layer.Animation.Tracks {
+					if !componentProperties[track.Property] {
+						continue
+					}
+					if track.Easing != "" && track.Easing != "linear" {
+						t.Fatalf("layer %q component track %s declares easing %q; Chronon's composed component path requires linear/empty or shared timing",
+							layer.ID, track.Property, track.Easing)
+					}
+				}
 			}
 		})
 	}

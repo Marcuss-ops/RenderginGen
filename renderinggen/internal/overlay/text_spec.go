@@ -516,7 +516,22 @@ func cloneLayerStyleBackground(source *LayerBackground) *LayerBackground {
 		value := *source.Opacity
 		opacity = &value
 	}
-	return &LayerBackground{Color: source.Color, Opacity: opacity, Radius: source.Radius, Padding: append([]float64(nil), source.Padding...), LiftToShape: source.LiftToShape}
+	var stroke *LayerStroke
+	if source.Stroke != nil {
+		value := *source.Stroke
+		stroke = &value
+	}
+	var shadow *LayerShadow
+	if source.Shadow != nil {
+		value := *source.Shadow
+		value.Offset = append([]float64(nil), source.Shadow.Offset...)
+		shadow = &value
+	}
+	return &LayerBackground{
+		Color: source.Color, Opacity: opacity, Radius: source.Radius,
+		Padding: append([]float64(nil), source.Padding...), LiftToShape: source.LiftToShape,
+		Stroke: stroke, Shadow: shadow, Motions: append([]string(nil), source.Motions...),
+	}
 }
 
 // resolvedTextFontSize is the role style's base size: an explicitly resolved

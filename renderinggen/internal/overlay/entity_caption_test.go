@@ -161,6 +161,31 @@ func TestEntityCaptionLowersPayloadCardBackground(t *testing.T) {
 	}
 }
 
+func TestEntityCaptionPlateCarriesStrokeShadowAndMotion(t *testing.T) {
+	layers := compileEntityCaptionPlanForTest(t, "Ada Lovelace", false, map[string]any{
+		"background": map[string]any{
+			"color":   "#1B2A3A",
+			"padding": []any{18.0, 10.0},
+			"stroke":  map[string]any{"color": "#FFD159", "width": 3.0},
+			"shadow":  map[string]any{"color": "#000000", "opacity": 0.55, "blur": 18.0, "offset": []any{0.0, 8.0}},
+			"motions": []any{"wipe_right"},
+		},
+	})
+	if len(layers) != 3 {
+		t.Fatalf("got %d layers, want image + plate + caption", len(layers))
+	}
+	plate := layers[1]
+	if plate.Shape == nil || plate.Shape.Stroke == nil || plate.Shape.Stroke.Color != "#FFD159" || plate.Shape.Stroke.Width != 3 {
+		t.Fatalf("plate stroke = %+v, want #FFD159 at 3", plate.Shape)
+	}
+	if plate.Style == nil || plate.Style.Shadow == nil || plate.Style.Shadow.Blur != 18 || len(plate.Style.Shadow.Offset) != 2 {
+		t.Fatalf("plate shadow = %+v, want blur 18 and [0,8]", plate.Style)
+	}
+	if plate.Animation == nil || len(plate.Animation.Tracks) < 2 || plate.Animation.Tracks[0].Property != "scale_x" {
+		t.Fatalf("plate animation = %+v, want the independent wipe_right entrance", plate.Animation)
+	}
+}
+
 func TestEntityCaptionRejectsMalformedCardBackground(t *testing.T) {
 	for name, background := range map[string]any{
 		"missing color": map[string]any{"radius": 8.0},

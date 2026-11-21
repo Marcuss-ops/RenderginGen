@@ -16,7 +16,6 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
@@ -59,7 +58,7 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 			Backend: p.backend, ChrononVersion: p.chrononVersion,
 		}, nil
 	}
-	result, err := overlay.CompileSemantic(job.RenderPlan)
+	result, err := p.compileSemanticForPrepare(job.RenderPlan)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
@@ -81,9 +80,18 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
 		return queue.Artifact{}, err
 	}
-	// The prepare-only path stores the plan bytes and never builds a prepared
-	// package, so the fit's "did it change anything" answer is unused here.
-	if _, err := fitEntityImageLayersToAssets(ws.Root(), plan); err != nil {
+	// Second pass with the probed source sizes: the stored plan bytes must
+	// describe the geometry a frame renders, not the blind first reading.
+	sizes, err := probePlanImageSizes(ws.Root(), plan)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	sized, err := p.compileSemanticWithAssetSizes(job.RenderPlan, sizes)
+	if err != nil {
+		return queue.Artifact{}, fmt.Errorf("processor: sized recompile after materialize: %w", err)
+	}
+	plan = sized.Plan
+	if err := validateFrameRange(job, plan); err != nil {
 		return queue.Artifact{}, err
 	}
 	planBytes, err := plan.Marshal()

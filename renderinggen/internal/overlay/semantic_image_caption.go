@@ -27,24 +27,8 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	// The resolver owns the geometry: image bottom_center + margin anchor,
 	// safe-area clamping and long-name font fitting all happen there. The
 	// lowering below only writes the resolver's answer into the layer.
-	layoutPosition := image.Position
-	sequenceOffsetX, sequenceOffsetY := 0.0, 0.0
-	if parent.Item.CameraMotionID != "" {
-		// Resolve the label in the local viewport, then translate it back to the
-		// portrait's world position so the camera carries the pair together.
-		if len(image.Position) >= 2 {
-			sequenceOffsetX, sequenceOffsetY = image.Position[0], image.Position[1]
-		}
-		layoutPosition = []float64{0, 0}
-	}
-	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, layoutPosition, image.Size[0], image.Size[1])
-	requestedFontSize := 0.0
-	if parent.Item.CameraMotionID != "" {
-		if value, ok := numericValue(parent.Params["font_size_px"]); ok {
-			requestedFontSize = value
-		}
-	}
-	layout, err := ResolveEntityCardLayoutAtSize(src.Width, src.Height, imageBounds, caption, child.CaptionLayout, requestedFontSize)
+	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, image.Position, image.Size[0], image.Size[1])
+	layout, err := ResolveEntityCardLayoutAtSize(src.Width, src.Height, imageBounds, caption, child.CaptionLayout, 0)
 	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: item %q entity caption layout: %w", parent.Item.ID, err)
 	}
@@ -75,10 +59,6 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	}
 	positionX := captionBounds.CenterX
 	positionY := captionBounds.CenterY
-	if parent.Item.CameraMotionID != "" {
-		positionX += sequenceOffsetX - float64(src.Width)/2
-		positionY += sequenceOffsetY - float64(src.Height)/2
-	}
 	styleParams := map[string]any{
 		"position_x":   positionX,
 		"position_y":   positionY,
@@ -125,9 +105,7 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 		mergeStyle(value)
 	}
 	if family := strings.TrimSpace(child.CaptionFontFamily); family != "" {
-		if parent.Item.CameraMotionID != "" {
-			styleParams["font_family"] = family
-		} else if _, parentChoice := parent.Params["font_family"]; !parentChoice {
+		if _, parentChoice := parent.Params["font_family"]; !parentChoice {
 			styleParams["font_family"] = family
 		}
 	}
@@ -170,9 +148,29 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	if err != nil {
 		return Layer{}, fmt.Errorf("overlay: entity image caption %q: %w", captionLayerID, err)
 	}
+	// A caption whose image was fitted from its probed source aspect keeps the
+	// historical pinned font interval: the label is resolved against the FINAL
+	// card geometry in this compile, and the interval must travel with
+	// shrink_only so Chronon accepts the limits.
+	if image.SourceFitted {
+		pinCaptionFitSize(captionLayer.Style)
+	}
 	captionLayer.CaptionForImageID = image.ID
 	captionLayer.CaptionLayout = child.CaptionLayout
 	return captionLayer, nil
+}
+
+// pinCaptionFitSize locks a fitted caption to the size the layout resolved.
+// Chronon rejects font size limits without a non-none fit mode, so the interval
+// must travel with shrink_only (min == max renders the pinned size verbatim);
+// emitting the limits alone failed every fitted entity card.
+func pinCaptionFitSize(style *LayerStyle) {
+	if style == nil {
+		return
+	}
+	style.MinFontSize = style.FontSize
+	style.MaxFontSize = style.FontSize
+	style.FitMode = FitModeShrinkOnly
 }
 
 // compileEntityCaptionLayer keeps entity-card call sites explicit while

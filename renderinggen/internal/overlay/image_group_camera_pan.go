@@ -178,94 +178,34 @@ func stripPosition(position []float64, index int, spacing float64, spec cameraPa
 // more premium instead of a flat slide.
 func stripAnimation(pan AnimationTrack, duration int64, axis string) *LayerAnimation {
 	last := lastValidFrame(duration)
-	neutral := func(property string, value float64) AnimationTrack {
-		return AnimationTrack{Property: property, Keyframes: []AnimationKeyframe{
-			{Frame: 0, Value: value},
-			{Frame: last, Value: value},
-		}}
-	}
-	positionX := neutral("position_x", 0)
-	positionY := neutral("position_y", 0)
-	if axis == "y" {
-		positionY = pan
-	} else {
-		positionX = pan
-	}
 	scale := AnimationTrack{Property: "scale", Easing: "in_out_sine", Keyframes: []AnimationKeyframe{
 		{Frame: 0, Value: 1.02},
 		{Frame: last, Value: 1.06},
 	}}
-	return &LayerAnimation{Tracks: []AnimationTrack{
-		positionX,
-		positionY,
-		scale,
-		neutral("opacity", 1),
-	}}
+	return panAnimation(pan, duration, axis, &scale)
 }
 
 // cameraPanTrack builds the shared staircase. The first image holds at the
 // centre, then each later image's arrival defines one travel step followed by a
 // hold. Travel takes 60% of every step, leaving a deliberate 40% hold for the
 // slower editorial cadence.
+//
+// The curve is BAKED per frame and the track declares linear easing, exactly
+// like the chain camera-pan. That is not a style choice: Chronon's component
+// position compiler (render_plan_compiler_animation.cpp) treats a component
+// track with non-linear easing as the reference for the whole vector and then
+// requires every axis track to share its keyframes and easing, otherwise it
+// rejects the plan with "component tracks with per-key timing must share
+// keyframes and track easing". A sparse `in_out_sine` x track against the
+// neutral y track violated that contract; baked linear keys compose through
+// the dominant-easing fallback.
 func cameraPanTrack(ri resolvedItem, src *semanticPlan, count int, spacing float64, duration int64, spec cameraPanSpec) AnimationTrack {
 	property := "position_x"
 	if spec.axis == "y" {
 		property = "position_y"
 	}
-	track := AnimationTrack{Property: property, Easing: "in_out_sine"}
-	if duration <= 0 {
-		track.Keyframes = []AnimationKeyframe{{Frame: 0, Value: 0.0}}
-		return track
-	}
-	keys := []AnimationKeyframe{{Frame: 0, Value: 0.0}}
-	lastFrame := int64(0)
-	step := duration / int64(count)
-	if step < 1 {
-		step = 1
-	}
-	travel := step * 3 / 5
-	if travel < 1 {
-		travel = 1
-	}
 	arrivals := cameraPanArrivals(ri, src, count, duration)
-	for index := 1; index < count; index++ {
-		arrival := arrivals[index]
-		gap := arrival - lastFrame
-		if gap < 2 {
-			gap = 2
-		}
-		stepTravel := travel
-		if stepTravel > gap*3/5 {
-			stepTravel = gap * 3 / 5
-		}
-		if stepTravel < 1 {
-			stepTravel = 1
-		}
-		moveStart := arrival - stepTravel
-		if moveStart <= lastFrame {
-			moveStart = lastFrame + 1
-		}
-		if moveStart >= arrival {
-			arrival = moveStart + 1
-		}
-		if arrival >= duration {
-			arrival = duration - 1
-		}
-		if arrival <= moveStart {
-			break
-		}
-		keys = append(keys,
-			AnimationKeyframe{Frame: moveStart, Value: spec.travelSign * float64(index-1) * spacing},
-			AnimationKeyframe{Frame: arrival, Value: spec.travelSign * float64(index) * spacing},
-		)
-		lastFrame = arrival
-	}
-	end := lastValidFrame(duration)
-	if end > lastFrame {
-		keys = append(keys, AnimationKeyframe{Frame: end, Value: spec.travelSign * float64(count-1) * spacing})
-	}
-	track.Keyframes = keys
-	return track
+	return buildPanStrip(arrivals, count, duration).track(property, spacing, spec.travelSign)
 }
 
 // cameraPanArrivals places each member's arrival. Staggered producer start_ms

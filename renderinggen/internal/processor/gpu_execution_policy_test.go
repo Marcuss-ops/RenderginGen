@@ -249,3 +249,49 @@ func TestBuildChrononRequestParity(t *testing.T) {
 		})
 	}
 }
+
+// TestResolveExecutionPolicyRoutesStripPlansToSoftware pins the explicit
+// capability contract: the policy reads Plan.Features, not transient per-layer
+// metadata, so the compiler's statement that a plan keeps overlapping animated
+// full-canvas surfaces is the single input. A final composite stays on its auto
+// Vulkan contract even if it somehow carries the flag.
+func TestResolveExecutionPolicyRoutesStripPlansToSoftware(t *testing.T) {
+	plan := policyTestPlan(overlay.Layer{ID: "chain:seg0:image", Type: "image", Asset: "assets/a.png"})
+	plan.Features.OverlappingFullCanvasStrip = true
+	policy, err := ResolveExecutionPolicy(policyTestJob("strip"), plan, ProcessorConfig{
+		Backend: "vulkan", HardwareEncoder: "nvenc", EncoderBackend: "native",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if policy.Backend != "software" || policy.HardwareEncoder != chronon.HardwareEncoderNone || policy.EncoderBackend != "pipe" {
+		t.Fatalf("strip policy = %+v, want software/none/pipe", policy)
+	}
+	if policy.GPURequired {
+		t.Fatalf("strip policy requires a GPU: %+v", policy)
+	}
+	if !policy.CPUFallbackAllowed || policy.SoftwareRetryAllowed {
+		t.Fatalf("strip policy fallback/retry = %v/%v, want true/false", policy.CPUFallbackAllowed, policy.SoftwareRetryAllowed)
+	}
+
+	// The capability must NOT be inferred from a layer that merely looks like a
+	// strip member; only the explicit feature selects the software lane.
+	inferred := policyTestPlan(overlay.Layer{ID: "chain:seg0:image", Type: "image", Asset: "assets/a.png"})
+	if policy, err := ResolveExecutionPolicy(policyTestJob("no-strip"), inferred, ProcessorConfig{
+		Backend: "vulkan", HardwareEncoder: "nvenc", EncoderBackend: "native",
+	}); err != nil {
+		t.Fatal(err)
+	} else if policy.Backend != "vulkan" {
+		t.Fatalf("default policy backend = %q, want the declared vulkan", policy.Backend)
+	}
+
+	final := policyTestPlan(overlay.Layer{ID: "final:image", Type: "image", Asset: "assets/a.png"})
+	final.Features.OverlappingFullCanvasStrip = true
+	if policy, err := ResolveExecutionPolicy(policyTestJob("plan:final-composite:scene-1"), final, ProcessorConfig{
+		Backend: "vulkan", HardwareEncoder: "nvenc", EncoderBackend: "native",
+	}); err != nil {
+		t.Fatal(err)
+	} else if policy.Backend != "auto" || !policy.GPURequired {
+		t.Fatalf("final composite strip policy = %+v, want the auto Vulkan contract", policy)
+	}
+}

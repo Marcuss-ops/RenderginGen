@@ -134,7 +134,7 @@ func TestStagePipelineMatchesCompileSemanticDecoded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	direct, directAssets, directStats, directUnknown, err := compileSemanticDecoded(&src)
+	direct, directAssets, directStats, directUnknown, err := compileSemanticDecoded(&src, CompileOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -159,7 +159,7 @@ func TestStagePipelineMatchesCompileSemanticDecoded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	sealed, assets, sealedStats, unknown, err := sealPlan(lowered, stats, resolved)
+	sealed, assets, sealedStats, unknown, err := sealPlan(lowered, stats, resolved, CompileOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

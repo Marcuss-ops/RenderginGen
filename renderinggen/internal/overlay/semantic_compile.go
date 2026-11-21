@@ -85,14 +85,14 @@ func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
 	if err != nil {
 		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: decode semantic plan: %w", err)
 	}
-	return compileSemanticDecoded(&src)
+	return compileSemanticDecoded(&src, CompileOptions{})
 }
 
 // compileSemanticDecoded lowers an ALREADY-decoded semantic plan. It is the
 // single semantic overlay-plan.v1 → concrete render-plan.v2 lowering; the
 // decode happens once upstream so the prepare path never re-reads the raw
 // document.
-func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string, error) {
+func compileSemanticDecoded(src *semanticPlan, opts CompileOptions) (*Plan, []Asset, Stats, []string, error) {
 	validated, err := validateSemanticPlan(src)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
@@ -107,11 +107,14 @@ func compileSemanticDecoded(src *semanticPlan) (*Plan, []Asset, Stats, []string,
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
+	// The probe belongs to the document being lowered; set it after the copy
+	// stages so cloneSemanticPlan cannot drop it.
+	resolved.Document.assetSizes = opts.AssetSizes
 	concrete, stats, err := lowerPlan(resolved)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	return sealPlan(concrete, stats, resolved)
+	return sealPlan(concrete, stats, resolved, opts)
 }
 
 // resolveSemanticItems validates the plan's items once and lowers each to its
@@ -228,6 +231,17 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 		mapSpec, err := resolveItemMap(item, kind, src, envelope)
 		if err != nil {
 			return nil, err
+		}
+		// A chain's segments are decoded ONCE here, at the same stage that
+		// validates the item and resolves its params. The lowering then reads
+		// the typed list, so a decode failure can no longer surface halfway
+		// through layer construction (or twice for the camera controller).
+		if isChainKind(kind) {
+			segments, err := decodeChainSegments(presentation.Params, item.ID)
+			if err != nil {
+				return nil, err
+			}
+			item.chainSegments = segments
 		}
 		ri := resolvedItem{
 			Item: item, Spec: spec, Kind: kind, Params: presentation.Params,
@@ -369,11 +383,6 @@ func resolveItemPresentation(item semanticItem, spec TemplateSpec, kind ItemKind
 		return itemPresentation{}, err
 	}
 	hasCaption := itemHasCaption(item)
-	if item.CameraMotionID != "" && len(item.ImageLayers) > 0 {
-		// Camera sequences render each child's caption beside its portrait; the
-		// group itself intentionally has no aggregate EntityCaption.
-		hasCaption = true
-	}
 	if err := validateTextRuntimeOverrides(params, item.ID, kind, preset, len(item.Assets) > 0, hasCaption); err != nil {
 		return itemPresentation{}, err
 	}
@@ -415,15 +424,9 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		layers, err = applyImageGlowToBaseLayers(ri, layers)
-		if err != nil {
-			return nil, err
-		}
-		layers, err = applyImageItemEffects(ri, layers)
-		if err != nil {
-			return nil, err
-		}
-		return addStandaloneImageGrid(ri, src, layers)
+		// compileEntityGroup owns the members' backdrops through the shared
+		// member primitive; the item-level decoration is the shared finalizer.
+		return finalizeImageLayers(ri, src, registry, layers, false)
 	case isEntityKind(ri.Kind) && len(ri.Item.ImageLayers) > 0:
 		return compileImageItem(ri, src, registry)
 	case isEntityKind(ri.Kind) && len(ri.Item.Assets) > 0:
@@ -431,15 +434,9 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		layers, err = applyImageGlowToBaseLayers(ri, layers)
-		if err != nil {
-			return nil, err
-		}
-		layers, err = applyImageItemEffects(ri, layers)
-		if err != nil {
-			return nil, err
-		}
-		return addStandaloneImageGrid(ri, src, layers)
+		// compileEntityCard emits its own single-photo backdrop; only the
+		// remaining decoration belongs to the finalizer.
+		return finalizeImageLayers(ri, src, registry, layers, false)
 	case isImageKind(ri.Kind) && ri.Item.EntityStyleID != "" && len(ri.Item.Assets) > 0:
 		if ri.Item.ImagePresetID == "" {
 			return nil, fmt.Errorf("overlay: entity image item %q with entity_style_id requires image_preset_id", ri.Item.ID)
@@ -448,15 +445,7 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		if err != nil {
 			return nil, err
 		}
-		layers, err = applyImageGlowToBaseLayers(ri, layers)
-		if err != nil {
-			return nil, err
-		}
-		layers, err = applyImageItemEffects(ri, layers)
-		if err != nil {
-			return nil, err
-		}
-		return addStandaloneImageGrid(ri, src, layers)
+		return finalizeImageLayers(ri, src, registry, layers, false)
 	case isVideoKind(ri.Kind):
 		layer, err := compileVideoOverlayLayer(ri, src, registry)
 		if err != nil {

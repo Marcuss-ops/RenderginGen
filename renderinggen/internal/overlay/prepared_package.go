@@ -15,12 +15,18 @@ import (
 // Backends may upload each PreparedAsset/PreparedTextRun once and only consume
 // PreparedOverlay.Dynamic while rendering frames.
 type PreparedPackage struct {
-	PlanID      string            `json:"plan_id"`
-	Language    string            `json:"language,omitempty"`
-	Assets      []PreparedAsset   `json:"assets,omitempty"`
-	TextRuns    []PreparedTextRun `json:"text_runs,omitempty"`
-	Overlays    []PreparedOverlay `json:"overlays"`
-	ContentHash string            `json:"content_hash"`
+	PlanID   string            `json:"plan_id"`
+	Language string            `json:"language,omitempty"`
+	Assets   []PreparedAsset   `json:"assets,omitempty"`
+	TextRuns []PreparedTextRun `json:"text_runs,omitempty"`
+	Overlays []PreparedOverlay `json:"overlays"`
+	// Features carries the plan-level capability contract. The concrete Plan
+	// keeps it off the Chronon wire (the renderer has no use for it), so the
+	// durable sidecar is where a worker that loads a prepared package recovers
+	// it. Without this a reused package would lose the requirement that its
+	// overlapping strip renders on the software lane.
+	Features    PlanFeatures `json:"features"`
+	ContentHash string       `json:"content_hash"`
 }
 
 // PreparedAsset is a content-addressed image/video input. Size and fit are
@@ -153,7 +159,7 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 		assetHashes[asset.LogicalPath] = asset.Hash
 	}
 
-	pkg := PreparedPackage{PlanID: plan.JobID, Language: language}
+	pkg := PreparedPackage{PlanID: plan.JobID, Language: language, Features: plan.Features}
 	textByKey := make(map[string]struct{})
 	assetByKey := make(map[string]int)
 	for _, layer := range plan.Layers {

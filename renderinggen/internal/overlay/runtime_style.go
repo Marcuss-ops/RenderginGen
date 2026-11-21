@@ -48,6 +48,35 @@ func itemHasCaption(item semanticItem) bool {
 	return false
 }
 
+// textRuntimeKeyAllowedForKind is the single owner of "may this runtime text
+// key travel on a layer of this kind?". It is used by the validator (to reject
+// a text override on a media layer) and by the chain segment scrubber (to drop
+// such keys from a segment that inherited them). Two copies of this rule would
+// drift: a key allowed in one and scrubbed in the other becomes a silent no-op.
+//
+// Non-media kinds own every text key. A media kind may carry a key only when:
+//   - the item is a captioned entity/image, where the key styles the caption;
+//   - the key is shape `fill` (geometry, not a text face colour);
+//   - the key is shared with the image-style vocabulary (shadow_opacity), owned
+//     by the image validator.
+func textRuntimeKeyAllowedForKind(key string, kind ItemKind, hasImage, hasEntityCaption bool) bool {
+	if !isShapeKind(kind) && !isImageKind(kind) && !isVideoKind(kind) && !(isEntityKind(kind) && hasImage) {
+		return true
+	}
+	if (isEntityKind(kind) || isImageKind(kind)) && hasImage && hasEntityCaption {
+		return true
+	}
+	if key == "fill" && isShapeKind(kind) {
+		return true
+	}
+	for _, imageKey := range runtimeImageStyleKeys {
+		if imageKey == key {
+			return true
+		}
+	}
+	return false
+}
+
 func validateTextRuntimeOverrides(params map[string]any, itemID string, kind ItemKind, presetID string, hasImage, hasEntityCaption bool) error {
 	// Cursor controls are recognized only so they can fail closed on every item
 	// kind. Chronon has no caret primitive, so accepting them here would validate
@@ -69,31 +98,22 @@ func validateTextRuntimeOverrides(params map[string]any, itemID string, kind Ite
 				// on media layers, so it is not a text-layer trespass.
 				continue
 			}
-			if key == "fill" && isShapeKind(kind) {
-				// Shape layers own `fill` natively (rect/bar color as an
-				// RGBA array or hex string, validated by the shape
-				// compiler via parseRGBA). It is geometry, not a text
-				// face-color override, so the text trespass gate must not
-				// reject producer chart bars carrying it.
-				continue
-			}
 			value, exists := params[key]
 			if !exists {
 				continue
 			}
-			// A captioned entity image carries the payload's text style for
-			// its caption layer: every runtime text key is legal here and
-			// validated with the same rules as a text layer, so the
-			// payload's font, glow, stroke, size and shadow reach the
-			// caption instead of falling back to preset constants.
+			// The same predicate the chain scrubber uses decides whether the
+			// key may travel at all. Captioned entity images then validate the
+			// key with the text-layer rules, so the payload's font, glow,
+			// stroke, size and shadow reach the caption instead of falling
+			// back to preset constants.
+			if !textRuntimeKeyAllowedForKind(key, kind, hasImage, hasEntityCaption) {
+				return fmt.Errorf("overlay: item %q cannot apply text runtime override %q to a non-text layer", itemID, key)
+			}
 			if captionedEntityImage {
 				if err := validateRuntimeTextStyleKey(key, value, itemID); err != nil {
 					return err
 				}
-				continue
-			}
-			if exists {
-				return fmt.Errorf("overlay: item %q cannot apply text runtime override %q to a non-text layer", itemID, key)
 			}
 		}
 		if err := validateImageRuntimeOverrides(params, itemID); err != nil {
@@ -278,6 +298,27 @@ func decodeRuntimeTextBackground(raw any) (*LayerBackground, error) {
 		}
 		background.Padding = padding
 	}
+	if value, exists := entry["stroke"]; exists {
+		stroke, err := decodeRuntimePlateStroke(value)
+		if err != nil {
+			return nil, err
+		}
+		background.Stroke = stroke
+	}
+	if value, exists := entry["shadow"]; exists {
+		shadow, err := decodeRuntimePlateShadow(value)
+		if err != nil {
+			return nil, err
+		}
+		background.Shadow = shadow
+	}
+	if value, exists := entry["motions"]; exists {
+		motions, err := decodeRuntimePlateMotions(value)
+		if err != nil {
+			return nil, err
+		}
+		background.Motions = motions
+	}
 	return background, nil
 }
 
@@ -388,76 +429,121 @@ func validateImageRuntimeOverrides(params map[string]any, itemID string) error {
 	return nil
 }
 
+// imageStyleNumberMessage names the contract sentence a numeric rule uses. The
+// wording is part of the payload contract, so it is selected by kind instead of
+// being repeated in every table entry.
+type imageStyleNumberMessage int
+
+const (
+	imageStyleWithin        imageStyleNumberMessage = iota // [min,max]
+	imageStyleWithinPixels                                 // ±max pixels
+	imageStyleWithinSigned                                 // ±max
+	imageStyleBetweenPixels                                // between min and max pixels
+)
+
+// imageStyleNumberRule is one numeric image-style override. Adding a key means
+// adding a row, not another switch arm: the acceptance check lives in
+// validate() and every message keeps the same phrasing.
+type imageStyleNumberRule struct {
+	min          float64
+	max          float64
+	minExclusive bool
+	// finite rejects NaN/Inf. The dimension rules predate this check and only
+	// bound the magnitude, so they leave it off.
+	finite  bool
+	message imageStyleNumberMessage
+}
+
+func (rule imageStyleNumberRule) validate(key string, value any, itemID string) error {
+	n, ok := numericValue(value)
+	if !ok || (rule.finite && !finite(n)) {
+		return rule.error(key, itemID)
+	}
+	if rule.minExclusive {
+		if n <= rule.min || n > rule.max {
+			return rule.error(key, itemID)
+		}
+		return nil
+	}
+	if n < rule.min || n > rule.max {
+		return rule.error(key, itemID)
+	}
+	return nil
+}
+
+func (rule imageStyleNumberRule) error(key, itemID string) error {
+	low := rule.min
+	if rule.minExclusive {
+		// A strict zero bound is the card dimension contract: the smallest
+		// legal pixel is 1, which is what the payload message prints.
+		low = 1
+	}
+	switch rule.message {
+	case imageStyleBetweenPixels:
+		return fmt.Errorf("overlay: item %q params.%s must be between %g and %g pixels", itemID, key, low, rule.max)
+	case imageStyleWithinPixels:
+		return fmt.Errorf("overlay: item %q params.%s must be within ±%g pixels", itemID, key, rule.max)
+	case imageStyleWithinSigned:
+		return fmt.Errorf("overlay: item %q params.%s must be within ±%g", itemID, key, rule.max)
+	default:
+		return fmt.Errorf("overlay: item %q params.%s must be within [%g,%g]", itemID, key, low, rule.max)
+	}
+}
+
+// runtimeImageNumberRules is the numeric half of the image-style contract.
+// Every key advertised in runtimeImageStyleKeys must appear either here or in
+// the color/bool/fit tables below; TestRuntimeImageStyleRulesCoverCatalog
+// enforces that split so a key can never become an unchecked no-op.
+var runtimeImageNumberRules = map[string]imageStyleNumberRule{
+	"width":  {min: 0, minExclusive: true, max: 8192, message: imageStyleBetweenPixels},
+	"height": {min: 0, minExclusive: true, max: 8192, message: imageStyleBetweenPixels},
+
+	"position_x": {min: -8192, max: 8192, finite: true, message: imageStyleWithinPixels},
+	"position_y": {min: -8192, max: 8192, finite: true, message: imageStyleWithinPixels},
+
+	"radius":        {max: maxFrameRadius, finite: true, message: imageStyleWithin},
+	"border_radius": {max: maxFrameRadius, finite: true, message: imageStyleWithin},
+	"border_width":  {max: maxFrameBorderWidth, finite: true, message: imageStyleWithin},
+	"stroke_width":  {max: maxFrameStrokeWidth, finite: true, message: imageStyleWithin},
+
+	"image_glow_radius":    {max: maxRuntimeGlowSize, finite: true, message: imageStyleWithin},
+	"image_glow_intensity": {max: maxRuntimeGlowIntensity, finite: true, message: imageStyleWithin},
+
+	"shadow_opacity":  {max: 1, finite: true, message: imageStyleWithin},
+	"shadow_blur":     {max: maxFrameShadowBlur, finite: true, message: imageStyleWithin},
+	"shadow_offset_x": {min: -maxFrameShadowOffset, max: maxFrameShadowOffset, finite: true, message: imageStyleWithinSigned},
+	"shadow_offset_y": {min: -maxFrameShadowOffset, max: maxFrameShadowOffset, finite: true, message: imageStyleWithinSigned},
+}
+
+var runtimeImageColorKeys = map[string]bool{
+	"border_color": true, "stroke_color": true, "shadow_color": true, "image_glow_color": true,
+}
+
+var runtimeImageBoolKeys = map[string]bool{
+	"bounded": true, "shadow_enabled": true,
+}
+
 func validateRuntimeImageStyleKey(key string, value any, itemID string) error {
-	switch key {
-	case "width", "height":
-		n, ok := numericValue(value)
-		if !ok || n <= 0 || n > 8192 {
-			return fmt.Errorf("overlay: item %q params.%s must be between 1 and 8192 pixels", itemID, key)
-		}
-	case "position_x", "position_y":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || math.Abs(n) > 8192 {
-			return fmt.Errorf("overlay: item %q params.%s must be within ±8192 pixels", itemID, key)
-		}
-	case "radius", "border_radius":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > maxFrameRadius {
-			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameRadius)
-		}
-	case "border_width":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > maxFrameBorderWidth {
-			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameBorderWidth)
-		}
-	case "stroke_width":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > maxFrameStrokeWidth {
-			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxFrameStrokeWidth)
-		}
-	case "border_color", "stroke_color", "shadow_color":
+	if rule, registered := runtimeImageNumberRules[key]; registered {
+		return rule.validate(key, value, itemID)
+	}
+	if runtimeImageColorKeys[key] {
 		color, ok := value.(string)
 		if !ok || !isHexColor(color) {
 			return fmt.Errorf("overlay: item %q params.%s must be #RRGGBB", itemID, key)
 		}
-	case "bounded", "shadow_enabled":
+		return nil
+	}
+	if runtimeImageBoolKeys[key] {
 		if _, ok := value.(bool); !ok {
 			return fmt.Errorf("overlay: item %q params.%s must be a boolean", itemID, key)
 		}
-	case "fit":
+		return nil
+	}
+	if key == "fit" {
 		fit, ok := value.(string)
 		if !ok || (fit != "cover" && fit != "contain" && fit != "fill") {
 			return fmt.Errorf("overlay: item %q params.fit must be cover, contain or fill", itemID)
-		}
-	case "image_glow_radius":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > maxRuntimeGlowSize {
-			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxRuntimeGlowSize)
-		}
-	case "image_glow_intensity":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > maxRuntimeGlowIntensity {
-			return fmt.Errorf("overlay: item %q params.%s must be within [0,%g]", itemID, key, maxRuntimeGlowIntensity)
-		}
-	case "image_glow_color":
-		color, ok := value.(string)
-		if !ok || !isHexColor(color) {
-			return fmt.Errorf("overlay: item %q params.%s must be #RRGGBB", itemID, key)
-		}
-	case "shadow_opacity":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > 1 {
-			return fmt.Errorf("overlay: item %q params.shadow_opacity must be within [0,1]", itemID)
-		}
-	case "shadow_blur":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || n < 0 || n > maxFrameShadowBlur {
-			return fmt.Errorf("overlay: item %q params.shadow_blur must be within [0,%g]", itemID, maxFrameShadowBlur)
-		}
-	case "shadow_offset_x", "shadow_offset_y":
-		n, ok := numericValue(value)
-		if !ok || !finite(n) || math.Abs(n) > maxFrameShadowOffset {
-			return fmt.Errorf("overlay: item %q params.%s must be within ±%g", itemID, key, maxFrameShadowOffset)
 		}
 	}
 	return nil

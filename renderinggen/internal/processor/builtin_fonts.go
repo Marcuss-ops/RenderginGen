@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	fontassets "github.com/Marcuss-ops/RenderingGen/renderinggen/assets"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/assets"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
@@ -39,7 +39,7 @@ func materializeBuiltinFonts(root string, plan *overlay.Plan) error {
 		if info, statErr := os.Stat(target); statErr == nil && info.Mode().IsRegular() {
 			continue
 		}
-		data, err := fontassets.Fonts.ReadFile(strings.TrimPrefix(font, "assets/"))
+		data, err := assets.Fonts.ReadFile(strings.TrimPrefix(font, "assets/"))
 		if err != nil {
 			return fmt.Errorf("processor: official preset font %q is missing from the editorial_v1 bundle", font)
 		}

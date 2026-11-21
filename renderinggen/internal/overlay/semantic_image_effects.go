@@ -12,24 +12,39 @@ import (
 	"strings"
 )
 
-// compileImageItem lowers one semantic image item and then decorates its base
-// image layers with the item's runtime effects. The core lowering is
-// compileImageItemCore; compileItem routes entity cards, entity groups and
-// composite recipes through the same applyImageItemEffects step, so an item's
-// declared stack can never be skipped because of the path that lowered it.
+// compileImageItem lowers one semantic image item and then runs the shared
+// finalizer. The core lowering is compileImageItemCore; compileItem routes
+// entity cards and entity groups through the same finalizer, so an item's
+// declared backdrop, glow, runtime effect stack and grid can never be skipped
+// because of the path that lowered its base layers.
 func compileImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	layers, err := compileImageItemCore(ri, src, registry)
 	if err != nil {
 		return nil, err
 	}
-	if len(ri.Item.ImageLayers) > 0 {
-		// Co-present entity portraits keep one backdrop per member photo.
-		layers, err = addCompositeImageBackdrops(ri, src, registry, layers)
-	} else {
-		layers, err = addSingleImageBackdrop(ri, src, registry, layers)
-	}
-	if err != nil {
-		return nil, err
+	return finalizeImageLayers(ri, src, registry, layers, true)
+}
+
+// finalizeImageLayers is the ONE post-lowering pipeline for image-producing
+// items, in execution order:
+//
+//  1. optional per-member backdrops (owner items only — an entity card already
+//     emitted its own single backdrop during lowering);
+//  2. the image glow plate;
+//  3. the item's runtime params.effects stack;
+//  4. the standalone params.grid overlay.
+//
+// It replaces three copies of the same glow→effects→grid chain inside
+// compileItem and the fourth inside compileImageItem, so a new decoration
+// stage is added in exactly one place.
+func finalizeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry, layers []Layer, backdrops bool) ([]Layer, error) {
+	var err error
+	if backdrops {
+		// One entry point owns the single/member/shared-backdrop decision.
+		layers, err = addImageBackdrops(ri, src, registry, layers)
+		if err != nil {
+			return nil, err
+		}
 	}
 	layers, err = applyImageGlowToBaseLayers(ri, layers)
 	if err != nil {

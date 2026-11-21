@@ -143,37 +143,32 @@ func addBackdropGrid(ri resolvedItem, src *semanticPlan, spec *imageBackdropSpec
 	return append(layers, gridLayer), nil
 }
 
-// addSingleImageBackdrop adds a restrained, full-canvas copy of the same
-// source image behind a standalone image.
-func addSingleImageBackdrop(ri resolvedItem, src *semanticPlan, registry *assetRegistry, layers []Layer) ([]Layer, error) {
+// addImageBackdrops is the ONE image_backdrop entry point. It resolves the
+// authored block into exactly the backdrops the item's visible photos require:
+//
+//   - an explicit image_backdrop.asset_id yields one shared full-item backdrop;
+//   - an item without image_layers (standalone image, entity card) blurs its
+//     own source image behind itself;
+//   - an image_layers composite blurs each member's OWN photo, so a co-present
+//     group never borrows a sibling's background;
+//   - the optional backdrop grid is appended once, after the backdrops.
+//
+// Backdrops are prepended to the item's layers so they stay behind the photo
+// surface. Callers no longer choose between a single and a composite variant.
+func addImageBackdrops(ri resolvedItem, src *semanticPlan, registry *assetRegistry, layers []Layer) ([]Layer, error) {
 	spec, err := parseImageBackdrop(ri, src, registry)
 	if err != nil || spec == nil {
 		return layers, err
 	}
-	assetPath := spec.assetPath
-	if assetPath == "" {
-		return nil, fmt.Errorf("overlay: image_backdrop requires at least one asset")
-	}
-	out := append([]Layer{spec.layer(ri, src, assetPath, ri.Item.ID+":image-backdrop", ri.Start, ri.End)}, layers...)
-	return addBackdropGrid(ri, src, spec, out)
-}
-
-// addCompositeImageBackdrops adds one backdrop per member image layer: entity
-// portraits rendered as an image_layers composite blur their OWN photo behind
-// the card, so a co-present group never borrows a sibling's background. An
-// explicit image_backdrop.asset_id overrides the per-member choice and yields
-// one shared backdrop for the whole item.
-func addCompositeImageBackdrops(ri resolvedItem, src *semanticPlan, registry *assetRegistry, layers []Layer) ([]Layer, error) {
-	spec, err := parseImageBackdrop(ri, src, registry)
-	if err != nil || spec == nil {
-		return layers, err
-	}
-	if spec.explicitAsset {
+	if spec.explicitAsset || len(ri.Item.ImageLayers) == 0 {
+		if spec.assetPath == "" {
+			return nil, fmt.Errorf("overlay: image_backdrop requires at least one asset")
+		}
 		out := append([]Layer{spec.layer(ri, src, spec.assetPath, ri.Item.ID+":image-backdrop", ri.Start, ri.End)}, layers...)
 		return addBackdropGrid(ri, src, spec, out)
 	}
 	seen := make(map[string]struct{}, len(layers))
-	out := make([]Layer, 0, len(layers)*2)
+	backdrops := make([]Layer, 0, len(layers))
 	for _, layer := range layers {
 		if layer.Type != "image" || !strings.HasSuffix(layer.ID, ":image") || layer.Asset == "" {
 			continue
@@ -182,12 +177,14 @@ func addCompositeImageBackdrops(ri resolvedItem, src *semanticPlan, registry *as
 			continue
 		}
 		seen[layer.Asset] = struct{}{}
-		out = append(out, spec.layer(ri, src, layer.Asset, layer.ID+"-backdrop",
+		backdrops = append(backdrops, spec.layer(ri, src, layer.Asset, layer.ID+"-backdrop",
 			layer.StartFrame, layer.StartFrame+layer.DurationFrames))
 	}
 	if len(seen) == 0 {
 		return nil, fmt.Errorf("overlay: item %q image_backdrop found no member image layer to blur", ri.Item.ID)
 	}
+	out := make([]Layer, 0, len(backdrops)+len(layers))
+	out = append(out, backdrops...)
 	out = append(out, layers...)
 	return addBackdropGrid(ri, src, spec, out)
 }

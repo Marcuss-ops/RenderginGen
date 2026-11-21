@@ -3143,11 +3143,6 @@
                 }
               }
             }
-          },
-          "camera_motion_id": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Optional shared photo-documentary camera recipe for an image sequence."
           }
         }
       }

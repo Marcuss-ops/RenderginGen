@@ -129,9 +129,11 @@ func ResolveExecutionPolicy(job *queue.Job, plan *overlay.Plan, cfg ProcessorCon
 	// A chain camera-pan keeps overlapping animated full-canvas image
 	// surfaces, which the native residency gate cannot materialize. Run only
 	// those plans through the software (libx264) lane so the rest of the
-	// worker keeps NVENC. Final composites are excluded: they own the auto
-	// Vulkan contract and are validated below.
-	if !policy.FinalComposite && planHasChainCamera(plan) {
+	// worker keeps NVENC. The overlay compiler states the requirement as a
+	// plan capability; the policy never inspects individual layers. Final
+	// composites are excluded: they own the auto Vulkan contract and are
+	// validated below.
+	if !policy.FinalComposite && plan != nil && plan.Features.RequiresSoftwareEncode() {
 		policy.Backend = "software"
 		policy.HardwareEncoder = chronon.HardwareEncoderNone
 		policy.EncoderBackend = "pipe"
@@ -158,22 +160,6 @@ func ResolveExecutionPolicy(job *queue.Job, plan *overlay.Plan, cfg ProcessorCon
 		return RenderExecutionPolicy{}, err
 	}
 	return policy, nil
-}
-
-// planHasChainCamera reports whether the compiled plan carries a chain
-// camera-pan strip. The image layers keep the transient strip offset until
-// the processor resolves captions, so the resolver can see the opt-in without
-// re-parsing the producer document.
-func planHasChainCamera(plan *overlay.Plan) bool {
-	if plan == nil {
-		return false
-	}
-	for _, layer := range plan.Layers {
-		if len(layer.ChainPanOffset) == 2 {
-			return true
-		}
-	}
-	return false
 }
 
 // Validate asserts the invariants the rest of the pipeline relies on.

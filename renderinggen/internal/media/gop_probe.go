@@ -47,8 +47,11 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 		log.Printf("media: ffprobe %s: closed-GOP probe start: %v (closed_gop=false, uncertifiable)", path, err)
 		return false, true, 0
 	}
-	waitDone := make(chan error, 1)
-	go func() { waitDone <- cmd.Wait() }()
+	// StdoutPipe's contract forbids calling Wait before every read has
+	// completed: Wait closes the read end when the child exits. A concurrent
+	// Wait let a short clip exit before the decoder's first read and turned a
+	// certifiable GOP into "file already closed". Drain first, then Wait (or
+	// cancel + Wait on an early exit).
 
 	positions := make([]int, 0, 16)
 	step := 0 // keyframe spacing once two keyframes are known (0 until proven)
@@ -61,17 +64,17 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 	dec := json.NewDecoder(stdout)
 	// Expected top level: { "packets": [ ...
 	if err := expectJSONDelim(dec, '{'); err != nil {
-		return failProbe(cancel, waitDone, path, err)
+		return failProbe(cancel, cmd, path, err)
 	}
 	key, err := dec.Token()
 	if err != nil {
-		return failProbe(cancel, waitDone, path, err)
+		return failProbe(cancel, cmd, path, err)
 	}
 	if k, ok := key.(string); !ok || k != "packets" {
-		return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected top-level key %v", key))
+		return failProbe(cancel, cmd, path, fmt.Errorf("unexpected top-level key %v", key))
 	}
 	if err := expectJSONDelim(dec, '['); err != nil {
-		return failProbe(cancel, waitDone, path, err)
+		return failProbe(cancel, cmd, path, err)
 	}
 
 	for {
@@ -80,37 +83,37 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 			if err == io.EOF {
 				err = fmt.Errorf("unterminated packets array")
 			}
-			return failProbe(cancel, waitDone, path, err)
+			return failProbe(cancel, cmd, path, err)
 		}
 		d, isDelim := tok.(json.Delim)
 		if isDelim && d == ']' {
 			break // end of the packet table
 		}
 		if !isDelim || d != '{' {
-			return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected packet-table token %v", tok))
+			return failProbe(cancel, cmd, path, fmt.Errorf("unexpected packet-table token %v", tok))
 		}
 		// One packet object: { "flags" : "..." }
 		keyTok, err := dec.Token()
 		if err != nil {
-			return failProbe(cancel, waitDone, path, err)
+			return failProbe(cancel, cmd, path, err)
 		}
 		valueTok, err := dec.Token()
 		if err != nil {
-			return failProbe(cancel, waitDone, path, err)
+			return failProbe(cancel, cmd, path, err)
 		}
 		closeTok, err := dec.Token()
 		if err != nil {
-			return failProbe(cancel, waitDone, path, err)
+			return failProbe(cancel, cmd, path, err)
 		}
 		if k, ok := keyTok.(string); !ok || k != "flags" {
-			return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected packet key %v", keyTok))
+			return failProbe(cancel, cmd, path, fmt.Errorf("unexpected packet key %v", keyTok))
 		}
 		flags, ok := valueTok.(string)
 		if !ok {
-			return failProbe(cancel, waitDone, path, fmt.Errorf("packet flags value is not a string: %v", valueTok))
+			return failProbe(cancel, cmd, path, fmt.Errorf("packet flags value is not a string: %v", valueTok))
 		}
 		if cd, ok := closeTok.(json.Delim); !ok || cd != '}' {
-			return failProbe(cancel, waitDone, path, fmt.Errorf("unexpected packet close %v", closeTok))
+			return failProbe(cancel, cmd, path, fmt.Errorf("unexpected packet close %v", closeTok))
 		}
 		if strings.Contains(flags, "K") {
 			positions = append(positions, packetIndex)
@@ -119,21 +122,21 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 			if len(positions) >= 3 {
 				if positions[len(positions)-1]-positions[len(positions)-2] != step {
 					cancel() // reap the child; we already have the verdict
-					<-waitDone
+					_ = cmd.Wait()
 					return false, false, 0 // read successfully: the cadence is invalid
 				}
 			} else if len(positions) == 2 {
 				step = positions[1] - positions[0]
 				if step <= 0 {
 					cancel()
-					<-waitDone
+					_ = cmd.Wait()
 					return false, false, 0
 				}
 			}
 		}
 		packetIndex++
 	}
-	if err := <-waitDone; err != nil {
+	if err := cmd.Wait(); err != nil {
 		// A non-cancel wait error means ffprobe itself failed (bad file,
 		// unsupported flag): fail closed and say so.
 		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false, uncertifiable)", path, err)
@@ -168,9 +171,9 @@ func expectJSONDelim(dec *json.Decoder, want json.Delim) error {
 // failed closed-GOP probe so the degradation is never silent. It always
 // reports false + uncertifiable: no packet table was decoded, so the cadence
 // was never observed (distinct from a decoded but non-uniform cadence).
-func failProbe(cancel context.CancelFunc, waitDone <-chan error, path string, cause error) (bool, bool, int) {
+func failProbe(cancel context.CancelFunc, cmd *exec.Cmd, path string, cause error) (bool, bool, int) {
 	cancel()
-	<-waitDone
+	_ = cmd.Wait()
 	log.Printf("media: ffprobe %s: closed-GOP probe decode failed: %v (closed_gop=false, uncertifiable)", path, cause)
 	return false, true, 0
 }

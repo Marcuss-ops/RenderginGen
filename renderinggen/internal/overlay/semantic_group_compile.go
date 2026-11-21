@@ -26,7 +26,10 @@ var groupLayoutNames = map[string]int{
 }
 
 // compileEntityGroup validates the group contract, applies slot defaults and
-// delegates member lowering to the shared composite path.
+// delegates member lowering to the shared composite-member primitive. It does
+// NOT route through compileLegacyCompositeImageLayers: an entity group is a
+// current producer construct, not a sealed pre-group_motion_id replay, and it
+// must keep compiling even when the legacy path is deleted.
 func compileEntityGroup(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	n := len(ri.Item.ImageLayers)
 	if n < 2 || n > 5 {
@@ -83,5 +86,22 @@ func compileEntityGroup(ri resolvedItem, src *semanticPlan, registry *assetRegis
 		}
 		grouped.Item.ImageLayers[i].Params = params
 	}
-	return compileLegacyCompositeImageLayers(grouped, src, registry)
+	// Entity-group members carry their own per-child motion and are decorated
+	// by the shared member primitive. The item-level premium recipe is resolved
+	// here exactly like the sealed composite path resolved it, so a group item
+	// that names a premium image motion keeps that decoration.
+	_, imageRecipe, err := resolveImageRecipeMotion(grouped.Item.MotionID, false)
+	if err != nil {
+		return nil, err
+	}
+	layers, gridSource, err := compileCompositeImageMembers(grouped, src, registry, premiumImageRecipeDefinition(imageRecipe))
+	if err != nil {
+		return nil, err
+	}
+	// One grid per item: a child-declared grid lowers once, and only when the
+	// item itself does not declare params.grid (the caller lowers that one).
+	if _, itemGrid := ri.Params["grid"]; !itemGrid && gridSource != nil {
+		return addStandaloneImageGrid(*gridSource, src, layers)
+	}
+	return layers, nil
 }

@@ -12,9 +12,6 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
-// compileImageItemCore is the pure recipe/motion lowering of one image item.
-// The runtime effect decoration is applied by the compileImageItem wrapper in
-// semantic_image_effects.go; keep this function effect-stack agnostic.
 // entityCaptionLayer builds the caption layer anchored to the image layer of
 // layers, or nil when the item declares no caption. Both image lowering paths
 // share the anchor index and the error path.
@@ -31,23 +28,59 @@ func entityCaptionLayer(ri resolvedItem, src *semanticPlan, layers []Layer) (*La
 	return &captionLayer, nil
 }
 
+// imageRecipeSelection is the validated recipe set one image item lowers
+// through. At most one of group/premium/visualAccents is non-nil: they are
+// distinct motion families, and resolveImageRecipes has already rejected the
+// combinations the contract does not allow.
+type imageRecipeSelection struct {
+	resolvedMotion *resolvedMotion
+	group          *motion.MotionDefinition
+	premium        *motion.MotionDefinition
+	visualAccents  *motion.MotionDefinition
+}
+
+// compileImageItemCore is the pure recipe/motion lowering of one image item.
+// The runtime effect decoration is applied by the compileImageItem wrapper in
+// semantic_image_effects.go; keep this function effect-stack agnostic.
+//
+// The dispatcher owns no lowering of its own: it validates the recipe
+// selection once, then hands the item to its one choreography — standalone
+// (single asset, light leak), or multi-card (group recipe, premium stack,
+// sealed legacy replay).
 func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+	recipes, err := resolveImageRecipes(ri)
+	if err != nil {
+		return nil, err
+	}
+	if len(ri.Item.ImageLayers) == 0 {
+		return compileStandaloneImageItem(ri, src, registry, recipes)
+	}
+	return compileMultiImageItem(ri, src, registry, recipes)
+}
+
+// resolveImageRecipes resolves the item's registered motion and validates
+// target admission once, before any layer is built. Every check here is
+// item-level: it answers which lowering the payload asks for, not how a layer
+// looks.
+func resolveImageRecipes(ri resolvedItem) (imageRecipeSelection, error) {
+	var selection imageRecipeSelection
 	// Item-level controls apply only to the standalone image or to a catalog
 	// recipe that coordinates multiple image layers. Ordinary composite children own their
 	// independent motion_params and are validated in compileSingleImageLayer.
 	if len(ri.Item.ImageLayers) > 0 {
 		if _, _, err := motionWindows(ri.Item.MotionParams, ri.Preset.Motion.Exit); err != nil {
-			return nil, err
+			return selection, err
 		}
 	}
 	resolvedImageMotion, imageRecipe, err := resolveImageRecipeMotion(ri.Item.MotionID, true)
 	if err != nil {
-		return nil, err
+		return selection, err
 	}
+	selection.resolvedMotion = resolvedImageMotion
 	groupRecipe := imageGroupRecipeDefinition(imageRecipe)
 	if groupRecipe != nil && len(ri.Item.ImageLayers) == 0 && isReusableImageGroupRecipe(groupRecipe) {
 		if !motionDefinitionAdmitsTarget(groupRecipe, TargetImage) {
-			return nil, fmt.Errorf("overlay: motion %q is not supported for a single image", groupRecipe.ID)
+			return selection, fmt.Errorf("overlay: motion %q is not supported for a single image", groupRecipe.ID)
 		}
 		// The same authored tracks serve a one-image item directly and are
 		// reused from group_recipe for multiple-image compositions.
@@ -55,100 +88,121 @@ func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetReg
 		imageRecipe = nil
 	}
 	if groupRecipe != nil && (len(ri.Item.ImageLayers) == 0 || !isImageKind(ri.Kind)) {
-		return nil, fmt.Errorf("overlay: group motion %q requires an image item with image_layers", groupRecipe.ID)
+		return selection, fmt.Errorf("overlay: group motion %q requires an image item with image_layers", groupRecipe.ID)
 	}
 	premium := premiumImageRecipeDefinition(imageRecipe)
 	if isMultiImageRecipe(imageRecipe) && premium == nil {
-		return nil, fmt.Errorf("overlay: multi-image motion %q in category %q has no recipe lowering", ri.Item.MotionID, imageRecipe.Category)
+		return selection, fmt.Errorf("overlay: multi-image motion %q in category %q has no recipe lowering", ri.Item.MotionID, imageRecipe.Category)
 	}
 	visualAccents := visualAccentsRecipeDefinition(imageRecipe)
 	if isMultiImageRecipe(visualAccents) {
-		return nil, fmt.Errorf("overlay: motion %q requires multiple image_layers", visualAccents.ID)
+		return selection, fmt.Errorf("overlay: motion %q requires multiple image_layers", visualAccents.ID)
 	}
 	if visualAccents != nil && visualAccents.GroupRecipe != nil {
-		return nil, fmt.Errorf("overlay: visual accents cannot be used as image group recipes")
+		return selection, fmt.Errorf("overlay: visual accents cannot be used as image group recipes")
 	}
-	if ri.Kind == KindLightLeak && len(ri.Item.Assets) == 0 && len(ri.Item.ImageLayers) == 0 {
-		if visualAccents == nil || visualAccents.Category != "light_leak_v1" {
-			return nil, fmt.Errorf("overlay: assetless light leak item %q requires a light_leak_v1 motion", ri.Item.ID)
-		}
-		opacity := 0.0
-		base := Layer{ID: ri.Item.ID + "__transparent_surface", Type: "image", Position: []float64{0, 0}, Size: []float64{float64(src.Width), float64(src.Height)}, Fit: "contain", StartFrame: ri.Start, DurationFrames: ri.End - ri.Start, Opacity: &opacity}
-		layers, err := compileVisualAccentsImageLayers(ri, src, base, visualAccents)
-		if err != nil {
-			return nil, err
-		}
-		out := make([]Layer, 0, len(layers)-1)
-		for _, layer := range layers {
-			if layer.ID != base.ID {
-				out = append(out, layer)
-			}
-		}
-		if len(out) == 0 {
-			return nil, fmt.Errorf("overlay: light leak item %q produced no glow layers", ri.Item.ID)
-		}
-		return out, nil
+	selection.group = groupRecipe
+	selection.premium = premium
+	selection.visualAccents = visualAccents
+	return selection, nil
+}
+
+// compileStandaloneImageItem lowers the one-card choreographies: an assetless
+// light leak, or a single asset with optional visual accents and caption.
+func compileStandaloneImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry, recipes imageRecipeSelection) ([]Layer, error) {
+	if ri.Kind == KindLightLeak && len(ri.Item.Assets) == 0 {
+		return compileAssetlessLightLeak(ri, src, recipes.visualAccents)
 	}
-	if len(ri.Item.ImageLayers) == 0 {
-		if len(ri.Item.Assets) == 0 {
-			return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
-		}
-		if isMultiImageRecipe(premium) {
-			return nil, fmt.Errorf("overlay: motion %q requires at least two image_layers and motion_params.active_layer_id", premium.ID)
-		}
-		layer, err := compileSingleImageLayerResolved(ri, src, registry.Path(ri.Item.Assets[0].ID), ri.Preset, ri.Item.MotionID, ri.Item.MotionParams, ri.Start, ri.End, ri.Item.ID, resolvedImageMotion)
+	if len(ri.Item.Assets) == 0 {
+		return nil, fmt.Errorf("overlay: image template %q item %q requires asset_refs", ri.Item.Template, ri.Item.ID)
+	}
+	if isMultiImageRecipe(recipes.premium) {
+		return nil, fmt.Errorf("overlay: motion %q requires at least two image_layers and motion_params.active_layer_id", recipes.premium.ID)
+	}
+	layer, err := compileSingleImageLayerResolved(ri, src, registry.Path(ri.Item.Assets[0].ID), ri.Preset, ri.Item.MotionID, ri.Item.MotionParams, ri.Start, ri.End, ri.Item.ID, recipes.resolvedMotion)
+	if err != nil {
+		return nil, err
+	}
+	if recipes.visualAccents != nil {
+		layers, err := compileVisualAccentsImageLayers(ri, src, layer, recipes.visualAccents)
 		if err != nil {
 			return nil, err
 		}
-		if visualAccents != nil {
-			layers, err := compileVisualAccentsImageLayers(ri, src, layer, visualAccents)
-			if err != nil {
-				return nil, err
-			}
-			captionLayer, err := entityCaptionLayer(ri, src, layers)
-			if err != nil {
-				return nil, err
-			}
-			if captionLayer != nil {
-				layers = append(layers, *captionLayer)
-			}
-			return layers, nil
-		}
-		layers, err := compilePremiumImageLayers(ri, src, layer, premium)
-		if err != nil {
-			return nil, err
-		}
-		captionLayer, err := entityCaptionLayer(ri, src, layers)
-		if err != nil {
-			return nil, err
-		}
-		if captionLayer != nil {
-			if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
-				premiumLayerActive(captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
-			}
-			return append(layers, *captionLayer), nil
-		}
+		return appendEntityCaption(ri, src, layers, nil)
+	}
+	layers, err := compilePremiumImageLayers(ri, src, layer, recipes.premium)
+	if err != nil {
+		return nil, err
+	}
+	return appendEntityCaption(ri, src, layers, recipes.premium)
+}
+
+// appendEntityCaption attaches the item's entity caption to an already-built
+// image stack and applies the premium caption tracks. A premium recipe that
+// requires a caption fails closed when the payload omits one; the visual
+// accents path passes a nil premium because it has no caption contract.
+func appendEntityCaption(ri resolvedItem, src *semanticPlan, layers []Layer, premium *motion.MotionDefinition) ([]Layer, error) {
+	captionLayer, err := entityCaptionLayer(ri, src, layers)
+	if err != nil {
+		return nil, err
+	}
+	if captionLayer == nil {
 		if premium != nil && premium.ImageRecipe.RequireCaption {
 			return nil, fmt.Errorf("overlay: motion %q requires entity_caption", premium.ID)
 		}
 		return layers, nil
 	}
-	if groupRecipe != nil {
-		if !groupRecipe.GroupRecipe.SupportsCount(len(ri.Item.ImageLayers)) {
-			return nil, fmt.Errorf("overlay: motion %q does not support %d image layers", groupRecipe.ID, len(ri.Item.ImageLayers))
-		}
-		return compileImageGroupRecipe(ri, src, registry, groupRecipe)
+	if premium != nil && len(premium.ImageRecipe.CaptionTracks) > 0 {
+		premiumLayerActive(captionLayer, premiumTracks(*premium, premium.ImageRecipe.CaptionTracks, captionLayer.DurationFrames))
 	}
-	if isMultiImageRecipe(premium) {
-		if !motionDefinitionAdmitsTarget(premium, TargetImage) {
+	return append(layers, *captionLayer), nil
+}
+
+// compileAssetlessLightLeak builds the transparent full-canvas surface a
+// light_leak_v1 recipe decorates, then drops the surface itself: the item is
+// the glow, not a frame.
+func compileAssetlessLightLeak(ri resolvedItem, src *semanticPlan, visualAccents *motion.MotionDefinition) ([]Layer, error) {
+	if visualAccents == nil || visualAccents.Category != "light_leak_v1" {
+		return nil, fmt.Errorf("overlay: assetless light leak item %q requires a light_leak_v1 motion", ri.Item.ID)
+	}
+	opacity := 0.0
+	base := Layer{ID: ri.Item.ID + "__transparent_surface", Type: "image", Position: []float64{0, 0}, Size: []float64{float64(src.Width), float64(src.Height)}, Fit: "contain", StartFrame: ri.Start, DurationFrames: ri.End - ri.Start, Opacity: &opacity}
+	layers, err := compileVisualAccentsImageLayers(ri, src, base, visualAccents)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Layer, 0, len(layers)-1)
+	for _, layer := range layers {
+		if layer.ID != base.ID {
+			out = append(out, layer)
+		}
+	}
+	if len(out) == 0 {
+		return nil, fmt.Errorf("overlay: light leak item %q produced no glow layers", ri.Item.ID)
+	}
+	return out, nil
+}
+
+// compileMultiImageItem lowers the card stacks: a certified group recipe, a
+// premium multi-image recipe, or the sealed legacy replay when the plan
+// carries its explicit marker.
+func compileMultiImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry, recipes imageRecipeSelection) ([]Layer, error) {
+	if recipes.group != nil {
+		if !recipes.group.GroupRecipe.SupportsCount(len(ri.Item.ImageLayers)) {
+			return nil, fmt.Errorf("overlay: motion %q does not support %d image layers", recipes.group.ID, len(ri.Item.ImageLayers))
+		}
+		return compileImageGroupRecipe(ri, src, registry, recipes.group)
+	}
+	if isMultiImageRecipe(recipes.premium) {
+		if !motionDefinitionAdmitsTarget(recipes.premium, TargetImage) {
 			return nil, fmt.Errorf("overlay: item %q motion %q is not supported for target %q", ri.Item.ID, ri.Item.MotionID, TargetImage)
 		}
-		return compilePremiumMultiImageRecipe(ri, src, registry, premium)
+		return compilePremiumMultiImageRecipe(ri, src, registry, recipes.premium)
 	}
-	if premium != nil && premium.ImageRecipe.RequireCaption {
+	if recipes.premium != nil && recipes.premium.ImageRecipe.RequireCaption {
 		for _, child := range ri.Item.ImageLayers {
 			if strings.TrimSpace(child.Caption) == "" {
-				return nil, fmt.Errorf("overlay: motion %q requires a caption on every image layer", premium.ID)
+				return nil, fmt.Errorf("overlay: motion %q requires a caption on every image layer", recipes.premium.ID)
 			}
 		}
 	}
@@ -200,15 +254,33 @@ func resolveAssetPaths(registry *assetRegistry, refs []SemanticAssetRef) map[str
 }
 
 // compileLegacyCompositeImageLayers is the replay path for sealed plans that
-// predate group_motion_id. It lowers every image_layers child through the
-// shared single-layer path with its own motion. New producer plans always use
-// compileImageGroupRecipe through the parent group_motion_id.
+// predate group_motion_id. It is a thin wrapper over the shared member
+// lowering plus the legacy child-grid rule, and it is reachable ONLY behind
+// legacy_composite_replay. New producer plans use compileImageGroupRecipe
+// through the parent group_motion_id and entity groups use the same member
+// lowering directly — neither needs this replay entry point.
 func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	_, imageRecipe, err := resolveImageRecipeMotion(ri.Item.MotionID, false)
 	if err != nil {
 		return nil, err
 	}
-	premium := premiumImageRecipeDefinition(imageRecipe)
+	layers, gridSource, err := compileCompositeImageMembers(ri, src, registry, premiumImageRecipeDefinition(imageRecipe))
+	if err != nil {
+		return nil, err
+	}
+	if _, itemGrid := ri.Params["grid"]; !itemGrid && gridSource != nil {
+		return addStandaloneImageGrid(*gridSource, src, layers)
+	}
+	return layers, nil
+}
+
+// compileCompositeImageMembers lowers every image_layers member through the
+// shared single-layer path with its own motion, preset and caption. It is the
+// modern multi-card primitive: both the sealed legacy replay and entity_group
+// call it, and neither re-implements per-child lowering. The caller owns the
+// item-level grid decision (returned as gridSource) because an item-level
+// params.grid must win over a child-declared one exactly once.
+func compileCompositeImageMembers(ri resolvedItem, src *semanticPlan, registry *assetRegistry, premium *motion.MotionDefinition) ([]Layer, *resolvedItem, error) {
 	assets := resolveAssetPaths(registry, ri.Item.Assets)
 
 	layers := make([]Layer, 0, len(ri.Item.ImageLayers)*2)
@@ -217,72 +289,24 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 	// declare it. Children are collected here and lowered once after the loop.
 	var gridSource *resolvedItem
 	for index, child := range ri.Item.ImageLayers {
-		childResolved, assetPath, preset, err := resolveImageChild(ri, assets, child, src, imageChildOptions{
-			sequence: ri.Item.CameraMotionID != "",
-			index:    index,
-		})
+		childResolved, assetPath, preset, err := resolveImageChild(ri, assets, child, src, imageChildOptions{index: index})
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		params := childResolved.Params
 		imageStart, imageEnd := childResolved.Start, childResolved.End
 		layer, err := compileSingleImageLayer(childResolved, src, assetPath, preset, childResolved.Item.MotionID, childResolved.Item.MotionParams, imageStart, imageEnd, childResolved.Item.ID)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		decorated := []Layer{layer}
-		if ri.Item.CameraMotionID == "" {
-			decorated, err = compilePremiumImageLayers(childResolved, src, layer, premium)
-			if err != nil {
-				return nil, err
-			}
-		}
-		// Camera sequences use the portrait viewport as a clean crop, without
-		// inherited decorative masks or side-fill effects.
-		if ri.Item.CameraMotionID != "" && len(decorated) > 0 {
-			imageIndex := premiumImageLayerIndex(decorated)
-			imageLayer := &decorated[imageIndex]
-			// Presets supply a default box, but camera-sequence dimensions belong
-			// to the sequence layout. Reapply them after preset/premium lowering so
-			// a preset cannot silently shrink a full-frame portrait back to 480px.
-			if width, ok := numericValue(params["width"]); ok && width > 0 {
-				imageLayer.BoxWidth = int(width)
-			}
-			if height, ok := numericValue(params["height"]); ok && height > 0 {
-				imageLayer.BoxHeight = int(height)
-			}
-			imageLayer.Size = []float64{float64(imageLayer.BoxWidth), float64(imageLayer.BoxHeight)}
-			imageLayer.EntityImage = false
-			imageLayer.Fit = FitCover
-			// An image preset can add rounded corners after the sequence layout
-			// has cleared its frame. Camera sequences use the full rectangular
-			// photo surface, so do not let preset radius leak into the crop.
-			imageLayer.Radius = 0
-			imageLayer.Masks = nil
-			// The camera sequence should stay on the native GPU path. The default
-			// image drop shadow currently dispatches through the software effect
-			// fallback, so omit it for these clean editorial photo cards.
-			if imageLayer.Style != nil {
-				imageLayer.Style.Shadow = nil
-				imageLayer.Style.Glow = nil
-			}
-			imageLayer.Position = []float64{float64(index * src.Width), 0}
-		}
-		// Sequence camera tracks only affect world-space layers. Composite
-		// portraits are normally 2D HUD overlays, and image motion lowering can
-		// reset Enable3D. Apply the sequence rig after lowering so every image
-		// component follows the scene camera.
-		if ri.Item.CameraMotionID != "" {
-			for i := range decorated {
-				decorated[i].Animation = nil
-				decorated[i].TextAnimators = nil
-				decorated[i].Enable3D = true
-			}
+		decorated, err := compilePremiumImageLayers(childResolved, src, layer, premium)
+		if err != nil {
+			return nil, nil, err
 		}
 		if _, hasChildEffects := params["effects"]; hasChildEffects {
 			decorated, err = applyImageItemEffects(childResolved, decorated)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 		}
 		if _, hasChildGrid := params["grid"]; hasChildGrid && gridSource == nil {
@@ -293,44 +317,9 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 			imageIndex := premiumImageLayerIndex(decorated)
 			captionLayer, err := compileImageCaptionLayer(ri, src, childResolved.Item, caption, &decorated[imageIndex], child.ID, textRoleImageCaption)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
-			if ri.Item.CameraMotionID != "" {
-				// Caption layout reserves vertical space by nudging its linked
-				// image. Camera sequences keep the portrait centered and position
-				// the caption independently in screen space.
-				decorated[imageIndex].Position = []float64{float64(index * src.Width), 0}
-				layerIndex := len(layers) - len(decorated) + imageIndex
-				layers[layerIndex].Position = append([]float64(nil), decorated[imageIndex].Position...)
-				captionStart, captionEnd := childResolved.Start, childResolved.End
-				// Keep the label attached to the image while the camera is settled.
-				// During the pan, clear the old name; reveal the next name once the
-				// camera reaches its portrait. The caption itself is screen-space so
-				// it stays directly below the centered subject as the camera travels.
-				if index+1 < len(ri.Item.ImageLayers) {
-					nextStart, _ := msFrames(ri.Item.ImageLayers[index+1].StartMS, ri.Item.ImageLayers[index+1].StartMS, int64(src.FPSNum), int64(src.FPSDen))
-					_, travel := msFrames(0, sequenceTravelMS, int64(src.FPSNum), int64(src.FPSDen))
-					panStart := ri.Start + nextStart - travel
-					if panStart < captionEnd {
-						captionEnd = panStart
-					}
-				}
-				captionLayer.StartFrame = captionStart
-				captionLayer.DurationFrames = max(int64(1), captionEnd-captionStart)
-				captionLayer.Animation = nil
-				captionLayer.TextAnimators = nil
-				captionLayer.Enable3D = false
-				// Chronon TEXT layers carry absolute top-left-origin box centers. The
-				// caption is screen-space during a sequence pan, so pin it to the
-				// absolute canvas center and keep the resolved below-image
-				// vertical position converted back to absolute coordinates.
-				// (Image layers use center offsets; text layers do not.)
-				captionY := 0.0
-				if len(captionLayer.Position) > 1 {
-					captionY = captionLayer.Position[1]
-				}
-				captionLayer.Position = []float64{float64(src.Width) / 2, captionY + float64(src.Height)/2}
-			} else if child.CaptionEndMS > 0 {
+			if child.CaptionEndMS > 0 {
 				captionStart, _ := msFrames(child.CaptionStartMS, child.CaptionStartMS, int64(src.FPSNum), int64(src.FPSDen))
 				captionEnd, _ := msFrames(child.CaptionEndMS, child.CaptionEndMS, int64(src.FPSNum), int64(src.FPSDen))
 				captionLayer.StartFrame = ri.Start + captionStart
@@ -342,43 +331,10 @@ func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, regis
 			layers = append(layers, captionLayer)
 		}
 	}
-	// One grid per item. An item-level params.grid is lowered by the caller
-	// (compileImageItem / the group path) after this function returns, so only
-	// a legacy payload that declared the block on a child is lowered here —
-	// exactly once, for the first child that asked, instead of once per member.
-	if _, itemGrid := ri.Params["grid"]; !itemGrid && gridSource != nil {
-		return addStandaloneImageGrid(*gridSource, src, layers)
-	}
-	return layers, nil
-}
-
-// sequenceImageLayoutParams gives each source orientation a consistent
-// viewport. Cover crops source padding so blurred side bands cannot dominate.
-func sequenceImageLayoutParams(params map[string]any, src *semanticPlan, index int, landscape bool) map[string]any {
-	if src == nil || src.Width <= 0 || src.Height <= 0 {
-		return params
-	}
-	result := make(map[string]any, len(params)+5)
-	for key, value := range params {
-		result[key] = value
-	}
-	// Normalize each orientation to one shared viewport. Horizontal sources use
-	// a 16:9 crop, so two landscape photos with slightly different source ratios
-	// occupy the same visible area instead of varying in height under contain.
-	// Portrait sources keep the established tall card and caption-safe margin.
-	if landscape {
-		width := float64(src.Width) * sequenceLandscapeWidthRatio
-		result["width"] = int(width)
-		result["height"] = int(width * 9 / 16)
-	} else {
-		portraitHeight := float64(src.Height) * sequencePortraitHeightRatio
-		result["width"] = int(portraitHeight * 0.73)
-		result["height"] = int(portraitHeight)
-	}
-	result["position_x"] = float64(index * src.Width)
-	result["position_y"] = 0.0
-	result["fit"] = "cover"
-	return result
+	// One grid per item: the first child that asked is returned to the caller,
+	// which lowers it only when the item itself declares no params.grid. This
+	// keeps a multi-card item from stacking one grid per member.
+	return layers, gridSource, nil
 }
 
 // compileSingleImageLayer is shared by standalone images and composite
@@ -401,11 +357,7 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	layer.StartFrame, layer.DurationFrames = start, end-start
 	applyPresetDefinition(&layer, preset)
 	defaultImageBox(&layer)
-	sequenceStatic := ri.Item.CameraMotionID != ""
-	if sequenceStatic {
-		motionID, motionParams, resolved = "", nil, nil
-	}
-	if motionID == "" && preset.ID != "" && !sequenceStatic {
+	if motionID == "" && preset.ID != "" {
 		motionID = runtimeDefaultImageMotionID(src, layerID)
 		if motionID != "" {
 			var err error
@@ -426,7 +378,7 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 		// Explicit image motion_id is authoritative for both entity and generic
 		// images; 2.5D recipes are no longer silently discarded for portraits.
 		applyMotionRouting(&layer, animation)
-	} else if preset.ID != "" && !sequenceStatic {
+	} else if preset.ID != "" {
 		animation, err := animationForPreset(preset, "", end-start)
 		if err != nil {
 			return Layer{}, err
@@ -469,6 +421,14 @@ func compileSingleImageLayerResolved(ri resolvedItem, src *semanticPlan, assetPa
 	frame := frameFromImageParams(ri.Params, ri.Item.Frame)
 	if err := applyFrameTreatment(&layer, frame); err != nil {
 		return Layer{}, fmt.Errorf("overlay: image item %q: %w", ri.Item.ID, err)
+	}
+	// Sized compile: resolve the source-derived geometry now. This is the same
+	// point in the pipeline the historical post-compile fit mutated (after the
+	// frame treatment), but it happens BEFORE the caller builds premium
+	// components and captions, so those are derived from the final size. A
+	// blind compile keeps the transient markers untouched.
+	if err := applyProbedImageGeometry(&layer, src.assetSizes); err != nil {
+		return Layer{}, err
 	}
 	return layer, nil
 }

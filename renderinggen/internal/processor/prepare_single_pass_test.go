@@ -113,6 +113,63 @@ func TestPrepareJobRebuildsThePreparedPackageFromTheFinalPlan(t *testing.T) {
 	}
 }
 
+// TestPrepareJobShipsSettledGeometry proves the sized recompile consumes the
+// probe: the plan that leaves prepare carries no transient geometry marker, and
+// re-running the historical fit over it is a no-op. A layer that still awaited
+// its source would change here, which is exactly the post-compile mutation this
+// wave removed from the processor.
+func TestPrepareJobShipsSettledGeometry(t *testing.T) {
+	proc, store, _ := newProcessorWith(t, Options{})
+	assetBytes := testImageJPEG(t, 1600, 900)
+	assetHash := storage.Hash(assetBytes)
+	if err := store.Put(context.Background(), assetHash, assetBytes); err != nil {
+		t.Fatalf("put asset: %v", err)
+	}
+	job := &queue.Job{
+		ID: "settled-geometry-1", Schema: queue.JobSchemaV1, Version: queue.JobSchemaVersionV1,
+		RenderPlan: json.RawMessage(`{
+          "schema_version":"renderinggen.overlay-plan.v1",
+          "plan_id":"settled-geometry-1","video_id":"settled-geometry-1",
+          "width":1280,"height":720,"fps_num":30,"fps_den":1,
+          "items":[{"id":"portrait","kind":"entity_image","template_id":"image_popup",
+            "preset_id":"image_focus_in","image_preset_id":"image_focus_in",
+            "entity_caption":"Ada Lovelace","caption_layout":"below",
+            "start_ms":0,"end_ms":3000,"params":{"width":480,"height":480},
+            "asset_refs":[{"asset_id":"portrait","sha256":"` + assetHash + `","url":"https://store.example/objects/portrait.jpg","media_type":"image/jpeg"}]}]
+        }`),
+	}
+	prepared, err := proc.PrepareJob(context.Background(), job)
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+	defer func() { _ = prepared.Workspace.Cleanup() }()
+
+	var sizes = map[string]overlay.ImageSize{}
+	for _, layer := range prepared.Plan.Layers {
+		if layer.EntityImage || layer.DeriveWidthFromAsset {
+			t.Fatalf("prepared layer %q still awaits source geometry", layer.ID)
+		}
+		if layer.Type == "image" {
+			sizes[layer.Asset] = overlay.ImageSize{Width: 1600, Height: 900}
+		}
+	}
+	if len(sizes) == 0 {
+		t.Fatal("prepared plan has no image layer")
+	}
+	changed, err := overlay.FitImageLayersToSizes(prepared.Plan, sizes)
+	if err != nil {
+		t.Fatalf("re-run fit over the prepared plan: %v", err)
+	}
+	if changed {
+		t.Fatal("prepared plan still depended on a post-compile geometry fit")
+	}
+	for _, layer := range prepared.Plan.Layers {
+		if layer.Type == "image" && (layer.BoxWidth != 480 || layer.BoxHeight != 270) {
+			t.Fatalf("prepared portrait = %dx%d, want the 16:9 480x270 card", layer.BoxWidth, layer.BoxHeight)
+		}
+	}
+}
+
 func TestPrepareJobRecordsMultiItemBatchCardinality(t *testing.T) {
 	proc, _, _ := newProcessorWith(t, Options{})
 	job := &queue.Job{

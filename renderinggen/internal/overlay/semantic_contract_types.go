@@ -52,6 +52,20 @@ type semanticPlan struct {
 	// without this marker image_layers fail closed instead of silently taking
 	// the child-by-child legacy path. It is not emitted by PipelineGen.
 	LegacyCompositeReplay bool `json:"legacy_composite_replay,omitempty"`
+	// assetSizes carries the probed pixel size of every materialized image this
+	// compile must lay out. nil means the blind compile (no I/O yet): cards that
+	// await their source aspect keep their transient markers and a later
+	// FitImageLayersToSizes pass may finish them. A non-nil map — even empty —
+	// is the SIZED compile: every waiting layer must find its size here, or the
+	// compile fails closed. Unexported: it is an input to lowering, not part of
+	// the published document.
+	assetSizes map[string]ImageSize `json:"-"`
+	// features is the lowering-time capability record. It is unexported on
+	// purpose: it is a compiler output, not part of the published document, and
+	// lowerPlan seals it onto the concrete Plan. The json:"-" tag keeps the
+	// schema-parity pin (which walks untagged fields) from treating it as a
+	// decoded wire field.
+	features planFeatures `json:"-"`
 }
 
 // semanticAnimationGroup is the V2 heterogeneous animation owner. Members may
@@ -245,11 +259,10 @@ type semanticItem struct {
 	// MotionID selects an animation independently of PresetID (visual style).
 	// MotionParams carries that catalog plugin's open parameter set; the
 	// compiler additionally validates shared enter_frames/exit_frames controls.
-	MotionID       string         `json:"motion_id"`
-	CameraMotionID string         `json:"camera_motion_id,omitempty"`
-	MotionParams   map[string]any `json:"motion_params"`
-	Text           string         `json:"text"`
-	EntityCaption  string         `json:"entity_caption,omitempty"`
+	MotionID      string         `json:"motion_id"`
+	MotionParams  map[string]any `json:"motion_params"`
+	Text          string         `json:"text"`
+	EntityCaption string         `json:"entity_caption,omitempty"`
 	// CaptionMotionID is the optional motion override for the entity caption
 	// layer. CaptionMotionParams remain independent from the image motion.
 	CaptionMotionID     string         `json:"caption_motion_id,omitempty"`
@@ -293,6 +306,12 @@ type semanticItem struct {
 	// first visible frame. Selection remains producer-owned; the worker only
 	// resolves the content-addressed asset and lowers its timing into Chronon.
 	SoundEffect *SemanticOverlaySFX `json:"sound_effect,omitempty"`
+	// chainSegments is the decoded producer segment list for a chain item. It
+	// is populated exactly once, during resolveSemanticItems, from the merged
+	// params.chain_segments wire field; the lowering reads this typed list and
+	// never re-decodes the blob. Unexported and json:"-" because the producer
+	// contract still publishes the segments inside params, not as an item field.
+	chainSegments []chainSegment `json:"-"`
 }
 
 type SemanticOverlaySFX struct {

@@ -229,6 +229,11 @@ type Options struct {
 	// SoftwareRenderer is the CLI/libx264 lane for plans that opt out of the
 	// native residency path. nil keeps the configured renderer for every plan.
 	SoftwareRenderer chronon.Renderer
+
+	// CameraBaker resolves animated camera tracks into per-frame poses. The
+	// worker injects the native CM3D CameraRig runner here; nil selects the
+	// in-process reference evaluator (tools and tests).
+	CameraBaker overlay.CameraSampleBaker
 }
 
 // semanticCompiler is the consumer-side contract PrepareJob needs from the
@@ -239,11 +244,18 @@ type semanticCompiler interface {
 	CompileSemantic(raw []byte) (overlay.CompileResult, error)
 }
 
-// overlaySemanticCompiler adapts the package-level compiler to the seam.
-type overlaySemanticCompiler struct{}
+// overlaySemanticCompiler adapts the package-level compiler to the seam and
+// carries the worker's camera baker as an explicit per-compile dependency.
+type overlaySemanticCompiler struct {
+	cameraBaker overlay.CameraSampleBaker
+}
 
-func (overlaySemanticCompiler) CompileSemantic(raw []byte) (overlay.CompileResult, error) {
-	return overlay.CompileSemantic(raw)
+func (c overlaySemanticCompiler) CompileSemantic(raw []byte) (overlay.CompileResult, error) {
+	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker})
+}
+
+func (c overlaySemanticCompiler) CompileSemanticWithAssetSizes(raw []byte, sizes map[string]overlay.ImageSize) (overlay.CompileResult, error) {
+	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{AssetSizes: sizes, CameraBaker: c.cameraBaker})
 }
 
 // compileSemantic dispatches through the seam. A zero-value Processor (tests
@@ -254,6 +266,46 @@ func (p *Processor) compileSemantic(raw []byte) (overlay.CompileResult, error) {
 		compiler = overlaySemanticCompiler{}
 	}
 	return compiler.CompileSemantic(raw)
+}
+
+// prepareSemanticCompiler is the optional seam capability for the
+// preparatory pass. Its plan is discarded after asset refs and probe inputs
+// are read, so it must not pay the animated-camera bake.
+type prepareSemanticCompiler interface {
+	CompileSemanticForPrepare(raw []byte) (overlay.CompileResult, error)
+}
+
+func (c overlaySemanticCompiler) CompileSemanticForPrepare(raw []byte) (overlay.CompileResult, error) {
+	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker, SkipCameraBake: true})
+}
+
+// compileSemanticForPrepare dispatches the pass-A compile without camera
+// baking. A legacy test double without the optional method keeps working
+// through the ordinary compile.
+func (p *Processor) compileSemanticForPrepare(raw []byte) (overlay.CompileResult, error) {
+	if compiler, ok := p.compiler.(prepareSemanticCompiler); ok {
+		return compiler.CompileSemanticForPrepare(raw)
+	}
+	return p.compileSemantic(raw)
+}
+
+// sizedSemanticCompiler is the optional seam capability. A test double that
+// predates the sized compile keeps working through compileSemantic's blind
+// result; the production compiler implements it.
+type sizedSemanticCompiler interface {
+	CompileSemanticWithAssetSizes(raw []byte, sizes map[string]overlay.ImageSize) (overlay.CompileResult, error)
+}
+
+// compileSemanticWithAssetSizes is the sized compile: the plan is lowered with
+// the probed source dimensions, so its geometry is final when it is returned.
+func (p *Processor) compileSemanticWithAssetSizes(raw []byte, sizes map[string]overlay.ImageSize) (overlay.CompileResult, error) {
+	if compiler, ok := p.compiler.(sizedSemanticCompiler); ok {
+		return compiler.CompileSemanticWithAssetSizes(raw, sizes)
+	}
+	if p.compiler == nil {
+		return overlay.CompileSemanticWithAssetSizes(raw, sizes)
+	}
+	return p.compiler.CompileSemantic(raw)
 }
 
 // New creates a job processor with the shipped defaults (Options{}).
@@ -271,7 +323,7 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		store:                     store,
 		renderer:                  renderer,
 		softwareRenderer:          opts.SoftwareRenderer,
-		compiler:                  overlaySemanticCompiler{},
+		compiler:                  overlaySemanticCompiler{cameraBaker: opts.CameraBaker},
 		assetPrefetcher:           opts.AssetPrefetcher,
 		phaseHook:                 opts.PhaseHook,
 		gpuGapHook:                opts.GPUGapHook,

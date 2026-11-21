@@ -34,6 +34,45 @@ type Plan struct {
 	// the same resolvedItem pass that lowers the layers, so the windows can
 	// never drift from the items that were actually compiled.
 	ItemWindows []ItemWindow `json:"-"`
+	// Features is the EXPLICIT capability contract between the overlay
+	// compiler and the execution layer. The processor reads this instead of
+	// re-deriving renderer requirements from transient layer metadata, so the
+	// lowering and the execution policy cannot disagree about what a plan is.
+	// It is transient on the Chronon wire (the renderer has no use for it) but
+	// durable in the prepared package, which is why preparedCompile restores
+	// it after decoding the stored plan.
+	Features PlanFeatures `json:"-"`
+}
+
+// PlanFeatures names the plan-level renderer capabilities a lowering
+// produced. Each flag replaces a heuristic the execution layer used to run
+// over individual layers.
+//
+// Zero value means "no special capability": a plan that predates the field or
+// carries no features renders through the default execution policy.
+type PlanFeatures struct {
+	// OverlappingFullCanvasStrip marks a camera-pan strip: several animated
+	// full-canvas image surfaces are resident and overlap during the handoff.
+	// Chronon's native residency gate cannot materialize that, so the plan must
+	// run on the software (libx264 pipe) lane.
+	OverlappingFullCanvasStrip bool `json:"overlapping_full_canvas_strip,omitempty"`
+}
+
+// RequiresSoftwareEncode reports whether the plan's capabilities exceed what
+// the native residency gate supports.
+func (f PlanFeatures) RequiresSoftwareEncode() bool {
+	return f.OverlappingFullCanvasStrip
+}
+
+// planFeatures is the lowering-time form of PlanFeatures. compileChainItem
+// records capabilities on the document being lowered; lowerPlan seals them
+// onto the concrete Plan once every item has been compiled.
+type planFeatures struct {
+	overlappingFullCanvasStrip bool
+}
+
+func (f planFeatures) export() PlanFeatures {
+	return PlanFeatures{OverlappingFullCanvasStrip: f.overlappingFullCanvasStrip}
 }
 
 // ItemWindow is one semantic item's frame window in canvas frames (half-open,
@@ -190,6 +229,11 @@ type Layer struct {
 	// source's contain bars after assets have been materialized, then serializes
 	// only the derived geometry in Size.
 	EntityImage bool `json:"-"`
+	// SourceFitted marks an image layer whose box/aspect was resolved from the
+	// probed source bytes during THIS compile. Caption lowering reads it to pin
+	// the label's fit limits exactly like the historical post-compile fit did;
+	// the processor never reads it and it never crosses the wire.
+	SourceFitted bool `json:"-"`
 	// CaptionForImageID links a first-class caption to the image whose final
 	// source-aspect geometry is resolved after asset materialization.
 	CaptionForImageID string `json:"-"`
@@ -491,6 +535,14 @@ type LayerBackground struct {
 	// native shape plate. Preset-authored backgrounds keep their historical
 	// (non-rendered) wire form; only the payload's plate is lifted.
 	LiftToShape bool `json:"-"`
+	// Stroke and Shadow decorate the lifted plate. They are runtime-only: the
+	// shape layer owns the final wire form (shape.stroke and style.shadow).
+	Stroke *LayerStroke `json:"-"`
+	Shadow *LayerShadow `json:"-"`
+	// Motions is the plate entrance pool. Empty keeps the historical
+	// behaviour of copying the caption layer animation; a non-empty pool is
+	// rotated in plan order by the plate lowering pass.
+	Motions []string `json:"-"`
 }
 
 type LayerStroke struct {

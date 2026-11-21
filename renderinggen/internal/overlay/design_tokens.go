@@ -96,8 +96,8 @@ const (
 	SubtitleTopCenterYFraction = 0.10
 )
 
-// Camera optics. Three lowering paths emit a CameraPlan (the whole-scene rig,
-// the map move, the entity/sequence controllers); the projection and
+// Camera optics. Two lowering paths emit a CameraPlan (the whole-scene rig and
+// the map move) plus the entity-style controller; the projection and
 // resting-distance values below were numeric literals inline at their use
 // sites in map_camera_tracks.go, scene_camera_rig.go and
 // semantic_camera_controllers.go. The values are unchanged — same discipline
@@ -106,7 +106,7 @@ const (
 // apart on a projection none of them chose.
 const (
 	// CameraDefaultFOVDeg is the field of view of the resting perspective
-	// camera (entity-style and sequence controllers) when no lens is authored.
+	// camera (the entity-style controller) when no lens is authored.
 	CameraDefaultFOVDeg = 55.0
 	// CameraRestingFOVDeg is the resting field of view of the world-scale
 	// rigs: the whole-scene camera when no lens is authored (the AE default
@@ -114,9 +114,9 @@ const (
 	CameraRestingFOVDeg = 50.0
 	// CameraDefaultNear is the near plane every emitted camera starts from.
 	CameraDefaultNear = 1.0
-	// CameraDefaultFar is the far plane of a plan-scale stage (the entity and
-	// sequence controllers); CameraWideFar is the far plane of a world-scale
-	// stage (the scene rig and the map plane).
+	// CameraDefaultFar is the far plane of a plan-scale stage (the entity
+	// controller); CameraWideFar is the far plane of a world-scale stage (the
+	// scene rig and the map plane).
 	CameraDefaultFar = 5000.0
 	CameraWideFar    = 10000000.0
 	// CameraDefaultDistanceZ is the resting perspective camera distance along

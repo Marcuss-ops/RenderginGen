@@ -2,7 +2,6 @@ package overlay
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -12,137 +11,6 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/camerabake"
 )
-
-func init() {
-	// The Go sampler is a reference in unit-only builds. When the worker's
-	// CHRONON_CAMERA_PLAN_BAKER is configured, these same tests exercise CM3D.
-	if strings.TrimSpace(os.Getenv("CHRONON_CAMERA_PLAN_BAKER")) == "" {
-		SetCameraSampleBaker(goReferenceBaker{})
-	}
-}
-
-// goReferenceBaker adapts the test-only Go sampler to the baker port: it
-// decodes the same wire document the native baker receives, computes the
-// reference samples and returns them in the same shape.
-type goReferenceBaker struct{}
-
-func (goReferenceBaker) Bake(planJSON []byte) ([]byte, error) {
-	var doc struct {
-		Canvas          Canvas           `json:"canvas"`
-		Camera          *CameraPlan      `json:"camera"`
-		CameraAnimation *CameraAnimation `json:"camera_animation"`
-	}
-	if err := json.Unmarshal(planJSON, &doc); err != nil {
-		return nil, err
-	}
-	plan := &Plan{Canvas: doc.Canvas, Camera: doc.Camera, CameraAnimation: doc.CameraAnimation}
-	if err := bakeResolvedCameraSamplesGo(plan); err != nil {
-		return nil, err
-	}
-	return json.Marshal(map[string]any{"camera_samples": plan.CameraSamples, "camera_animation": nil})
-}
-
-// useExecBaker installs the exec runner for one test and restores the previous
-// package-wide baker afterwards, so no test leaks its seam into another.
-func useExecBaker(t *testing.T, binary string, timeout time.Duration) func() {
-	t.Helper()
-	previous := cameraSampleBaker
-	SetCameraSampleBaker(camerabake.New(binary, timeout))
-	return func() { SetCameraSampleBaker(previous) }
-}
-
-// bakeResolvedCameraSamplesGo is a test-only reference for packages that are
-// run without the native runtime. It is never linked into RenderingGen builds.
-func bakeResolvedCameraSamplesGo(plan *Plan) error {
-	if plan == nil || plan.CameraAnimation == nil || len(plan.CameraAnimation.Tracks) == 0 {
-		return nil
-	}
-	if plan.Camera == nil {
-		return fmt.Errorf("overlay: camera tracks require a base camera")
-	}
-	frames := plan.Canvas.DurationFrames
-	if frames < 1 || frames > 1_000_000 {
-		return fmt.Errorf("overlay: camera sample duration %d is outside [1, 1000000]", frames)
-	}
-	tracks := make(map[string]CameraTrack, len(plan.CameraAnimation.Tracks))
-	for _, track := range plan.CameraAnimation.Tracks {
-		if len(track.Keyframes) == 0 {
-			return fmt.Errorf("overlay: camera track %q has no keyframes", track.Property)
-		}
-		tracks[track.Property] = track
-	}
-	sample := func(property string, frame int64, fallback float64) (float64, error) {
-		track, ok := tracks[property]
-		if !ok {
-			return fallback, nil
-		}
-		keys := track.Keyframes
-		first, ok := numericValue(keys[0].Value)
-		if !ok {
-			return 0, fmt.Errorf("overlay: camera track %q requires scalar values", property)
-		}
-		if frame <= keys[0].Frame {
-			return first, nil
-		}
-		for i := 1; i < len(keys); i++ {
-			if frame > keys[i].Frame {
-				continue
-			}
-			left, leftOK := numericValue(keys[i-1].Value)
-			right, rightOK := numericValue(keys[i].Value)
-			if !leftOK || !rightOK {
-				return 0, fmt.Errorf("overlay: camera track %q requires scalar values", property)
-			}
-			span := keys[i].Frame - keys[i-1].Frame
-			if span <= 0 {
-				return 0, fmt.Errorf("overlay: camera track %q has non-increasing keyframes", property)
-			}
-			t := float64(frame-keys[i-1].Frame) / float64(span)
-			eased, easeErr := easingValue(track.Easing, t)
-			if easeErr != nil {
-				return 0, fmt.Errorf("overlay: camera track %q: %w", property, easeErr)
-			}
-			return left + (right-left)*eased, nil
-		}
-		last, ok := numericValue(keys[len(keys)-1].Value)
-		if !ok {
-			return 0, fmt.Errorf("overlay: camera track %q requires scalar values", property)
-		}
-		return last, nil
-	}
-	plan.CameraSamples = make([]CameraSample, 0, frames)
-	for frame := int64(0); frame < frames; frame++ {
-		camera := *plan.Camera
-		if plan.Camera.DOF != nil {
-			dof := *plan.Camera.DOF
-			camera.DOF = &dof
-		}
-		for axis, suffix := range []string{"x", "y", "z"} {
-			v, err := sample("camera_position_"+suffix, frame, camera.Position[axis])
-			if err != nil {
-				return err
-			}
-			camera.Position[axis] = v
-			v, err = sample("camera_rotation_"+suffix, frame, camera.Rotation[axis])
-			if err != nil {
-				return err
-			}
-			camera.Rotation[axis] = v
-		}
-		var err error
-		if camera.FOVDeg, err = sample("camera_fov_deg", frame, camera.FOVDeg); err != nil {
-			return err
-		}
-		if camera.Zoom, err = sample("camera_zoom", frame, camera.Zoom); err != nil {
-			return err
-		}
-		if !finiteCamera(camera) {
-			return fmt.Errorf("overlay: resolved camera sample %d is non-finite", frame)
-		}
-		plan.CameraSamples = append(plan.CameraSamples, CameraSample{Frame: float64(frame), Camera: camera})
-	}
-	return nil
-}
 
 func TestBakeResolvedCameraSamples(t *testing.T) {
 	plan := &Plan{
@@ -155,7 +23,9 @@ func TestBakeResolvedCameraSamples(t *testing.T) {
 		}}},
 		Canvas: Canvas{Width: 640, Height: 360, FPSNum: 30, FPSDen: 1, DurationFrames: 3},
 	}
-	if err := bakeResolvedCameraSamples(plan); err != nil {
+	// A nil baker selects the in-process reference evaluator, the deterministic
+	// default for tools and direct library callers.
+	if err := bakeResolvedCameraSamples(plan, nil); err != nil {
 		t.Fatal(err)
 	}
 	if got := len(plan.CameraSamples); got != 3 {
@@ -182,6 +52,64 @@ func TestBakeResolvedCameraSamples(t *testing.T) {
 	}
 	if schema, version := RenderPlanWireVersion(plan); schema != RenderPlanSchemaV3 || version != 3 {
 		t.Fatalf("wire version = %s v%d, want v3", schema, version)
+	}
+}
+
+// recordingCameraBaker proves the compile uses the explicitly injected port
+// instead of package state.
+type recordingCameraBaker struct {
+	calls int
+}
+
+func (r *recordingCameraBaker) Bake(planJSON []byte) ([]byte, error) {
+	r.calls++
+	return referenceCameraBaker{}.Bake(planJSON)
+}
+
+const cameraBakerOptionPlan = `{
+	"schema_version":"renderinggen.overlay-plan.v1","plan_id":"baker-option","video_id":"baker-option",
+	"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":1000,
+	"background":{"kind":"color","color":[0,0,0,1]},
+	"scene_camera":{"node":"one_node","rig":[{"id":"push","start_ms":0,"end_ms":1000,"offset":[0,0,100]}]}
+}`
+
+// TestCompileOptionsUseTheInjectedCameraBaker pins the dependency direction:
+// the caller supplies the baker, and the compile never reads a mutable global.
+func TestCompileOptionsUseTheInjectedCameraBaker(t *testing.T) {
+	payload := []byte(cameraBakerOptionPlan)
+	baker := &recordingCameraBaker{}
+	result, err := CompileSemanticWithOptions(payload, CompileOptions{CameraBaker: baker})
+	if err != nil {
+		t.Fatalf("compile with injected baker: %v", err)
+	}
+	if baker.calls != 1 {
+		t.Fatalf("injected baker calls = %d, want 1", baker.calls)
+	}
+	if got, want := int64(len(result.Plan.CameraSamples)), result.Plan.Canvas.DurationFrames; got != want {
+		t.Fatalf("samples = %d, want %d", got, want)
+	}
+}
+
+// TestCompileOptionsSkipCameraBakeDefersTheRenderPass pins the preparatory
+// pass: the transient tracks survive for the render pass, but no baker is
+// invoked, so an animated plan is not baked twice.
+func TestCompileOptionsSkipCameraBakeDefersTheRenderPass(t *testing.T) {
+	baker := &recordingCameraBaker{}
+	result, err := CompileSemanticWithOptions([]byte(cameraBakerOptionPlan), CompileOptions{
+		CameraBaker:    baker,
+		SkipCameraBake: true,
+	})
+	if err != nil {
+		t.Fatalf("compile with deferred bake: %v", err)
+	}
+	if baker.calls != 0 {
+		t.Fatalf("preparatory compile invoked the baker %d times, want 0", baker.calls)
+	}
+	if result.Plan.CameraAnimation == nil || len(result.Plan.CameraAnimation.Tracks) == 0 {
+		t.Fatalf("deferred bake dropped the camera tracks: %+v", result.Plan.CameraAnimation)
+	}
+	if len(result.Plan.CameraSamples) != 0 {
+		t.Fatalf("deferred bake emitted %d camera samples", len(result.Plan.CameraSamples))
 	}
 }
 
@@ -213,11 +141,10 @@ func cameraBakerTestPlan() *Plan {
 // TestCameraBakerTimeoutFailsClosed proves a hung native baker cannot hold the
 // compile (and therefore the worker job) past the configured deadline.
 func TestCameraBakerTimeoutFailsClosed(t *testing.T) {
-	baker := fakeCameraBaker(t, "#!/bin/sh\nexec sleep 30\n")
-	defer useExecBaker(t, baker, 100*time.Millisecond)()
+	binary := fakeCameraBaker(t, "#!/bin/sh\nexec sleep 30\n")
 	plan := cameraBakerTestPlan()
 	started := time.Now()
-	err := bakeResolvedCameraSamples(plan)
+	err := bakeResolvedCameraSamples(plan, camerabake.New(binary, 100*time.Millisecond))
 	if err == nil || !strings.Contains(err.Error(), "did not finish within") {
 		t.Fatalf("hung baker error = %v, want a deadline failure", err)
 	}
@@ -240,10 +167,9 @@ func TestCameraBakerAcceptsResolvedSamples(t *testing.T) {
 		`{"frame":1,"camera":` + camera + `},` +
 		`{"frame":2,"camera":` + camera + `}` +
 		`],"camera_animation":null}` + "\nJSON\n"
-	baker := fakeCameraBaker(t, script)
-	defer useExecBaker(t, baker, 5*time.Second)()
+	binary := fakeCameraBaker(t, script)
 	plan := cameraBakerTestPlan()
-	if err := bakeResolvedCameraSamples(plan); err != nil {
+	if err := bakeResolvedCameraSamples(plan, camerabake.New(binary, 5*time.Second)); err != nil {
 		t.Fatalf("native baker path: %v", err)
 	}
 	if len(plan.CameraSamples) != 3 {

@@ -159,3 +159,48 @@ func TestImageBackdropProjectsOntoChainSegmentsAndStaysCentred(t *testing.T) {
 		}
 	}
 }
+
+// TestImageBackdropGridIsEmittedOnceForComposite pins the unified entry point:
+// two member photos produce two backdrops, the grid is appended exactly once,
+// and every backdrop precedes the photo layers (draw order).
+func TestImageBackdropGridIsEmittedOnceForComposite(t *testing.T) {
+	raw := []byte(fmt.Sprintf(`{
+		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"plan_id":"composite-backdrop-grid","video_id":"composite-backdrop-grid",
+		"width":1280,"height":720,"fps_num":24,"fps_den":1,"duration_ms":3000,
+		"items":[{
+			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"start_ms":0,"end_ms":3000,
+			"asset_refs":[%s,%s],
+			"image_layers":[
+				{"id":"left","asset_id":"left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
+				{"id":"right","asset_id":"right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
+			],
+			"params":{"image_backdrop":{"zoom":1.25,"blur_px":34,"grid":{"style":"lines","color":"#7FA8C8","spacing_px":64,"line_width_px":1,"opacity":0.12}}}
+		}]
+	}`, compositeBackdropAsset("left"), compositeBackdropAsset("right")))
+	compiled, err := CompileSemantic(raw)
+	if err != nil {
+		t.Fatalf("compile composite backdrop grid plan: %v", err)
+	}
+	var backdrops, grids, firstPhoto int = 0, 0, -1
+	for index, layer := range compiled.Plan.Layers {
+		switch {
+		case strings.HasSuffix(layer.ID, ":image-backdrop"):
+			backdrops++
+			if firstPhoto >= 0 {
+				t.Fatalf("backdrop %q appears after the first photo at index %d", layer.ID, firstPhoto)
+			}
+		case strings.HasSuffix(layer.ID, ":image-grid"):
+			grids++
+		case layer.Type == "image" && firstPhoto < 0:
+			firstPhoto = index
+		}
+	}
+	if backdrops != 2 {
+		t.Fatalf("backdrops = %d, want one per member photo: %+v", backdrops, compiled.Plan.Layers)
+	}
+	if grids != 1 {
+		t.Fatalf("backdrop grids = %d, want exactly one: %+v", grids, compiled.Plan.Layers)
+	}
+}

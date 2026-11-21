@@ -128,6 +128,12 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	if err := applyFrameTreatment(&img, ri.Item.Frame); err != nil {
 		return nil, fmt.Errorf("overlay: entity image item %q: %w", ri.Item.ID, err)
 	}
+	// Sized compile: fit the portrait before the premium components and the
+	// caption are built from its geometry, so the frame/mask and the label
+	// anchor are final. A blind compile keeps the markers for the later fit.
+	if err := applyProbedImageGeometry(&img, src.assetSizes); err != nil {
+		return nil, err
+	}
 	if ri.Item.MotionID != "" && ri.ImagePreset.ID == "" {
 		return nil, fmt.Errorf("overlay: entity image item %q with motion_id requires image_preset_id", ri.Item.ID)
 	}
@@ -159,5 +165,5 @@ func compileEntityCard(ri resolvedItem, src *semanticPlan, registry *assetRegist
 	// composite branch in compileImageItem only covers image_layers items;
 	// without this call the plan carried image_backdrop but the render showed
 	// a bare background (r7 entity card, r10 chain segments).
-	return addSingleImageBackdrop(ri, src, registry, layers)
+	return addImageBackdrops(ri, src, registry, layers)
 }

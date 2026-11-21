@@ -116,7 +116,34 @@ func canonicalProfileColorSpace(profileID string) string {
 // lowering. Byte-for-byte pass-through of an untyped document bypasses
 // validation and style resolution, so anything that is not the semantic
 // overlay-plan contract is rejected instead of executed.
+//
+// CompileSemantic is the BLIND compile: no source image bytes have been
+// materialized yet, so a card whose width/aspect derives from its photo keeps
+// its transient markers for a later FitImageLayersToSizes pass. The processor
+// uses CompileSemanticWithAssetSizes once it has probed the bytes, so the
+// emitted plan is already final.
 func CompileSemantic(raw []byte) (CompileResult, error) {
+	return compileSemanticWithOptions(raw, CompileOptions{})
+}
+
+// CompileSemanticWithAssetSizes is the SIZED compile: sizes maps every image's
+// logical asset path to its probed pixel dimensions, so entity cards, derived
+// widths, linked premium geometry and caption anchoring are resolved inside
+// lowering. A layer that awaits a size and has no entry fails the compile
+// closed; sizes == nil selects the blind compile.
+func CompileSemanticWithAssetSizes(raw []byte, sizes map[string]ImageSize) (CompileResult, error) {
+	return compileSemanticWithOptions(raw, CompileOptions{AssetSizes: sizes})
+}
+
+// CompileSemanticWithOptions is the dependency-explicit compile. The worker
+// passes its native camera baker here instead of mutating package state, so
+// concurrent compiles and test doubles cannot rewrite each other's camera
+// authority.
+func CompileSemanticWithOptions(raw []byte, opts CompileOptions) (CompileResult, error) {
+	return compileSemanticWithOptions(raw, opts)
+}
+
+func compileSemanticWithOptions(raw []byte, opts CompileOptions) (CompileResult, error) {
 	src, err := decodeSemanticPlan(raw)
 	if err != nil {
 		// Error path only: the historical probes (invalid-JSON check, then
@@ -137,7 +164,7 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 	if src.SchemaVersion != SemanticSchema {
 		return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", src.SchemaVersion, SemanticSchema)
 	}
-	plan, assets, stats, unknown, err := compileSemanticDecoded(&src)
+	plan, assets, stats, unknown, err := compileSemanticDecoded(&src, opts)
 	if err != nil {
 		return CompileResult{}, err
 	}

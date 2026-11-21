@@ -414,3 +414,27 @@ func TestRuntimeImageFlatOverridesValidate(t *testing.T) {
 		t.Fatalf("well-formed image overrides were rejected: %v", err)
 	}
 }
+
+// TestRuntimeImageStyleRulesCoverCatalog guards the declarative tables: every
+// key the validator advertises must be owned by exactly one rule, so a new key
+// cannot silently become an unchecked no-op.
+func TestRuntimeImageStyleRulesCoverCatalog(t *testing.T) {
+	for _, key := range runtimeImageStyleKeys {
+		covered := 0
+		if _, ok := runtimeImageNumberRules[key]; ok {
+			covered++
+		}
+		if runtimeImageColorKeys[key] {
+			covered++
+		}
+		if runtimeImageBoolKeys[key] {
+			covered++
+		}
+		if key == "fit" {
+			covered++
+		}
+		if covered != 1 {
+			t.Errorf("image style key %q is covered by %d rules, want exactly 1", key, covered)
+		}
+	}
+}

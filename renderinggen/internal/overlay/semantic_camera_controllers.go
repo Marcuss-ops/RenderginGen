@@ -10,12 +10,9 @@ import (
 // controller kind instead of checking during the item loop makes acceptance
 // independent of plan item order and keeps the conflict error deterministic.
 //
-// The precedence between controller kinds is unchanged:
-//
-//	scene_camera > map camera > entity-style camera > sequence camera
-//
-// The first three are mutually exclusive; the sequence camera is a fallback
-// that only applies when no other controller claimed the plan.
+// The three controller kinds are mutually exclusive: scene_camera, map camera
+// and entity-style camera. The retired sequence camera used to be a silent
+// fallback here; coexistence is now rejected before a plan is sealed.
 type cameraControllerSet struct {
 	scene *SemanticSceneCamera
 
@@ -26,11 +23,6 @@ type cameraControllerSet struct {
 
 	entityMotionID string
 	entityItemID   string
-
-	sequenceMotionID string
-	sequenceItem     semanticItem
-	sequenceStart    int64
-	sequenceEnd      int64
 }
 
 // observe records the controllers owned by one resolved item. Duplicate
@@ -38,19 +30,6 @@ type cameraControllerSet struct {
 // both items, so it is stable regardless of which item came first); conflicts
 // between kinds are left to validate.
 func (c *cameraControllerSet) observe(ri resolvedItem, src *semanticPlan) error {
-	if c.sequenceMotionID == "" {
-		if ri.Item.CameraMotionID != "" {
-			c.sequenceMotionID = ri.Item.CameraMotionID
-			c.sequenceItem = ri.Item
-			c.sequenceStart, c.sequenceEnd = ri.Start, ri.End
-		} else if isChainKind(ri.Kind) {
-			if motionID, item, start, end, ok := chainSequenceCamera(ri, src.FPSNum, src.FPSDen); ok {
-				c.sequenceMotionID, c.sequenceItem = motionID, item
-				c.sequenceStart, c.sequenceEnd = start, end
-			}
-		}
-	}
-
 	if (isEntityKind(ri.Kind) || isImageKind(ri.Kind)) && ri.Item.EntityStyleID != "" {
 		if style, ok := ResolveEntityStyle(ri.Item.EntityStyleID, src.entityStyleSampleKey(), src.VideoID, ri.Item.ID); ok && style.CameraMotionID != "" {
 			if c.entityMotionID != "" {
@@ -131,11 +110,6 @@ func (c *cameraControllerSet) apply(plan *Plan, src *semanticPlan) error {
 		if len(tracks) > 0 {
 			plan.CameraAnimation = &CameraAnimation{Tracks: tracks}
 		}
-	}
-
-	if c.sequenceMotionID != "" && c.scene == nil && c.mapMove == nil && c.entityMotionID == "" && plan.CameraAnimation == nil {
-		plan.Camera = defaultPerspectiveCamera(0, 0)
-		plan.CameraAnimation = &CameraAnimation{Tracks: entitySequenceCameraTracks(c.sequenceItem, c.sequenceStart, c.sequenceEnd, src.Width, src.Height, src.FPSNum, src.FPSDen)}
 	}
 	return nil
 }

@@ -277,6 +277,7 @@ func main() {
 		renderer,
 		processor.Options{
 			AssetPrefetcher:           assetPrefetcher,
+			CameraBaker:               camerabake.FromEnv(),
 			SoftwareRenderer:          softwareRenderer,
 			NativeOutputProfiles:      cfg.Chronon.NativeOutputProfiles,
 			AcceptedCodecConfigSHA256: cfg.Pipeline.NativeAVCCSHA256,
@@ -325,10 +326,9 @@ func main() {
 
 	// 3e-bis. CameraRig baker: the overlay compiler owns what a resolved camera
 	// sample must satisfy, but it must not start processes or touch temp files.
-	// The exec-backed runner is injected HERE, at the composition root, before
-	// any job is claimed. An unset binary fails the animated-camera job with a
-	// named configuration error instead of silently degrading.
-	overlay.SetCameraSampleBaker(camerabake.FromEnv())
+	// The exec-backed runner is injected through processor.Options above, as an
+	// explicit compile dependency. An unset binary fails the animated-camera job
+	// with a named configuration error instead of silently degrading.
 
 	// 3f. Overlay catalog: the motion vocabulary and the preset ids this worker
 	// renders come from ChrononTemplate's emitted catalog, embedded at build

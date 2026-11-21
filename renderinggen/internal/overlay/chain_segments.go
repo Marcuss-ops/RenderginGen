@@ -32,7 +32,6 @@ type chainSegment struct {
 	CaptionLayout       string               `json:"caption_layout"`
 	CaptionColor        string               `json:"caption_color"`
 	EntityStyleID       string               `json:"entity_style_id"`
-	CameraMotionID      string               `json:"camera_motion_id"`
 	StartUS             int64                `json:"start_us"`
 	DurationUS          int64                `json:"duration_us"`
 	MotionParams        map[string]any       `json:"motion_params"`
@@ -49,6 +48,10 @@ type chainSegment struct {
 // params (item.Params + item.Style). Params arrive as map[string]any from
 // JSON, so decode via round-trip instead of assuming concrete Go types — a
 // failed decode is a producer bug and fails closed.
+//
+// This is the ONLY place the blob is decoded. resolveSemanticItems calls it
+// once and stores the typed list on the item; the lowering and the camera
+// controller read that list through chainSegmentsFor.
 func decodeChainSegments(params map[string]any, itemID string) ([]chainSegment, error) {
 	raw, ok := params["chain_segments"]
 	if !ok {
@@ -66,6 +69,17 @@ func decodeChainSegments(params map[string]any, itemID string) ([]chainSegment, 
 		return nil, fmt.Errorf("overlay: chain item %q needs at least two segments, got %d", itemID, len(segments))
 	}
 	return segments, nil
+}
+
+// chainSegmentsFor returns the typed segment list resolved for this item. The
+// fallback decodes on demand only for a resolvedItem built outside the semantic
+// pipeline (unit tests, diagnostic tools); every producer plan takes the typed
+// field and triggers no JSON round-trip at lowering time.
+func chainSegmentsFor(item semanticItem, params map[string]any) ([]chainSegment, error) {
+	if len(item.chainSegments) > 0 {
+		return item.chainSegments, nil
+	}
+	return decodeChainSegments(params, item.ID)
 }
 
 // segmentIdentity resolves a chain segment's kind and template.
@@ -158,7 +172,6 @@ func segRIItem(seg chainSegment, chain semanticItem, itemID string, index int) (
 	item.CaptionLayout = seg.CaptionLayout
 	item.CaptionColor = seg.CaptionColor
 	item.EntityStyleID = seg.EntityStyleID
-	item.CameraMotionID = seg.CameraMotionID
 	item.ImageLayers = append([]SemanticImageLayer(nil), seg.ImageLayers...)
 	item.Frame = seg.Frame
 	item.Params = seg.Params
@@ -187,30 +200,6 @@ func segRIItem(seg chainSegment, chain semanticItem, itemID string, index int) (
 	return item, nil
 }
 
-func chainSequenceCamera(ri resolvedItem, fpsNum, fpsDen int) (string, semanticItem, int64, int64, bool) {
-	segments, err := decodeChainSegments(ri.Params, ri.Item.ID)
-	if err != nil {
-		return "", semanticItem{}, 0, 0, false
-	}
-	for _, segment := range segments {
-		if segment.CameraMotionID == "" || len(segment.ImageLayers) < 2 || segment.DurationUS <= 0 {
-			continue
-		}
-		startUS := segment.StartUS
-		endUS := startUS + segment.DurationUS
-		startFrame, endFrame := usFrames(startUS, endUS, int64(fpsNum), int64(fpsDen))
-		// A segment whose identity cannot be resolved is reported by
-		// compileChainItem, which fails the whole compile; here it only means
-		// this segment contributes no extra camera controller.
-		segItem, err := segRIItem(segment, ri.Item, ri.Item.ID, 0)
-		if err != nil {
-			continue
-		}
-		return segment.CameraMotionID, segItem, startFrame, endFrame, true
-	}
-	return "", semanticItem{}, 0, 0, false
-}
-
 // segParamsForKind scopes the chain-level params to one segment. A mixed
 // chain inherits every segment's Params from the chain item, which mirrors
 // the FIRST segment: when the first segment is text, its text runtime
@@ -222,22 +211,12 @@ func chainSequenceCamera(ri resolvedItem, fpsNum, fpsDen int) (string, semanticI
 // the payload's font, glow, stroke and shadow reach the caption instead of
 // falling back to preset constants.
 func segParamsForKind(chainParams map[string]any, segKind ItemKind, hasImage, hasCaption bool) map[string]any {
-	captionedEntityImage := (isEntityKind(segKind) || isImageKind(segKind)) && hasImage && hasCaption
-	if !isShapeKind(segKind) && !isImageKind(segKind) && !isVideoKind(segKind) && !(isEntityKind(segKind) && hasImage) {
-		return chainParams
-	}
 	filtered := make(map[string]any, len(chainParams))
 	for k, v := range chainParams {
 		filtered[k] = v
 	}
 	for _, key := range runtimeTextStyleKeys {
-		if captionedEntityImage {
-			continue
-		}
-		if key == "fill" && isShapeKind(segKind) {
-			// Shape segments own `fill` as geometry (bar/rect color),
-			// mirroring validateTextRuntimeOverrides: stripping it here
-			// would silently drop a shape's color on mixed chains.
+		if textRuntimeKeyAllowedForKind(key, segKind, hasImage, hasCaption) {
 			continue
 		}
 		delete(filtered, key)

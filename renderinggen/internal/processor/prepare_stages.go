@@ -76,6 +76,10 @@ func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error 
 		if err := json.Unmarshal(pkg.Plan, st.plan); err != nil {
 			return fmt.Errorf("processor: decode compiled plan from prepared package: %w", err)
 		}
+		// The capability contract is transient on the render wire, so a package
+		// loaded on another worker recovers it from the sidecar. An older
+		// package carries the zero value and keeps the historical behaviour.
+		st.plan.Features = pkg.Overlay.Features
 		st.stats, st.preparedPackage = pkg.Stats, pkg.Overlay
 		st.compiledAssets = make([]overlay.Asset, len(pkg.Assets))
 		for i, asset := range pkg.Assets {
@@ -86,7 +90,7 @@ func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error 
 		// One compile pass produces the plan AND the ledger counters, so the
 		// artifact metrics can never drift from the layers that were emitted.
 		compileStart := time.Now()
-		result, err := p.compileSemantic(job.RenderPlan)
+		result, err := p.compileSemanticForPrepare(job.RenderPlan)
 		if err != nil {
 			return err
 		}
@@ -211,6 +215,26 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	for _, a := range st.assets {
 		st.inputBytes += resolvedSizes[a.LogicalPath]
 	}
+	// The first compile ran before a single byte existed on disk, so any image
+	// whose box depends on its source aspect was left at its provisional
+	// geometry. Now that the promised assets are materialized, probe their real
+	// dimensions and lower the plan a second time: the fitted box and the
+	// caption interval pinned to it are what every frame renders, so they
+	// cannot be patched in after the compile. The recompile consumes the same
+	// producer document; only the size table is new.
+	sizes, err := probePlanImageSizes(ws.Root(), st.plan)
+	if err != nil {
+		return err
+	}
+	sized, err := p.compileSemanticWithAssetSizes(job.RenderPlan, sizes)
+	if err != nil {
+		return fmt.Errorf("processor: sized recompile after materialize: %w", err)
+	}
+	st.result = sized
+	st.plan = sized.Plan
+	st.stats = sized.Stats
+	st.preparedPackage = sized.Prepared
+	st.compiledAssets = sized.Assets
 	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
 	// no JSON round-trip.
 	renamed, err := normalizeMaterializedImagePaths(ws.Root(), st.plan)
@@ -225,18 +249,13 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 		workerlog.ByJobID(job.ID).Infof("normalized %d image asset extension(s) to match the verified bytes", len(renamed))
 	}
 	// Everything from here to the package build can change what the prepared
-	// sidecar must contain: the normalized asset path, an entity image's fitted
-	// size (part of the preparation identity) and the burned subtitle layers.
-	// The mutations are RECORDED and the package is rebuilt exactly ONCE from
-	// the final plan. The historical shape rebuilt it after the renames and
-	// again after the burn, so a job that did both paid for two full builds and
-	// the sidecar in between described a plan state no frame ever rendered.
+	// sidecar must contain: the normalized asset path and the burned subtitle
+	// layers. The mutations are RECORDED and the package is rebuilt exactly
+	// ONCE from the final plan. The historical shape rebuilt it after the
+	// renames and again after the burn, so a job that did both paid for two
+	// full builds and the sidecar in between described a plan state no frame
+	// ever rendered.
 	st.packageStale = len(renamed) > 0
-	fitChanged, err := fitEntityImageLayersToAssets(ws.Root(), st.plan)
-	if err != nil {
-		return err
-	}
-	st.packageStale = st.packageStale || fitChanged
 	if err := validateMapRasterAssets(ws.Root(), st.plan); err != nil {
 		return err
 	}

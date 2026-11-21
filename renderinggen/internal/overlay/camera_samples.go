@@ -22,34 +22,40 @@ type CameraSampleBaker interface {
 	Bake(planJSON []byte) ([]byte, error)
 }
 
-// cameraSampleBaker is installed once at startup, before any job is claimed.
-// nil fails closed: an animated camera without a configured baker is a
-// deployment error, never a silent switch of camera authority.
-var cameraSampleBaker CameraSampleBaker
-
-// SetCameraSampleBaker installs the process-wide baker. It must be called
-// during construction, before workers claim jobs; it is not synchronized with
-// in-flight compiles.
-func SetCameraSampleBaker(baker CameraSampleBaker) {
-	cameraSampleBaker = baker
+// CompileOptions carries the per-call dependencies of a compile. It is a value,
+// not package state: two compiles with different bakers never race or leak
+// into each other.
+type CompileOptions struct {
+	// AssetSizes maps a logical asset path to its probed pixel dimensions. nil
+	// selects the blind compile (no materialized bytes yet).
+	AssetSizes map[string]ImageSize
+	// CameraBaker resolves camera tracks into per-frame poses. nil selects the
+	// deterministic in-process evaluator; the worker injects the native CM3D
+	// CameraRig runner explicitly.
+	CameraBaker CameraSampleBaker
+	// SkipCameraBake leaves the transient camera tracks unresolved. It is for
+	// the preparatory pass whose plan is discarded after its asset refs and
+	// probe inputs are read: baking there would duplicate the render pass.
+	SkipCameraBake bool
 }
 
 // bakeResolvedCameraSamples converts the compiler's temporary scalar camera
 // tracks into complete absolute-frame renderer poses. The wire plan contains no
 // independent camera property tracks, so C3D receives a resolved pose at every
-// presentation frame.
-func bakeResolvedCameraSamples(plan *Plan) error {
+// presentation frame. The baker is an explicit dependency; a nil one falls back
+// to the in-process reference evaluator instead of mutable package state.
+func bakeResolvedCameraSamples(plan *Plan, baker CameraSampleBaker) error {
 	if plan == nil || plan.CameraAnimation == nil || len(plan.CameraAnimation.Tracks) == 0 {
 		return nil
 	}
-	if cameraSampleBaker == nil {
-		return fmt.Errorf("overlay: animated camera requires CHRONON_CAMERA_PLAN_BAKER (CM3D CameraRig)")
+	if baker == nil {
+		baker = referenceCameraBaker{}
 	}
 	input, err := cameraBakerInput(plan)
 	if err != nil {
 		return err
 	}
-	output, err := cameraSampleBaker.Bake(input)
+	output, err := baker.Bake(input)
 	if err != nil {
 		return fmt.Errorf("overlay: animated camera: %w", err)
 	}

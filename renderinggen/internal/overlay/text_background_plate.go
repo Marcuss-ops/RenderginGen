@@ -32,12 +32,14 @@ func liftTextBackgroundPlates(plan *Plan) {
 		usedIDs[layer.ID] = struct{}{}
 	}
 	out := make([]Layer, 0, len(plan.Layers))
+	plateIndex := 0
 	for _, layer := range plan.Layers {
-		plate, ok := textBackgroundPlate(layer, plan.Canvas, usedIDs)
+		plate, ok := textBackgroundPlate(&layer, plan.Canvas, usedIDs, plateIndex)
 		if !ok {
 			out = append(out, layer)
 			continue
 		}
+		plateIndex++
 		layer.Style.Background = nil
 		out = append(out, plate, layer)
 		usedIDs[plate.ID] = struct{}{}
@@ -45,7 +47,7 @@ func liftTextBackgroundPlates(plan *Plan) {
 	plan.Layers = out
 }
 
-func textBackgroundPlate(layer Layer, canvas Canvas, usedIDs map[string]struct{}) (Layer, bool) {
+func textBackgroundPlate(layer *Layer, canvas Canvas, usedIDs map[string]struct{}, plateIndex int) (Layer, bool) {
 	// A captioned entity can select a camera-backed caption motion. That text
 	// layer is still a text card and still owns style.background; skipping it
 	// here left the first 3D captions with the dead box_style field while the
@@ -62,7 +64,7 @@ func textBackgroundPlate(layer Layer, canvas Canvas, usedIDs map[string]struct{}
 	if err != nil || len(color) != 4 {
 		return Layer{}, false
 	}
-	width, height := textPlateBox(layer)
+	width, height := textPlateBox(*layer)
 	if width <= 0 || height <= 0 {
 		return Layer{}, false
 	}
@@ -111,10 +113,35 @@ func textBackgroundPlate(layer Layer, canvas Canvas, usedIDs map[string]struct{}
 		ScreenSpace:    layer.ScreenSpace,
 		Enable3D:       layer.Enable3D,
 		Opacity:        floatPointer(opacity),
-		Shape:          &LayerShape{Type: shapeType, Fill: []float64{color[0], color[1], color[2], color[3]}, Radius: radius},
+		Shape:          &LayerShape{Type: shapeType, Fill: []float64{color[0], color[1], color[2], color[3]}, Radius: radius, Stroke: clonePlateStroke(background.Stroke)},
 		Parent:         layer.Parent,
 	}
-	if layer.Animation != nil {
+	if background.Shadow != nil {
+		shadow := *background.Shadow
+		shadow.Offset = append([]float64(nil), background.Shadow.Offset...)
+		plate.Style = &LayerStyle{Shadow: &shadow}
+	}
+	if motion := plateMotionForIndex(background, plateIndex); motion != "" {
+		enter := int64(plateMotionDefaultEnterFrames)
+		if layer.DurationFrames > 0 && enter > layer.DurationFrames/2 {
+			enter = layer.DurationFrames / 2
+		}
+		if enter < 1 {
+			enter = 1
+		}
+		if animation, ok := plateEntranceAnimation(motion, width, enter, layer.StartFrame); ok {
+			plate.Animation = animation
+		}
+		// The plate entrance owns the card. Starting the label on the frame the
+		// plate settles keeps it (and its shadow/glow) from hanging outside a
+		// half-drawn or half-scaled rectangle. A short local fade softens the
+		// arrival without re-introducing a card track that fights the plate.
+		if layer.DurationFrames > enter {
+			layer.StartFrame += enter
+			layer.DurationFrames -= enter
+		}
+		revealPlateTextAfterEntrance(layer)
+	} else if layer.Animation != nil {
 		plate.Animation = &LayerAnimation{Tracks: cloneAnimationTracks(layer.Animation.Tracks)}
 	}
 	if layer.TransitionIn != nil {
@@ -150,6 +177,14 @@ func textPlatePadding(padding []float64) (float64, float64) {
 		return padX, padY
 	}
 	return 0, 0
+}
+
+func clonePlateStroke(stroke *LayerStroke) *LayerStroke {
+	if stroke == nil {
+		return nil
+	}
+	value := *stroke
+	return &value
 }
 
 func cloneAnimationTracks(tracks []AnimationTrack) []AnimationTrack {

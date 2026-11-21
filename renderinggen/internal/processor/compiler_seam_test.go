@@ -39,3 +39,27 @@ func TestCompileSemanticFallsBackToOverlayCompiler(t *testing.T) {
 		t.Fatal("zero-value Processor must still dispatch to the real compiler and reject invalid JSON")
 	}
 }
+
+// TestCompileSemanticForPrepareUsesTheOptionalSeam pins the pass-A dispatch:
+// a compiler that implements the prepare capability is called through it, so
+// the ordinary (baking) compile is not used for the discarded plan.
+func TestCompileSemanticForPrepareUsesTheOptionalSeam(t *testing.T) {
+	stub := &stubPrepareCompiler{stubSemanticCompiler: stubSemanticCompiler{err: errors.New("prepare stub")}}
+	p := &Processor{compiler: stub}
+	if _, err := p.compileSemanticForPrepare([]byte(`{}`)); err == nil {
+		t.Fatal("prepare compile did not surface its error")
+	}
+	if !stub.prepareCalled || stub.called {
+		t.Fatalf("prepare seam called=%t ordinary called=%t, want prepare only", stub.prepareCalled, stub.called)
+	}
+}
+
+type stubPrepareCompiler struct {
+	stubSemanticCompiler
+	prepareCalled bool
+}
+
+func (s *stubPrepareCompiler) CompileSemanticForPrepare([]byte) (overlay.CompileResult, error) {
+	s.prepareCalled = true
+	return s.result, s.err
+}
