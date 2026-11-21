@@ -87,47 +87,23 @@ func chainSegmentsFor(item semanticItem, params map[string]any) ([]chainSegment,
 	return decodeChainSegments(params, item.ID)
 }
 
-// segmentIdentity resolves a chain segment's kind and template.
+// segmentIdentity validates the kind/template a chain segment declares.
 //
-// The producer writes both (`ChainSegment` in BrainRust's planner), so this is
-// a compatibility shim for hand-authored plans and for segments produced
-// before per-segment identity existed — not a second decision layer. It
-// therefore only infers what the content names unambiguously: a segment that
-// carries both a map and image bytes, or carries no content at all, fails
-// closed instead of being guessed into the nearest family.
+// The producer writes both (`ChainSegment` in BrainRust's planner, mirrored by
+// the Go projection), so a segment without them is a producer bug. Until
+// 2026-11-21 this function inferred the missing family from the content; that
+// inference is retired (CHAIN-SEGMENT-SSOT Open 4): every compiled segment in
+// the repository carries both keys, and guessing a family silently lowered a
+// plan the producer never approved. Only the empty-content check remains — a
+// segment with nothing to draw fails closed instead of rendering nothing.
 func segmentIdentity(seg chainSegment, itemID string, index int) (string, string, error) {
 	segKind := strings.TrimSpace(seg.Kind)
 	segTemplate := strings.TrimSpace(seg.TemplateID)
-	hasMap := seg.Map != nil
-	hasImage := len(seg.Assets) > 0 || strings.TrimSpace(seg.AssetID) != "" || len(seg.ImageLayers) > 0
-	if segKind == "" {
-		switch {
-		case hasMap && hasImage:
-			return "", "", fmt.Errorf("overlay: chain item %q segment %d carries both a map and image content; its kind cannot be inferred", itemID, index)
-		case hasMap:
-			segKind = string(KindMap)
-		case hasImage:
-			segKind = string(KindImageSynonym)
-		default:
-			segKind = string(KindTextPhraseSynonym)
-		}
+	if segKind == "" || segTemplate == "" {
+		return "", "", fmt.Errorf("overlay: chain item %q segment %d must declare kind and template_id (chain_segments producer contract)", itemID, index)
 	}
 	if !segmentCarriesContent(seg) {
 		return "", "", fmt.Errorf("overlay: chain item %q segment %d carries no content", itemID, index)
-	}
-	if segTemplate == "" {
-		switch ItemKind(segKind) {
-		case KindMap:
-			segTemplate = "MAP"
-		case KindImageSynonym, KindEntityImage, KindProduct, KindLogo:
-			segTemplate = "IMAGE_OVERLAY"
-		case KindEntityCard, KindOrganization, KindLocation, KindConcept, KindLowerThird:
-			segTemplate = "person_default"
-		case KindNumber:
-			segTemplate = "NUMBER"
-		default:
-			segTemplate = "IMPORTANT_PHRASE"
-		}
 	}
 	return segKind, segTemplate, nil
 }
