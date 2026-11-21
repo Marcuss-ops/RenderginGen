@@ -1,6 +1,6 @@
 # TICKET — Confine Producer 77 / Master 51 (SUPERSEDED)
 
-- **Stato:** SUPERSEDED il 2026-11-14.
+- **Stato:** CHIUSO (SUPERSEDED il 2026-11-14) — sostituito dal contratto corrente; nessun lavoro residuo in questa scheda.
 - **Contratto corrente:** [`refactored/docs/operations/PRODUCER-MASTER-BOUNDARY.md`](../../../refactored/docs/operations/PRODUCER-MASTER-BOUNDARY.md)
 - **Residui Master/stockpipeline:** [`TICKET-MASTER-STOCK-MATERIALIZATION-2026-11-14.md`](../../../refactored/docs/operations/TICKET-MASTER-STOCK-MATERIALIZATION-2026-11-14.md)
 - **Storico completo:** [`archive/TICKET-PRODUCER-MASTER-BOUNDARY-2026-11-04.md`](archive/TICKET-PRODUCER-MASTER-BOUNDARY-2026-11-04.md)

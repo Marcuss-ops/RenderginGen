@@ -1,6 +1,6 @@
 # GOP probe: `Wait()` concorrente chiude il pipe del decoder
 
-**Stato:** FIXED (2026-11-21) · **Priorità:** P0
+**Stato:** CLOSED (2026-11-21) — fix verificato su tutti i criteri · **Priorità:** P0
 **Origine:** `go test ./...` dopo la wave overlay-decoupling; fallimento
 riprodotto anche da solo con `-count=5`.
 
@@ -58,3 +58,10 @@ go test ./... -count=1
 Esito effettivo (2026-11-21): 10/10 PASS sul test canonical (43,1 s),
 `media`+`processor` verdi (4,4 s / 53,8 s), `go test ./...` **exit 0**
 (40 package con test, 0 FAIL).
+
+Ricontrollo 2026-11-21 (questa sessione): `RenderingGen` è al tree `c515fb5` e
+`internal/media/gop_probe.go` è invariato (nessuna goroutine `Wait()`; il
+commento di contratto è al punto di chiamata). Il working tree contiene
+modifiche non correlate sotto `queue/`, `internal/chronon/` e `docs/tickets/`,
+nessuna delle quali tocca il probe. I quattro criteri sono coperti dall'esito
+sopra, quindi la scheda è chiusa.
