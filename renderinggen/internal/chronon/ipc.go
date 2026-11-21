@@ -632,6 +632,7 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 	lastProgress := time.Now()
 	stamps := make([]outputStamp, len(outputs))
 	states := make(map[string]string, len(jobIDs))
+	framesSeen := make(map[string]int64, len(jobIDs))
 	sawStatus := false
 	running := false
 	pollInterval := 2 * time.Second
@@ -653,20 +654,28 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 				if strings.TrimSpace(jobID) == "" {
 					continue
 				}
-				state, ok := c.ipcJobState(ctx, jobID)
+				snapshot, ok := c.ipcJobState(ctx, jobID)
 				if !ok {
 					continue
 				}
 				sawStatus = true
-				if states[jobID] != state {
-					states[jobID] = state
+				if states[jobID] != snapshot.state {
+					states[jobID] = snapshot.state
+					progress = true
+				}
+				// A newer frame counter is real progress even when the output file
+				// has not grown yet (the encoder may be buffering). Older daemons
+				// omit the field, so zero is indistinguishable from "not reported"
+				// and must never count as advancement.
+				if snapshot.framesDone > framesSeen[jobID] {
+					framesSeen[jobID] = snapshot.framesDone
 					progress = true
 				}
 				// prepared is a live admission wait, not a render stall.
-				if state == "prepared" || state == "completed" || state == "failed" {
+				if snapshot.state == "prepared" || snapshot.state == "completed" || snapshot.state == "failed" {
 					progress = true
 				}
-				if state == "running" {
+				if snapshot.state == "running" {
 					running = true
 				}
 			}
@@ -685,23 +694,44 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 	}
 }
 
+// ipcJobSnapshot is the liveness projection of one GET_JOB_STATUS reply. The
+// frame counters are optional on the wire: a daemon built before this field
+// simply reports zero, which the watchdog treats as "not reported".
+type ipcJobSnapshot struct {
+	state       string
+	framesDone  int64
+	framesTotal int64
+}
+
+// parseIPCJobStatus decodes the reply body. It is a pure function so the frame
+// counter contract is testable without a socket.
+func parseIPCJobStatus(message string) (ipcJobSnapshot, bool) {
+	var reply struct {
+		State       string `json:"state"`
+		FramesDone  int64  `json:"frames_done"`
+		FramesTotal int64  `json:"frames_total"`
+	}
+	if err := json.Unmarshal([]byte(message), &reply); err != nil || reply.State == "" {
+		return ipcJobSnapshot{}, false
+	}
+	return ipcJobSnapshot{
+		state:       reply.State,
+		framesDone:  reply.FramesDone,
+		framesTotal: reply.FramesTotal,
+	}, true
+}
+
 // ipcJobState reads one daemon lifecycle record on its own connection. A
 // missing/expired job or an older daemon is not a stall signal: the err/ok
 // result keeps that distinction available to the watchdog.
-func (c *IPCClient) ipcJobState(ctx context.Context, jobID string) (string, bool) {
+func (c *IPCClient) ipcJobState(ctx context.Context, jobID string) (ipcJobSnapshot, bool) {
 	pollCtx, cancel := context.WithTimeout(ctx, ipcStatusPollTimeout)
 	defer cancel()
 	status, message, err := c.request(pollCtx, ipcCommandGetJobStatus, []byte(jobID))
 	if err != nil || status != ipcStatusOk {
-		return "", false
+		return ipcJobSnapshot{}, false
 	}
-	var reply struct {
-		State string `json:"state"`
-	}
-	if err := json.Unmarshal([]byte(message), &reply); err != nil || reply.State == "" {
-		return "", false
-	}
-	return reply.State, true
+	return parseIPCJobStatus(message)
 }
 
 func jobIDList(jobIDs []string) string {
@@ -770,6 +800,23 @@ func (c *IPCClient) serviceContext(ctx context.Context) (context.Context, contex
 	return context.WithTimeout(ctx, timeout)
 }
 
+// ipcRequestContextError maps a transport failure to the caller's context
+// error. The socket deadline is installed from ctx's deadline, so an i/o
+// timeout is that deadline expiring even if the timer goroutine has not yet
+// run and ctx.Err() is still nil at the instant the syscall returns.
+func ipcRequestContextError(ctx context.Context, err error) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return fmt.Errorf("ipc request canceled: %w", ctxErr)
+	}
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		if _, ok := ctx.Deadline(); ok {
+			return fmt.Errorf("ipc request canceled: %w", context.DeadlineExceeded)
+		}
+	}
+	return nil
+}
+
 // request dials the daemon, sends one framed command and reads the reply.
 func (c *IPCClient) request(ctx context.Context, command uint32, payload []byte) (uint32, string, error) {
 	var d net.Dialer
@@ -793,16 +840,16 @@ func (c *IPCClient) request(ctx context.Context, command uint32, payload []byte)
 
 	frame := encodeIPCRequest(command, payload)
 	if _, err := conn.Write(frame); err != nil {
-		if ctx.Err() != nil {
-			return 0, "", fmt.Errorf("ipc request canceled: %w", ctx.Err())
+		if canceled := ipcRequestContextError(ctx, err); canceled != nil {
+			return 0, "", canceled
 		}
 		return 0, "", fmt.Errorf("ipc write request: %w", err)
 	}
 
 	status, message, err := readIPCReply(conn)
 	if err != nil {
-		if ctx.Err() != nil {
-			return 0, "", fmt.Errorf("ipc request canceled: %w", ctx.Err())
+		if canceled := ipcRequestContextError(ctx, err); canceled != nil {
+			return 0, "", canceled
 		}
 		return 0, "", fmt.Errorf("ipc read reply: %w", err)
 	}
