@@ -155,3 +155,18 @@ renderinggen/drive-upload
 /Upload/**
 /UploadDrive/**
 /hdr_bokeh_focus_pull_20261108/**
+
+# Purged from history 2026-11-21: run outputs, evidence and screenshots stay
+# local. The runtime background plates in assets/backgrounds stay tracked.
+*.mp4
+*.mov
+*.webm
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.rgba
+*.ppm
+*.pgm
+*.mp3
+*.wav
