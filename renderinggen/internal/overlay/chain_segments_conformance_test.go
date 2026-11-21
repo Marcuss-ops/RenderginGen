@@ -11,7 +11,7 @@ import (
 	"testing"
 )
 
-const conformanceFixtureSHA256 = "7647670ee04550892cc9c8939bba6b71d354698ccdb2bdbdd8a4ba8d25dde9d0"
+const conformanceFixtureSHA256 = "a96712594aadf832c47674cfc557a4b20cea27898a70fa967dcaeedf87351093"
 
 // TestSharedChainSegmentsFixtureCompilesFiveImages is the consumer half of the
 // cross-repository chain_segments contract. The same bytes PipelineGen
