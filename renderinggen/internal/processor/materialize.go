@@ -209,16 +209,18 @@ func isHTTPURL(s string) bool {
 }
 
 // assetSourceURL returns the validated download URL for a self-heal fetch.
-// SourceURL is the preferred URL-typed input: it must parse and use
-// http/https with a host. A LogicalPath that parses as http/https is still
-// honored as a LEGACY self-heal source (pinned by
-// TestPrepareSelfHealsMissingEntityImageFromURL): the downloaded bytes are
-// hash-verified (64-hex key) and size-capped before Chronon sees them, so a
-// wrong body can never be injected — but the fetch is logged loudly because a
-// workspace-relative field carrying a URL is a contract smell and new producers
-// must set source_url explicitly. Any other scheme in LogicalPath is rejected
-// (SSRF fail-closed).
+// SourceURL is the only URL-typed input: it must parse and use http/https with
+// a host. LogicalPath is always a workspace-relative path; a URL there is a
+// producer bug and fails closed instead of being silently accepted as a legacy
+// self-heal source. Any other scheme in LogicalPath is rejected too (SSRF
+// fail-closed).
 func assetSourceURL(asset queue.AssetRef) (string, error) {
+	if u, err := url.Parse(asset.LogicalPath); err == nil && u.Scheme != "" {
+		if u.Scheme == "http" || u.Scheme == "https" {
+			return "", fmt.Errorf("asset logical_path %q is a URL: set source_url and use a workspace-relative logical_path", asset.LogicalPath)
+		}
+		return "", fmt.Errorf("asset logical_path %q has unsupported URL scheme %q: refusing to fetch it", asset.LogicalPath, u.Scheme)
+	}
 	if asset.SourceURL != "" {
 		u, err := url.Parse(asset.SourceURL)
 		if err != nil {
@@ -231,13 +233,6 @@ func assetSourceURL(asset queue.AssetRef) (string, error) {
 			return "", fmt.Errorf("asset source_url %q has no host", asset.SourceURL)
 		}
 		return asset.SourceURL, nil
-	}
-	if u, err := url.Parse(asset.LogicalPath); err == nil && u.Scheme != "" {
-		if u.Scheme == "http" || u.Scheme == "https" {
-			log.Printf("asset logical_path %q carries a URL: legacy self-heal accepted (hash-verified, size-capped); set source_url explicitly", asset.LogicalPath)
-			return asset.LogicalPath, nil
-		}
-		return "", fmt.Errorf("asset logical_path %q has unsupported URL scheme %q: refusing to fetch it", asset.LogicalPath, u.Scheme)
 	}
 	return "", nil
 }

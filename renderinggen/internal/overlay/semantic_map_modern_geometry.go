@@ -13,62 +13,6 @@ import (
 // path/bbox convention shared by fill, outline, halo and route. Nothing here
 // touches a layer.
 
-// trimMapPolyline clips a canvas-space polyline to the [start, end] fraction of
-// its arc length, interpolating the two cut points. An empty result means the
-// requested range is degenerate.
-func trimMapPolyline(points [][2]float64, start, end float64) [][2]float64 {
-	if len(points) < 2 {
-		return points
-	}
-	start = math.Max(0, math.Min(1, start))
-	end = math.Max(0, math.Min(1, end))
-	if end <= start {
-		return nil
-	}
-	if start == 0 && end == 1 {
-		return points
-	}
-	lengths := make([]float64, len(points)-1)
-	total := 0.0
-	for index := range lengths {
-		lengths[index] = math.Hypot(points[index+1][0]-points[index][0], points[index+1][1]-points[index][1])
-		total += lengths[index]
-	}
-	if total <= 0 {
-		return nil
-	}
-	startDistance, endDistance := start*total, end*total
-	out := make([][2]float64, 0, len(points)+2)
-	travelled := 0.0
-	for index, length := range lengths {
-		segmentStart, segmentEnd := travelled, travelled+length
-		travelled = segmentEnd
-		if segmentEnd <= startDistance || segmentStart >= endDistance {
-			continue
-		}
-		from, to := points[index], points[index+1]
-		fromFraction, toFraction := 0.0, 1.0
-		if length > 0 {
-			fromFraction = math.Max(0, (startDistance-segmentStart)/length)
-			toFraction = math.Min(1, (endDistance-segmentStart)/length)
-		}
-		cutFrom := mapPolylinePoint(from, to, fromFraction)
-		cutTo := mapPolylinePoint(from, to, toFraction)
-		if len(out) == 0 || out[len(out)-1] != cutFrom {
-			out = append(out, cutFrom)
-		}
-		out = append(out, cutTo)
-	}
-	return out
-}
-
-func mapPolylinePoint(from, to [2]float64, fraction float64) [2]float64 {
-	return [2]float64{
-		from[0] + (to[0]-from[0])*fraction,
-		from[1] + (to[1]-from[1])*fraction,
-	}
-}
-
 // modernMapTerritoryRings selects the country parts the plate can afford and
 // sizes each silhouette by its share of the territory. Halo, outline and fill
 // all consume these rings, because a second, coarser fill ring is exactly what

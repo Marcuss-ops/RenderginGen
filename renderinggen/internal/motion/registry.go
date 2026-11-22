@@ -169,6 +169,7 @@ func (r *RegistryType) Categories() []string {
 // appears in neither list.
 var phrasePlanningCategories = [...]string{
 	"apple_v2", "apple_v3", "phrase_apple_clean_v1", "apple_phrase_v1", "brush_v1", "text_3d_v1", "documentary_highlighting_v1",
+	"web_phrase_v1",
 }
 
 // phrasePoolExcludedCategories admit planning-relevant targets but are

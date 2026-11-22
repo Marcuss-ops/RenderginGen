@@ -261,6 +261,17 @@ func registerShortPhraseStyles(registry *RegistryType) error {
 		return err
 	}
 	for _, recipe := range recipes {
+		// Web recipes are a bridge, not a second definition: the canonical
+		// catalog already registered the same ID under web_phrase_v1, and the
+		// canonical form is the GPU-safe one (square band selectors and native
+		// RGBA fills). Registering the short projection too would panic on the
+		// duplicate and would also make pool membership depend on load order.
+		if recipe.Family == "web" {
+			if _, err := registry.Resolve(recipe.ID); err != nil {
+				return fmt.Errorf("motion: web phrase recipe %q is not in the canonical catalog: %w", recipe.ID, err)
+			}
+			continue
+		}
 		definition := shortPhraseMotionDefinition(recipe)
 		if err := ValidateDefinition(definition); err != nil {
 			return fmt.Errorf("motion: short phrase style %q: %w", recipe.ID, err)

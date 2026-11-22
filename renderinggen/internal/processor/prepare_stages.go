@@ -100,6 +100,9 @@ func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error 
 		st.stats, st.plan, st.compiledAssets = result.Stats, result.Plan, result.Assets
 		st.preparedPackage = result.Prepared
 	}
+	if err := validateAudioMode(st.plan); err != nil {
+		return fmt.Errorf("processor: %w", err)
+	}
 	st.metrics[metricnames.OverlayItemCount] = float64(st.stats.SemanticItemCount)
 	if st.stats.SemanticItemCount > 1 {
 		st.metrics[metricnames.OverlayRenderBatch] = 1
@@ -429,16 +432,6 @@ func (p *Processor) preparePlanOutput(st *prepareState) error {
 	}
 	if st.audioInert {
 		st.metrics[metricnames.AudioInertParams] = 1
-		if st.plan.Output.Audio != nil && !audioModeCopyOnly(st.plan.Output.Audio.Mode) {
-			// The caller asked for an audio policy the worker cannot execute
-			// (the native mux copies the source stream). Name it separately:
-			// "parameters ignored" and "the requested audio mode was not
-			// applied" are different operational facts, and only the second
-			// one changes what the published artifact sounds like.
-			st.metrics[metricnames.AudioModeUnsupported] = 1
-			workerlog.ByJobID(st.job.ID).Warnf("requested audio mode %q is NOT applied (native mux copies the source stream); the artifact carries the source audio unchanged",
-				st.plan.Output.Audio.Mode)
-		}
 		workerlog.ByJobID(st.job.ID).Warnf("audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
 			st.plan.Output.Audio.Mode, st.plan.Output.Audio.Codec, st.plan.Output.Audio.SampleRate, st.plan.Output.Audio.Channels)
 	}

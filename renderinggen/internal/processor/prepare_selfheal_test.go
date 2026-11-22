@@ -151,7 +151,7 @@ func TestPrepareSelfHealsMissingEntityImageFromURL(t *testing.T) {
 	job := validJob()
 	job.ID = "overlay-prepare-self-heal"
 	job.JobType = queue.JobTypeOverlayPrepare
-	job.Assets = []queue.AssetRef{{Hash: imageHash, LogicalPath: srv.URL + "/michael-jordan.jpg"}}
+	job.Assets = []queue.AssetRef{{Hash: imageHash, LogicalPath: "assets/semantic/michael-jordan.jpg", SourceURL: srv.URL + "/michael-jordan.jpg"}}
 	job.RenderPlan = json.RawMessage(`{
       "schema_version":"renderinggen.overlay-prepare.v1",
       "plan_id":"run-1","video_id":"run-1",
@@ -177,6 +177,29 @@ func TestPrepareSelfHealsMissingEntityImageFromURL(t *testing.T) {
 	}
 }
 
+// TestPrepareRejectsURLInLogicalPath pins the schema boundary: logical_path is
+// a workspace-relative name, never a fetchable origin. The URL belongs in
+// source_url; accepting it in logical_path is the legacy workaround retired on
+// 2026-11-22.
+func TestPrepareRejectsURLInLogicalPath(t *testing.T) {
+	proc, _, _ := newProcessor(t)
+
+	job := validJob()
+	job.ID = "overlay-prepare-url-in-logical-path"
+	job.JobType = queue.JobTypeOverlayPrepare
+	job.Assets = []queue.AssetRef{{Hash: storage.Hash([]byte("url-in-logical-path")), LogicalPath: "https://cdn.example/photo.png"}}
+	job.RenderPlan = json.RawMessage(`{
+      "schema_version":"renderinggen.overlay-prepare.v1",
+      "plan_id":"run-1","video_id":"run-1",
+      "width":1280,"height":720,"fps_num":30,"fps_den":1,
+      "intents":[{"template_id":"person_default","timing_state":"PENDING"}]
+    }`)
+
+	if _, err := proc.Prepare(context.Background(), job); err == nil {
+		t.Fatal("prepare must reject a URL in logical_path")
+	}
+}
+
 // TestPrepareSelfHealRejectsHashMismatch pins the fail-closed boundary: a URL
 // whose bytes do not hash to the declared asset hash must fail resolution, and
 // must never stage the wrong bytes into L3.
@@ -192,7 +215,7 @@ func TestPrepareSelfHealRejectsHashMismatch(t *testing.T) {
 	job := validJob()
 	job.ID = "overlay-prepare-self-heal-mismatch"
 	job.JobType = queue.JobTypeOverlayPrepare
-	job.Assets = []queue.AssetRef{{Hash: wantHash, LogicalPath: srv.URL + "/wrong.jpg"}}
+	job.Assets = []queue.AssetRef{{Hash: wantHash, LogicalPath: "assets/semantic/wrong.jpg", SourceURL: srv.URL + "/wrong.jpg"}}
 	job.RenderPlan = json.RawMessage(`{
       "schema_version":"renderinggen.overlay-prepare.v1",
       "plan_id":"run-1","video_id":"run-1",

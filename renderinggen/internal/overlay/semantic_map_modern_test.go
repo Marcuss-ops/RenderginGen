@@ -1,7 +1,14 @@
 package overlay
 
 import (
+	"bytes"
 	"fmt"
+	"image"
+	"image/png"
+	"math"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -174,6 +181,224 @@ func TestModernMap1FillUsesOutlineRing(t *testing.T) {
 	}
 	if fills != 1 {
 		t.Fatalf("ModernMap1 emitted %d plate fills, want exactly one", fills)
+	}
+}
+
+func TestModernMap1RouteKeepsFullGeometryWithNativeTrim(t *testing.T) {
+	plan := modernMapPlan("Italy", nil)
+	item := plan["items"].([]any)[0].(map[string]any)
+	stops := []any{
+		map[string]any{"latitude": 41.9028, "longitude": 12.4964},
+		map[string]any{"latitude": 43.7696, "longitude": 11.2558},
+		map[string]any{"latitude": 44.4949, "longitude": 11.3426},
+		map[string]any{"latitude": 45.4642, "longitude": 9.19},
+		map[string]any{"latitude": 45.0703, "longitude": 7.6869},
+	}
+	item["map"].(map[string]any)["routes"] = []any{
+		map[string]any{
+			"id": "trimmed", "color": "#38D9C5", "width_px": 5.0,
+			"trim_start": 0.40, "trim_end": 0.60, "stops": stops,
+		},
+	}
+	result, err := compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatalf("compile ModernMap1 with a trimmed route: %v", err)
+	}
+	var route *Layer
+	for index := range result.Plan.Layers {
+		if result.Plan.Layers[index].ID == "shape-map:modernmap1:route:trimmed" {
+			route = &result.Plan.Layers[index]
+		}
+	}
+	if route == nil || route.Shape == nil {
+		t.Fatalf("trimmed ModernMap1 route layer missing: %+v", result.Plan.Layers)
+	}
+	samples, err := mapRouteGeoSamples([]SemanticMapPoint{
+		{Latitude: 41.9028, Longitude: 12.4964},
+		{Latitude: 43.7696, Longitude: 11.2558},
+		{Latitude: 44.4949, Longitude: 11.3426},
+		{Latitude: 45.4642, Longitude: 9.19},
+		{Latitude: 45.0703, Longitude: 7.6869},
+	})
+	if err != nil {
+		t.Fatalf("route samples: %v", err)
+	}
+	if len(route.Shape.Path) != len(samples) {
+		t.Fatalf("route path has %d commands, want the full %d-sample polyline (no pre-clip)", len(route.Shape.Path), len(samples))
+	}
+	if len(route.Shape.Operators) != 1 {
+		t.Fatalf("route operators = %+v, want one native trim operator", route.Shape.Operators)
+	}
+	op := route.Shape.Operators[0]
+	if op.Kind != "trim" || op.Params.Start != 0.40 || op.Params.End != 0.60 || op.Params.Animation != nil {
+		t.Fatalf("route trim operator = %+v, want static [0.40,0.60]", op)
+	}
+}
+
+// TestModernMap1RouteTrimRendersOnVulkan is the pixel gate for the retired
+// pre-clip workaround (TICKET-WORKAROUNDS #1). It renders one frame through the
+// real native path into the pre-encode raw RGBA surface (the PNG lane is not a
+// pixel-truth surface) and proves the static trim range is applied: green route
+// pixels exist in the middle of the polyline and are absent at both endpoints.
+//
+// Opt-in: CHRONON_BIN must name chronon3d_cli and
+// RENDERINGGEN_MODERNMAP_TRIM_RENDER=1. Set
+// RENDERINGGEN_TRIM_EVIDENCE_DIR to preserve the plan, raw frame, PNG and log.
+func TestModernMap1RouteTrimRendersOnVulkan(t *testing.T) {
+	bin := os.Getenv("CHRONON_BIN")
+	if bin == "" {
+		t.Skip("set CHRONON_BIN to a chronon3d_cli binary to run the native trim pixel gate")
+	}
+	if os.Getenv("RENDERINGGEN_MODERNMAP_TRIM_RENDER") != "1" {
+		t.Skip("set RENDERINGGEN_MODERNMAP_TRIM_RENDER=1 to run the native trim pixel gate")
+	}
+
+	plan := modernMapPlan("Italy", nil)
+	item := plan["items"].([]any)[0].(map[string]any)
+	stops := []any{
+		map[string]any{"latitude": 41.9028, "longitude": 12.4964},
+		map[string]any{"latitude": 43.7696, "longitude": 11.2558},
+		map[string]any{"latitude": 44.4949, "longitude": 11.3426},
+		map[string]any{"latitude": 45.4642, "longitude": 9.19},
+		map[string]any{"latitude": 45.0703, "longitude": 7.6869},
+	}
+	item["map"].(map[string]any)["routes"] = []any{map[string]any{
+		"id": "trimmed", "color": "#00FF00", "width_px": 8.0,
+		"trim_start": 0.40, "trim_end": 0.60, "stops": stops,
+	}}
+	result, err := compileMapTestPlan(t, plan)
+	if err != nil {
+		t.Fatalf("compile ModernMap1 trimmed route: %v", err)
+	}
+	var route *Layer
+	for index := range result.Plan.Layers {
+		if result.Plan.Layers[index].ID == "shape-map:modernmap1:route:trimmed" {
+			route = &result.Plan.Layers[index]
+		}
+	}
+	if route == nil || route.Shape == nil || len(route.Shape.Path) < 5 {
+		t.Fatalf("trimmed route layer missing or too short: %+v", route)
+	}
+	// The production plan places the route at -size/2 in the centered map
+	// plane, while a path primitive uses position as a direct translation. The
+	// gate recenters only this layer so the authored path stays inside the raw
+	// canvas; geometry and trim parameters are untouched.
+	route.Position = []float64{0, 0}
+
+	root := t.TempDir()
+	writeValidationAssets(t, root, result.Plan.Layers)
+	planBytes, err := result.Plan.MarshalIndent("", "  ")
+	if err != nil {
+		t.Fatalf("marshal render plan: %v", err)
+	}
+	planPath := filepath.Join(root, "modernmap-trim.plan.json")
+	if err := os.WriteFile(planPath, planBytes, 0o644); err != nil {
+		t.Fatalf("write render plan: %v", err)
+	}
+	evidenceDir := os.Getenv("RENDERINGGEN_TRIM_EVIDENCE_DIR")
+	saveEvidence := func(name string, data []byte) {
+		t.Helper()
+		if evidenceDir == "" {
+			return
+		}
+		if err := os.MkdirAll(evidenceDir, 0o755); err != nil {
+			t.Fatalf("create evidence dir: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(evidenceDir, name), data, 0o644); err != nil {
+			t.Fatalf("write evidence %s: %v", name, err)
+		}
+	}
+	saveEvidence("modernmap-trim.plan.json", planBytes)
+
+	rawPath := filepath.Join(root, "modernmap-trim.raw")
+	cmd := exec.Command(bin, "render", "--plan", planPath, "--assets-root", root,
+		"--start-frame", "0", "--end-frame", "0", "--backend", "vulkan",
+		"--video-sink", "raw", "--pipe-pixfmt", "rgba", "--encoder-backend", "pipe",
+		"-o", rawPath)
+	renderOut, err := cmd.CombinedOutput()
+	saveEvidence("render.log", renderOut)
+	if err != nil {
+		t.Fatalf("chronon raw render failed: %v\n%s", err, renderOut)
+	}
+
+	const canvasWidth, canvasHeight = 1920, 1080
+	const frameBytes = canvasWidth * canvasHeight * 4
+	raw, err := os.ReadFile(rawPath)
+	if err != nil {
+		t.Fatalf("read raw frame: %v", err)
+	}
+	if len(raw) != frameBytes {
+		t.Fatalf("raw frame is %d bytes, want exactly %d (one 1920x1080 RGBA frame)\n%s", len(raw), frameBytes, renderOut)
+	}
+	saveEvidence("modernmap-trim.raw", raw)
+	frame := image.NewRGBA(image.Rect(0, 0, canvasWidth, canvasHeight))
+	copy(frame.Pix, raw)
+	var pngBytes bytes.Buffer
+	if err := png.Encode(&pngBytes, frame); err != nil {
+		t.Fatalf("encode evidence PNG: %v", err)
+	}
+	saveEvidence("modernmap-trim.png", pngBytes.Bytes())
+
+	canvasPoint := func(point []float64) (float64, float64) {
+		return point[0] + route.Position[0], point[1] + route.Position[1]
+	}
+	polylinePointAt := func(fraction float64) (float64, float64) {
+		cumulative := make([]float64, len(route.Shape.Path))
+		for index := 1; index < len(route.Shape.Path); index++ {
+			dx := route.Shape.Path[index].Point[0] - route.Shape.Path[index-1].Point[0]
+			dy := route.Shape.Path[index].Point[1] - route.Shape.Path[index-1].Point[1]
+			cumulative[index] = cumulative[index-1] + math.Hypot(dx, dy)
+		}
+		target := cumulative[len(cumulative)-1] * fraction
+		for index := 1; index < len(cumulative); index++ {
+			if cumulative[index] < target {
+				continue
+			}
+			segment := cumulative[index] - cumulative[index-1]
+			t := 0.0
+			if segment > 0 {
+				t = (target - cumulative[index-1]) / segment
+			}
+			from := route.Shape.Path[index-1].Point
+			to := route.Shape.Path[index].Point
+			return canvasPoint([]float64{
+				from[0] + t*(to[0]-from[0]),
+				from[1] + t*(to[1]-from[1]),
+			})
+		}
+		return canvasPoint(route.Shape.Path[len(route.Shape.Path)-1].Point)
+	}
+	greenPixels := func(centerX, centerY float64, radius int) int {
+		count := 0
+		for y := int(centerY) - radius; y <= int(centerY)+radius; y++ {
+			for x := int(centerX) - radius; x <= int(centerX)+radius; x++ {
+				if x < 0 || y < 0 || x >= canvasWidth || y >= canvasHeight {
+					continue
+				}
+				offset := (y*canvasWidth + x) * 4
+				if raw[offset+1] > 180 && raw[offset] < 100 && raw[offset+2] < 100 {
+					count++
+				}
+			}
+		}
+		return count
+	}
+	firstX, firstY := canvasPoint(route.Shape.Path[0].Point)
+	lastX, lastY := canvasPoint(route.Shape.Path[len(route.Shape.Path)-1].Point)
+	midX, midY := polylinePointAt(0.5)
+	firstGreen := greenPixels(firstX, firstY, 24)
+	lastGreen := greenPixels(lastX, lastY, 24)
+	midGreen := greenPixels(midX, midY, 24)
+	t.Logf("raw trim gate: first=(%.1f,%.1f,%d green) mid=(%.1f,%.1f,%d green) last=(%.1f,%.1f,%d green)",
+		firstX, firstY, firstGreen, midX, midY, midGreen, lastX, lastY, lastGreen)
+	if firstGreen != 0 {
+		t.Fatalf("trimmed route still paints its first endpoint: %d green pixels", firstGreen)
+	}
+	if lastGreen != 0 {
+		t.Fatalf("trimmed route still paints its last endpoint: %d green pixels", lastGreen)
+	}
+	if midGreen == 0 {
+		t.Fatalf("trimmed route does not paint its middle: 0 green pixels")
 	}
 }
 

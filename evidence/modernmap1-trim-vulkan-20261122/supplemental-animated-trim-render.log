@@ -1,0 +1,40 @@
+[2026-11-22 07:32:19.996] [info] [plan-profile] read=0.16ms parse=0.08ms decode=55.15ms resolver=0.00ms compile_validate=2.50ms total=57.93ms
+[2026-11-22 07:32:19.996] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-22 07:32:20.031] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-22 07:32:20.031] [info] [video] Using raw sink (new) — frames will be written as raw pixel data to /tmp/trim-gate/trim.partial.raw
+[2026-11-22 07:32:20.031] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-22 07:32:20.033] [info] [video_adapter] Opened raw sink: 512x256 @ 30/1fps, format=rgba, codec=libx264
+[2026-11-22 07:32:20.669] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,] retired=[]
+[2026-11-22 07:32:20.669] [info] [exec-level-diag] frame=0 level=0 nodes=2 input_ms=0.001 dispatch_ms=85.034 fb_release_ms=0.001
+[2026-11-22 07:32:20.669] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-22 07:32:20.669] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-22 07:32:20.669] [info] [temp-lifetime] frame=0 after_level=1 live=[2,] retired=[0,1,]
+[2026-11-22 07:32:20.669] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.009 dispatch_ms=0.086 fb_release_ms=0.003
+[2026-11-22 07:32:20.679] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,] retired=[]
+[2026-11-22 07:32:20.679] [info] [exec-level-diag] frame=0 level=0 nodes=2 input_ms=0.001 dispatch_ms=2.772 fb_release_ms=0.001
+[2026-11-22 07:32:20.679] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-22 07:32:20.679] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-22 07:32:20.679] [info] [temp-lifetime] frame=0 after_level=1 live=[2,] retired=[0,1,]
+[2026-11-22 07:32:20.679] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.011 dispatch_ms=0.091 fb_release_ms=0.003
+[2026-11-22 07:32:21.011] [info] [video]   1/1 frames
+[2026-11-22 07:32:21.016] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-22 07:32:21.019] [info] [video] writer join complete
+[2026-11-22 07:32:21.019] [info] [drain-debug] start drain, capacity=6
+[2026-11-22 07:32:21.019] [info] [drain-debug] reap done, busy_count=0
+[2026-11-22 07:32:21.019] [info] [video] trimming framebuffer pool
+[2026-11-22 07:32:21.020] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-22 07:32:21.020] [info] [video] frame-loop cleanup complete
+[2026-11-22 07:32:21.020] [info] [video] Encoder write blocked duration: 0.64 ms
+[2026-11-22 07:32:21.020] [info] [video_diag] conversion_and_copy_duration_ms: 1 ms
+[2026-11-22 07:32:21.020] [info] [video_diag] conversion_bytes_written=524288 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-22 07:32:21.020] [info] [video_adapter] Closed sink — 1 frames written, write_blocked=0.64ms, close=0.01ms
+[2026-11-22 07:32:21.020] [info] [video] render_ms=4.22 encode_ms=4.14 writer_encode_ms=2.16 wall_ms=1023.29 nvml_stop_ms=0.08
+[2026-11-22 07:32:21.020] [info] [video] FFmpeg queue wait duration: 0.03 ms
+[2026-11-22 07:32:21.023] [info] [video] pre-encode artifact verified: 1 frames × 524288 bytes = 524288 bytes (format rgba), sha256=83e48a7c6e4cc8720756f5d10690f6ffe8824973890135aef6de9f4fbbab627a
+[2026-11-22 07:32:21.023] [info] [startup-profile] total=635.40ms logger=0.07ms cli_bootstrap=3.27ms cli_parse=nullms composition=0.13ms plan_read=0.16ms json_parse=0.08ms plan_decode_validate=55.15ms asset_resolve=0.00ms plan_compile=2.50ms unaccounted=137.02ms
+[2026-11-22 07:32:21.024] [info] [video] Wrote exact per-frame timing sidecar: /tmp/trim-gate/trim.raw.timing.json
+[2026-11-22 07:32:21.024] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-22 07:32:21.137] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=0.2 decoder_reset_ms=0.0 full_graph_reset_ms=112.2 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-22 07:32:21.137] [info] [INFO] job-lifecycle: sidecar_write_ms=0.9 session_teardown_ms=112.6
+[2026-11-22 07:32:21.144] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=119.7
+[2026-11-22 07:32:21.144] [info] [INFO] job-lifecycle: execute_ms=1147.8 caller_tail_ms=0.0 receipt_deferred=0

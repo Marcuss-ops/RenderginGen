@@ -467,18 +467,13 @@ func TestArtifactFromFileMissingPath(t *testing.T) {
 	}
 }
 
-func TestMergeAssetsCanonicalizesURLBackedManifestAndRetainsSourceURL(t *testing.T) {
+func TestMergeAssetsRejectsURLBackedManifest(t *testing.T) {
 	hash := strings.Repeat("a", 64)
-	got, err := mergeAssets(
+	if _, err := mergeAssets(
 		[]queue.AssetRef{{Hash: hash, LogicalPath: "https://cdn.example/photo.png"}},
 		[]overlay.Asset{{Hash: hash, LogicalPath: "assets/semantic/photo.png"}},
-	)
-	if err != nil {
-		t.Fatalf("mergeAssets: %v", err)
-	}
-	want := queue.AssetRef{Hash: hash, LogicalPath: "assets/semantic/photo.png", SourceURL: "https://cdn.example/photo.png"}
-	if len(got) != 1 || got[0] != want {
-		t.Fatalf("merged assets = %+v, want [%+v]", got, want)
+	); err == nil {
+		t.Fatal("a URL in logical_path must fail closed; set source_url instead")
 	}
 }
 

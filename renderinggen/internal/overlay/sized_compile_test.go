@@ -169,6 +169,79 @@ func TestSizedCompileMatchesThePostFitOnACameraPanChain(t *testing.T) {
 	}
 }
 
+// TestSizedCompileFitsMixedAspectEntityChain is the mixed-aspect proof for a
+// single image_chain: a landscape 4:3 source uses the canonical 16:9 cover
+// card, a square source keeps its square card, and a 9:16 portrait narrows the
+// card instead of being squeezed into the landscape width. Every source settles
+// on cover with its natural aspect, so the chain never deforms a photo.
+func TestSizedCompileFitsMixedAspectEntityChain(t *testing.T) {
+	asset := func(id string, letter string) map[string]any {
+		return map[string]any{
+			"asset_id": id, "sha256": strings.Repeat(letter, 64),
+			"url": "https://example.test/" + id + ".png", "media_type": "image/png",
+		}
+	}
+	segment := func(id, letter string, startUS, durationUS int64) map[string]any {
+		return map[string]any{
+			"kind": "entity_image", "template_id": "image_popup", "preset_id": "image_scale_in",
+			"image_preset_id": "image_scale_in", "asset_id": id,
+			"assets":   []any{asset(id, letter)},
+			"start_us": startUS, "duration_us": durationUS,
+			"params": map[string]any{"width": 600, "height": 600},
+		}
+	}
+	plan := map[string]any{
+		"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "mixed-aspect", "video_id": "mixed-aspect",
+		"width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1,
+		"items": []any{map[string]any{
+			"id": "mixed-aspect", "kind": "image_chain", "template_id": "IMAGE_CHAIN",
+			"start_ms": 0, "end_ms": 9000,
+			"asset_refs": []any{asset("wide", "a"), asset("square", "b"), asset("tall", "c")},
+			"params": map[string]any{
+				"chain_camera": "fly_under_fade", "chain_count": 3,
+				"chain_segments": []any{
+					segment("wide", "a", 0, 3_000_000),
+					segment("square", "b", 3_000_000, 3_000_000),
+					segment("tall", "c", 6_000_000, 3_000_000),
+				},
+			},
+		}},
+	}
+	raw, err := json.Marshal(plan)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result, err := CompileSemanticWithAssetSizes(raw, map[string]ImageSize{
+		"assets/semantic/wide.png":   {Width: 1600, Height: 1200},
+		"assets/semantic/square.png": {Width: 1000, Height: 1000},
+		"assets/semantic/tall.png":   {Width: 900, Height: 1600},
+	})
+	if err != nil {
+		t.Fatalf("sized mixed-aspect chain: %v", err)
+	}
+
+	wide := imageSizeOf(t, result.Plan.Layers, "seg0:image")
+	square := imageSizeOf(t, result.Plan.Layers, "seg1:image")
+	tall := imageSizeOf(t, result.Plan.Layers, "seg2:image")
+	if wide.BoxWidth != 600 || wide.BoxHeight != 337 || wide.Fit != FitCover {
+		t.Errorf("wide card = %dx%d fit=%q, want the 16:9 600x337 cover card", wide.BoxWidth, wide.BoxHeight, wide.Fit)
+	}
+	if square.BoxWidth != 600 || square.BoxHeight != 600 || square.Fit != FitCover {
+		t.Errorf("square card = %dx%d fit=%q, want 600x600 cover", square.BoxWidth, square.BoxHeight, square.Fit)
+	}
+	if tall.BoxWidth != 338 || tall.BoxHeight != 600 || tall.Fit != FitCover {
+		t.Errorf("portrait card = %dx%d fit=%q, want the 338x600 cover card", tall.BoxWidth, tall.BoxHeight, tall.Fit)
+	}
+	if wide.BoxWidth == tall.BoxWidth {
+		t.Errorf("portrait chain member kept the landscape card width %d instead of narrowing", tall.BoxWidth)
+	}
+	for _, layer := range []*Layer{wide, square, tall} {
+		if layer.EntityImage {
+			t.Errorf("layer %q still awaits source geometry after the sized compile", layer.ID)
+		}
+	}
+}
+
 // assertSizedMatchesPostFit compiles the same payload twice: blind + the
 // historical fit, and once with the probed sizes. The complete layer list must
 // be byte-identical, so any field the sized compile settles differently is a

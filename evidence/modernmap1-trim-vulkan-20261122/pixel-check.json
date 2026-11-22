@@ -1,0 +1,118 @@
+{
+  "ticket": "TICKET-WORKAROUNDS-2026-11-17 #1",
+  "date": "2026-11-22",
+  "backend": "vulkan",
+  "pixel_surface": "raw RGBA8 pre-encode (--video-sink raw --pipe-pixfmt rgba --encoder-backend pipe)",
+  "main_gate": {
+    "test": "TestModernMap1RouteTrimRendersOnVulkan",
+    "plan_layer": "shape-map:modernmap1:route:trimmed",
+    "route_stops": 5,
+    "path_points": 6,
+    "trim": [
+      {
+        "kind": "trim",
+        "params": {
+          "start": 0.4,
+          "end": 0.6,
+          "offset": 0
+        }
+      }
+    ],
+    "frame": 0,
+    "canvas": [
+      1920,
+      1080
+    ],
+    "raw_bytes": 8294400,
+    "raw_sha256": "212441f3eac5384370a973167788318dd6d4106708a23514bb1c517a5e7a673c",
+    "png_sha256": "03ec1181ed88ee58486709eb04b392384ba743e2108efea59f1a8cff77448771",
+    "plan_sha256": "cb9a9bc6d4ad3007fde7289aec38aadd15578739b8d1850211ecbf8d0c46536a",
+    "log_sha256": "04f5f9e5a3ccf4846036a4c1342d7f8ce3bd10fbfaf430d0902b2fe9cca4b64a",
+    "green_pixels": 908,
+    "green_bbox_xyxy": [
+      826,
+      289,
+      884,
+      367
+    ],
+    "green_arc_range": [
+      0.4,
+      0.6
+    ],
+    "arc_points": {
+      "0.0": [
+        956.068,
+        557.055
+      ],
+      "0.4": [
+        877.341,
+        367.353
+      ],
+      "0.5": [
+        872.448,
+        320.062
+      ],
+      "0.6": [
+        828.492,
+        292.08
+      ],
+      "1.0": [
+        642.899,
+        272.68
+      ]
+    },
+    "checks": {
+      "first_endpoint_green_pixels": 0,
+      "last_endpoint_green_pixels": 0,
+      "midpoint_green_pixels": 384
+    },
+    "gate": "PASS",
+    "note": "The route layer was translated from [-960,-540] to [0,0] only for the raw frame so the full 1920x1080 path is inside the canvas. Path geometry and trim operator are unchanged; TestModernMap1RouteKeepsFullGeometryWithNativeTrim certifies the production geometry and native operator."
+  },
+  "supplemental_animated_trim": {
+    "purpose": "prove the native trim animation is evaluated per frame on Vulkan",
+    "canvas": [
+      512,
+      256
+    ],
+    "path": [
+      [
+        64,
+        128
+      ],
+      [
+        448,
+        128
+      ]
+    ],
+    "trim_keyframes": [
+      [
+        0,
+        [
+          0,
+          0,
+          0
+        ]
+      ],
+      [
+        10,
+        [
+          0,
+          1,
+          0
+        ]
+      ]
+    ],
+    "frame": 5,
+    "raw_bytes": 524288,
+    "raw_sha256": "83e48a7c6e4cc8720756f5d10690f6ffe8824973890135aef6de9f4fbbab627a",
+    "png_sha256": "277cbee7aadd2469c34a2b07ac7b05a03da99e61bdc05d1c04adba06333d0d99",
+    "green_x_range": [
+      64,
+      255
+    ],
+    "green_pixels": 192,
+    "gate": "PASS",
+    "note": "At frame 5 the 0..10 animation is 50%, so only x=64..255 (the first half) is green; x>=256 is empty."
+  }
+}

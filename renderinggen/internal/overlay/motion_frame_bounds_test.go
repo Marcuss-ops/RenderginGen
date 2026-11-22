@@ -281,8 +281,18 @@ func TestPhrasePresetWithoutMotionOverrideUsesCappedEntrance(t *testing.T) {
 			foundEntranceEnd = foundEntranceEnd || keyframe.Frame == 16
 		}
 	}
+	// Web gestures may put the entire entrance on per-unit tracks (for example
+	// a halftone dissolve with only a layer opacity track). The capped window
+	// still applies to those properties, so they are valid evidence too.
+	for _, animator := range layer.TextAnimators {
+		for _, track := range animator.Properties {
+			for _, keyframe := range track.Keyframes {
+				foundEntranceEnd = foundEntranceEnd || keyframe.Frame == 16
+			}
+		}
+	}
 	if !foundEntranceEnd {
-		t.Fatalf("preset-only phrase entrance did not last exactly 17 frames: %+v", layer.Animation.Tracks)
+		t.Fatalf("preset-only phrase entrance did not last exactly 17 frames: layers=%+v text=%+v", layer.Animation.Tracks, layer.TextAnimators)
 	}
 }
 

@@ -1,0 +1,395 @@
+[2026-11-22 07:35:29.656] [info] [asset-profile] kind=3 path=assets/fonts/Poppins-Bold.ttf bytes=155996 cache=miss invalidated=0 stat=0.02ms hash=4.52ms hashed_bytes=155996 total=4.79ms
+[2026-11-22 07:35:29.656] [info] [asset-digest-cache] hits=0 misses=1 invalidations=0 bytes_hashed=155996 lookup_ms=0.00 write_ms=0.01 full_hash_ms=4.52
+[2026-11-22 07:35:29.674] [info] [plan-profile] read=2.48ms parse=9.44ms decode=169.71ms resolver=0.04ms compile_validate=23.30ms total=205.03ms
+[2026-11-22 07:35:29.676] [info] [video] execution plan resolved (reason: render_graph_default); decode=2 composite=3 encode=2 interop=0 handoff=3 codec=3
+[2026-11-22 07:35:29.695] [info] [video-runtime] created persistent runtime for device 0 (CUDA ordinal 0)
+[2026-11-22 07:35:29.695] [info] [video] Using raw sink (new) — frames will be written as raw pixel data to /tmp/TestModernMap1RouteTrimRendersOnVulkan997355887/001/modernmap-trim.partial.raw
+[2026-11-22 07:35:29.696] [info] [video] encoder feed capability: host_frame=true direct_yuv=false native_surface=false
+[2026-11-22 07:35:29.738] [info] [video_adapter] Opened raw sink: 1920x1080 @ 30/1fps, format=rgba, codec=h264
+[2026-11-22 07:35:30.827] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.831] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.832] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.832] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.833] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.833] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.833] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.834] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.834] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.834] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.835] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.835] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.836] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.836] [warning] [text-fit] auto-fit changed the authored font size: authored=132.00 effective=105.60 box=1152.0x178.2 mode=shrink_only
+[2026-11-22 07:35:30.836] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.837] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.837] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.838] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.838] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.839] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.839] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.839] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.840] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.840] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.840] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.841] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.841] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.841] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:30.842] [warning] [text-fit] auto-fit changed the authored font size: authored=30.00 effective=21.00 box=690.0x48.0 mode=shrink_only
+[2026-11-22 07:35:30.842] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.345] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.345] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.345] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.345] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.345] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.346] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.347] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.347] [warning] [text-fit] auto-fit changed the authored font size: authored=132.00 effective=105.60 box=1152.0x178.2 mode=shrink_only
+[2026-11-22 07:35:31.347] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.347] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.347] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.347] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.348] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.348] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.348] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.348] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.349] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.349] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.349] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.349] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.350] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.350] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:31.350] [warning] [text-fit] auto-fit changed the authored font size: authored=30.00 effective=21.00 box=690.0x48.0 mode=shrink_only
+[2026-11-22 07:35:31.350] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:33.941] [info] chronon3d::vulkan text batch formats: dst_image.format=109 atlas_image.format=44 atlas_encoding=2 (shader contract: dst rgba32f, atlas rgba8)
+[2026-11-22 07:35:33.941] [info] [text-route] frame=0 route=mtsdf
+[2026-11-22 07:35:33.985] [info] [text-route] frame=0 route=mtsdf
+[2026-11-22 07:35:34.036] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[]
+[2026-11-22 07:35:34.036] [info] [exec-level-diag] frame=0 level=0 nodes=18 input_ms=0.003 dispatch_ms=2623.024 fb_release_ms=0.016
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-22 07:35:34.036] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[0,1,]
+[2026-11-22 07:35:34.036] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.010 dispatch_ms=0.213 fb_release_ms=0.023
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-22 07:35:34.036] [info] [temp-lifetime] frame=0 after_level=2 live=[4,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[2,3,]
+[2026-11-22 07:35:34.036] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.007 dispatch_ms=0.105 fb_release_ms=0.010
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-22 07:35:34.036] [info] [temp-lifetime] frame=0 after_level=3 live=[6,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[4,5,]
+[2026-11-22 07:35:34.036] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.007 dispatch_ms=0.079 fb_release_ms=0.007
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-22 07:35:34.036] [info] [temp-lifetime] frame=0 after_level=4 live=[8,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[6,7,]
+[2026-11-22 07:35:34.036] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.007 dispatch_ms=0.076 fb_release_ms=0.006
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-22 07:35:34.036] [info] [temp-lifetime] frame=0 after_level=5 live=[10,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[8,9,]
+[2026-11-22 07:35:34.036] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.006 dispatch_ms=0.075 fb_release_ms=0.006
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-22 07:35:34.036] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=6 live=[12,13,15,17,19,21,23,25,27,33,35,37,] retired=[10,11,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=6 nodes=1 input_ms=0.008 dispatch_ms=0.082 fb_release_ms=0.006
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=7 live=[14,15,17,19,21,23,25,27,33,35,37,] retired=[12,13,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=7 nodes=1 input_ms=0.007 dispatch_ms=0.076 fb_release_ms=0.006
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=8 live=[16,17,19,21,23,25,27,33,35,37,] retired=[14,15,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=8 nodes=1 input_ms=0.008 dispatch_ms=0.086 fb_release_ms=0.006
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=9 live=[18,19,21,23,25,27,33,35,37,] retired=[16,17,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=9 nodes=1 input_ms=0.006 dispatch_ms=0.075 fb_release_ms=0.007
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=10 live=[20,21,23,25,27,33,35,37,] retired=[18,19,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=10 nodes=1 input_ms=0.006 dispatch_ms=0.085 fb_release_ms=0.005
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=11 live=[22,23,25,27,33,35,37,] retired=[20,21,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=11 nodes=1 input_ms=0.006 dispatch_ms=0.084 fb_release_ms=0.007
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-22 07:35:34.037] [info] [temp-lifetime] frame=0 after_level=12 live=[24,25,27,33,35,37,] retired=[22,23,]
+[2026-11-22 07:35:34.037] [info] [exec-level-diag] frame=0 level=12 nodes=1 input_ms=0.008 dispatch_ms=0.073 fb_release_ms=0.006
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-22 07:35:34.037] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-22 07:35:34.041] [info] [exec-fb-diag] resetting temp[25] took 3.943 ms
+[2026-11-22 07:35:34.041] [info] [temp-lifetime] frame=0 after_level=13 live=[26,27,33,35,37,] retired=[24,25,]
+[2026-11-22 07:35:34.041] [info] [exec-level-diag] frame=0 level=13 nodes=1 input_ms=0.006 dispatch_ms=0.075 fb_release_ms=3.975
+[2026-11-22 07:35:34.041] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-22 07:35:34.041] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-22 07:35:34.046] [info] [exec-fb-diag] resetting temp[27] took 4.554 ms
+[2026-11-22 07:35:34.046] [info] [temp-lifetime] frame=0 after_level=14 live=[28,33,35,37,] retired=[26,27,]
+[2026-11-22 07:35:34.046] [info] [exec-level-diag] frame=0 level=14 nodes=1 input_ms=0.007 dispatch_ms=0.112 fb_release_ms=4.585
+[2026-11-22 07:35:34.046] [info] [graph-edge] frame=0 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-22 07:35:34.046] [info] [temp-lifetime] frame=0 after_level=15 live=[30,33,35,37,] retired=[28,]
+[2026-11-22 07:35:34.046] [info] [exec-level-diag] frame=0 level=15 nodes=1 input_ms=0.007 dispatch_ms=0.069 fb_release_ms=0.006
+[2026-11-22 07:35:34.046] [info] [graph-edge] frame=0 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-22 07:35:34.046] [info] [temp-lifetime] frame=0 after_level=16 live=[32,33,35,37,] retired=[30,]
+[2026-11-22 07:35:34.046] [info] [exec-level-diag] frame=0 level=16 nodes=1 input_ms=0.005 dispatch_ms=0.047 fb_release_ms=0.004
+[2026-11-22 07:35:34.046] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-22 07:35:34.046] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-22 07:35:34.051] [info] [exec-fb-diag] resetting temp[33] took 4.526 ms
+[2026-11-22 07:35:34.051] [info] [temp-lifetime] frame=0 after_level=17 live=[34,35,37,] retired=[32,33,]
+[2026-11-22 07:35:34.051] [info] [exec-level-diag] frame=0 level=17 nodes=1 input_ms=0.007 dispatch_ms=0.094 fb_release_ms=4.567
+[2026-11-22 07:35:34.051] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-22 07:35:34.051] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-22 07:35:34.054] [info] [exec-fb-diag] resetting temp[35] took 2.937 ms
+[2026-11-22 07:35:34.054] [info] [temp-lifetime] frame=0 after_level=18 live=[36,37,] retired=[34,35,]
+[2026-11-22 07:35:34.054] [info] [exec-level-diag] frame=0 level=18 nodes=1 input_ms=0.009 dispatch_ms=0.172 fb_release_ms=2.970
+[2026-11-22 07:35:34.054] [info] [graph-edge] frame=0 level=19 consumer_id=38 input_index=0 producer_id=36 producer_level=18
+[2026-11-22 07:35:34.054] [info] [graph-edge] frame=0 level=19 consumer_id=38 input_index=1 producer_id=37 producer_level=0
+[2026-11-22 07:35:34.058] [info] [exec-fb-diag] resetting temp[37] took 3.703 ms
+[2026-11-22 07:35:34.058] [info] [temp-lifetime] frame=0 after_level=19 live=[38,] retired=[36,37,]
+[2026-11-22 07:35:34.058] [info] [exec-level-diag] frame=0 level=19 nodes=1 input_ms=0.007 dispatch_ms=0.096 fb_release_ms=3.736
+[2026-11-22 07:35:34.149] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.149] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.149] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.149] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.150] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.151] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.151] [warning] [text-fit] auto-fit changed the authored font size: authored=132.00 effective=105.60 box=1152.0x178.2 mode=shrink_only
+[2026-11-22 07:35:34.151] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.151] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.151] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.151] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.152] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.152] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.152] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.152] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.153] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.154] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.154] [warning] [text-fit] auto-fit changed the authored font size: authored=30.00 effective=21.00 box=690.0x48.0 mode=shrink_only
+[2026-11-22 07:35:34.154] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.367] [info] [text-route] frame=0 route=mtsdf
+[2026-11-22 07:35:34.399] [info] [text-route] frame=0 route=mtsdf
+[2026-11-22 07:35:34.430] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[]
+[2026-11-22 07:35:34.430] [info] [exec-level-diag] frame=0 level=0 nodes=18 input_ms=0.002 dispatch_ms=274.049 fb_release_ms=0.003
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-22 07:35:34.430] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[0,1,]
+[2026-11-22 07:35:34.430] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.010 dispatch_ms=0.156 fb_release_ms=0.017
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-22 07:35:34.430] [info] [temp-lifetime] frame=0 after_level=2 live=[4,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[2,3,]
+[2026-11-22 07:35:34.430] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.007 dispatch_ms=0.080 fb_release_ms=0.007
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-22 07:35:34.430] [info] [temp-lifetime] frame=0 after_level=3 live=[6,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[4,5,]
+[2026-11-22 07:35:34.430] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.007 dispatch_ms=0.076 fb_release_ms=0.007
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-22 07:35:34.430] [info] [temp-lifetime] frame=0 after_level=4 live=[8,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[6,7,]
+[2026-11-22 07:35:34.430] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.007 dispatch_ms=0.084 fb_release_ms=0.057
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-22 07:35:34.430] [info] [temp-lifetime] frame=0 after_level=5 live=[10,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[8,9,]
+[2026-11-22 07:35:34.430] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.007 dispatch_ms=0.087 fb_release_ms=0.032
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-22 07:35:34.430] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=6 live=[12,13,15,17,19,21,23,25,27,33,35,37,] retired=[10,11,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=6 nodes=1 input_ms=0.007 dispatch_ms=0.078 fb_release_ms=0.030
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=7 live=[14,15,17,19,21,23,25,27,33,35,37,] retired=[12,13,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=7 nodes=1 input_ms=0.025 dispatch_ms=0.079 fb_release_ms=0.030
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=8 live=[16,17,19,21,23,25,27,33,35,37,] retired=[14,15,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=8 nodes=1 input_ms=0.006 dispatch_ms=0.078 fb_release_ms=0.031
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=9 live=[18,19,21,23,25,27,33,35,37,] retired=[16,17,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=9 nodes=1 input_ms=0.009 dispatch_ms=0.078 fb_release_ms=0.030
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=10 live=[20,21,23,25,27,33,35,37,] retired=[18,19,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=10 nodes=1 input_ms=0.007 dispatch_ms=0.088 fb_release_ms=0.024
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=11 live=[22,23,25,27,33,35,37,] retired=[20,21,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=11 nodes=1 input_ms=0.007 dispatch_ms=0.078 fb_release_ms=0.030
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-22 07:35:34.431] [info] [temp-lifetime] frame=0 after_level=12 live=[24,25,27,33,35,37,] retired=[22,23,]
+[2026-11-22 07:35:34.431] [info] [exec-level-diag] frame=0 level=12 nodes=1 input_ms=0.007 dispatch_ms=0.077 fb_release_ms=0.030
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-22 07:35:34.431] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-22 07:35:34.436] [info] [exec-fb-diag] resetting temp[25] took 4.393 ms
+[2026-11-22 07:35:34.436] [info] [temp-lifetime] frame=0 after_level=13 live=[26,27,33,35,37,] retired=[24,25,]
+[2026-11-22 07:35:34.436] [info] [exec-level-diag] frame=0 level=13 nodes=1 input_ms=0.007 dispatch_ms=0.084 fb_release_ms=4.446
+[2026-11-22 07:35:34.436] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-22 07:35:34.436] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-22 07:35:34.441] [info] [exec-fb-diag] resetting temp[27] took 4.685 ms
+[2026-11-22 07:35:34.441] [info] [temp-lifetime] frame=0 after_level=14 live=[28,33,35,37,] retired=[26,27,]
+[2026-11-22 07:35:34.441] [info] [exec-level-diag] frame=0 level=14 nodes=1 input_ms=0.012 dispatch_ms=0.135 fb_release_ms=4.743
+[2026-11-22 07:35:34.441] [info] [graph-edge] frame=0 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-22 07:35:34.441] [info] [temp-lifetime] frame=0 after_level=15 live=[30,33,35,37,] retired=[28,]
+[2026-11-22 07:35:34.441] [info] [exec-level-diag] frame=0 level=15 nodes=1 input_ms=0.005 dispatch_ms=0.062 fb_release_ms=0.005
+[2026-11-22 07:35:34.441] [info] [graph-edge] frame=0 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-22 07:35:34.441] [info] [temp-lifetime] frame=0 after_level=16 live=[32,33,35,37,] retired=[30,]
+[2026-11-22 07:35:34.441] [info] [exec-level-diag] frame=0 level=16 nodes=1 input_ms=0.004 dispatch_ms=0.047 fb_release_ms=0.004
+[2026-11-22 07:35:34.441] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-22 07:35:34.441] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-22 07:35:34.445] [info] [exec-fb-diag] resetting temp[33] took 3.931 ms
+[2026-11-22 07:35:34.445] [info] [temp-lifetime] frame=0 after_level=17 live=[34,35,37,] retired=[32,33,]
+[2026-11-22 07:35:34.445] [info] [exec-level-diag] frame=0 level=17 nodes=1 input_ms=0.006 dispatch_ms=0.085 fb_release_ms=3.959
+[2026-11-22 07:35:34.445] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-22 07:35:34.445] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-22 07:35:34.450] [info] [exec-fb-diag] resetting temp[35] took 5.111 ms
+[2026-11-22 07:35:34.450] [info] [temp-lifetime] frame=0 after_level=18 live=[36,37,] retired=[34,35,]
+[2026-11-22 07:35:34.450] [info] [exec-level-diag] frame=0 level=18 nodes=1 input_ms=0.007 dispatch_ms=0.093 fb_release_ms=5.138
+[2026-11-22 07:35:34.450] [info] [graph-edge] frame=0 level=19 consumer_id=38 input_index=0 producer_id=36 producer_level=18
+[2026-11-22 07:35:34.450] [info] [graph-edge] frame=0 level=19 consumer_id=38 input_index=1 producer_id=37 producer_level=0
+[2026-11-22 07:35:34.454] [info] [exec-fb-diag] resetting temp[37] took 3.534 ms
+[2026-11-22 07:35:34.454] [info] [temp-lifetime] frame=0 after_level=19 live=[38,] retired=[36,37,]
+[2026-11-22 07:35:34.454] [info] [exec-level-diag] frame=0 level=19 nodes=1 input_ms=0.007 dispatch_ms=0.087 fb_release_ms=3.560
+[2026-11-22 07:35:34.769] [info] [video]   1/1 frames
+[2026-11-22 07:35:34.770] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.770] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.770] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.770] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.771] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.772] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.772] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.772] [warning] [text-fit] auto-fit changed the authored font size: authored=132.00 effective=105.60 box=1152.0x178.2 mode=shrink_only
+[2026-11-22 07:35:34.772] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.772] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.772] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.773] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.773] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.773] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.773] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.773] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.774] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.774] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.774] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.774] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.775] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.775] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.775] [warning] [text-fit] auto-fit changed the authored font size: authored=30.00 effective=21.00 box=690.0x48.0 mode=shrink_only
+[2026-11-22 07:35:34.775] [warning] [font-fallback] Bundled fonts directory not found: 'assets/fonts'. Default fallback stack degrades to primary-only.
+[2026-11-22 07:35:34.981] [info] [text-route] frame=0 route=mtsdf
+[2026-11-22 07:35:35.012] [info] [text-route] frame=0 route=mtsdf
+[2026-11-22 07:35:35.053] [info] [temp-lifetime] frame=0 after_level=0 live=[0,1,3,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[]
+[2026-11-22 07:35:35.053] [info] [exec-level-diag] frame=0 level=0 nodes=18 input_ms=0.002 dispatch_ms=275.487 fb_release_ms=0.003
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=0 producer_id=0 producer_level=0
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=1 consumer_id=2 input_index=1 producer_id=1 producer_level=0
+[2026-11-22 07:35:35.053] [info] [temp-lifetime] frame=0 after_level=1 live=[2,3,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[0,1,]
+[2026-11-22 07:35:35.053] [info] [exec-level-diag] frame=0 level=1 nodes=1 input_ms=0.010 dispatch_ms=0.174 fb_release_ms=0.012
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=0 producer_id=2 producer_level=1
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=2 consumer_id=4 input_index=1 producer_id=3 producer_level=0
+[2026-11-22 07:35:35.053] [info] [temp-lifetime] frame=0 after_level=2 live=[4,5,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[2,3,]
+[2026-11-22 07:35:35.053] [info] [exec-level-diag] frame=0 level=2 nodes=1 input_ms=0.007 dispatch_ms=0.106 fb_release_ms=0.011
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=0 producer_id=4 producer_level=2
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=3 consumer_id=6 input_index=1 producer_id=5 producer_level=0
+[2026-11-22 07:35:35.053] [info] [temp-lifetime] frame=0 after_level=3 live=[6,7,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[4,5,]
+[2026-11-22 07:35:35.053] [info] [exec-level-diag] frame=0 level=3 nodes=1 input_ms=0.006 dispatch_ms=0.088 fb_release_ms=0.006
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=0 producer_id=6 producer_level=3
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=4 consumer_id=8 input_index=1 producer_id=7 producer_level=0
+[2026-11-22 07:35:35.053] [info] [temp-lifetime] frame=0 after_level=4 live=[8,9,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[6,7,]
+[2026-11-22 07:35:35.053] [info] [exec-level-diag] frame=0 level=4 nodes=1 input_ms=0.006 dispatch_ms=0.089 fb_release_ms=0.006
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=0 producer_id=8 producer_level=4
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=5 consumer_id=10 input_index=1 producer_id=9 producer_level=0
+[2026-11-22 07:35:35.053] [info] [temp-lifetime] frame=0 after_level=5 live=[10,11,13,15,17,19,21,23,25,27,33,35,37,] retired=[8,9,]
+[2026-11-22 07:35:35.053] [info] [exec-level-diag] frame=0 level=5 nodes=1 input_ms=0.006 dispatch_ms=0.087 fb_release_ms=0.006
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=0 producer_id=10 producer_level=5
+[2026-11-22 07:35:35.053] [info] [graph-edge] frame=0 level=6 consumer_id=12 input_index=1 producer_id=11 producer_level=0
+[2026-11-22 07:35:35.054] [info] [temp-lifetime] frame=0 after_level=6 live=[12,13,15,17,19,21,23,25,27,33,35,37,] retired=[10,11,]
+[2026-11-22 07:35:35.054] [info] [exec-level-diag] frame=0 level=6 nodes=1 input_ms=0.007 dispatch_ms=0.096 fb_release_ms=0.043
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=0 producer_id=12 producer_level=6
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=7 consumer_id=14 input_index=1 producer_id=13 producer_level=0
+[2026-11-22 07:35:35.054] [info] [temp-lifetime] frame=0 after_level=7 live=[14,15,17,19,21,23,25,27,33,35,37,] retired=[12,13,]
+[2026-11-22 07:35:35.054] [info] [exec-level-diag] frame=0 level=7 nodes=1 input_ms=0.006 dispatch_ms=0.091 fb_release_ms=0.031
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=0 producer_id=14 producer_level=7
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=8 consumer_id=16 input_index=1 producer_id=15 producer_level=0
+[2026-11-22 07:35:35.054] [info] [temp-lifetime] frame=0 after_level=8 live=[16,17,19,21,23,25,27,33,35,37,] retired=[14,15,]
+[2026-11-22 07:35:35.054] [info] [exec-level-diag] frame=0 level=8 nodes=1 input_ms=0.007 dispatch_ms=0.080 fb_release_ms=0.030
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=0 producer_id=16 producer_level=8
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=9 consumer_id=18 input_index=1 producer_id=17 producer_level=0
+[2026-11-22 07:35:35.054] [info] [temp-lifetime] frame=0 after_level=9 live=[18,19,21,23,25,27,33,35,37,] retired=[16,17,]
+[2026-11-22 07:35:35.054] [info] [exec-level-diag] frame=0 level=9 nodes=1 input_ms=0.007 dispatch_ms=0.079 fb_release_ms=0.030
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=0 producer_id=18 producer_level=9
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=10 consumer_id=20 input_index=1 producer_id=19 producer_level=0
+[2026-11-22 07:35:35.054] [info] [temp-lifetime] frame=0 after_level=10 live=[20,21,23,25,27,33,35,37,] retired=[18,19,]
+[2026-11-22 07:35:35.054] [info] [exec-level-diag] frame=0 level=10 nodes=1 input_ms=0.007 dispatch_ms=0.103 fb_release_ms=0.045
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=0 producer_id=20 producer_level=10
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=11 consumer_id=22 input_index=1 producer_id=21 producer_level=0
+[2026-11-22 07:35:35.054] [info] [temp-lifetime] frame=0 after_level=11 live=[22,23,25,27,33,35,37,] retired=[20,21,]
+[2026-11-22 07:35:35.054] [info] [exec-level-diag] frame=0 level=11 nodes=1 input_ms=0.007 dispatch_ms=0.080 fb_release_ms=0.028
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=0 producer_id=22 producer_level=11
+[2026-11-22 07:35:35.054] [info] [graph-edge] frame=0 level=12 consumer_id=24 input_index=1 producer_id=23 producer_level=0
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=12 live=[24,25,27,33,35,37,] retired=[22,23,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=12 nodes=1 input_ms=0.007 dispatch_ms=0.090 fb_release_ms=0.029
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=0 producer_id=24 producer_level=12
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=13 consumer_id=26 input_index=1 producer_id=25 producer_level=0
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=13 live=[26,27,33,35,37,] retired=[24,25,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=13 nodes=1 input_ms=0.007 dispatch_ms=0.079 fb_release_ms=0.028
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=0 producer_id=26 producer_level=13
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=14 consumer_id=28 input_index=1 producer_id=27 producer_level=0
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=14 live=[28,33,35,37,] retired=[26,27,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=14 nodes=1 input_ms=0.007 dispatch_ms=0.119 fb_release_ms=0.028
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=15 consumer_id=30 input_index=0 producer_id=28 producer_level=14
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=15 live=[30,33,35,37,] retired=[28,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=15 nodes=1 input_ms=0.005 dispatch_ms=0.050 fb_release_ms=0.023
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=16 consumer_id=32 input_index=0 producer_id=30 producer_level=15
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=16 live=[32,33,35,37,] retired=[30,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=16 nodes=1 input_ms=0.005 dispatch_ms=0.049 fb_release_ms=0.022
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=0 producer_id=32 producer_level=16
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=17 consumer_id=34 input_index=1 producer_id=33 producer_level=0
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=17 live=[34,35,37,] retired=[32,33,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=17 nodes=1 input_ms=0.007 dispatch_ms=0.083 fb_release_ms=0.038
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=0 producer_id=34 producer_level=17
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=18 consumer_id=36 input_index=1 producer_id=35 producer_level=0
+[2026-11-22 07:35:35.055] [info] [temp-lifetime] frame=0 after_level=18 live=[36,37,] retired=[34,35,]
+[2026-11-22 07:35:35.055] [info] [exec-level-diag] frame=0 level=18 nodes=1 input_ms=0.007 dispatch_ms=0.089 fb_release_ms=0.027
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=19 consumer_id=38 input_index=0 producer_id=36 producer_level=18
+[2026-11-22 07:35:35.055] [info] [graph-edge] frame=0 level=19 consumer_id=38 input_index=1 producer_id=37 producer_level=0
+[2026-11-22 07:35:35.056] [info] [temp-lifetime] frame=0 after_level=19 live=[38,] retired=[36,37,]
+[2026-11-22 07:35:35.056] [info] [exec-level-diag] frame=0 level=19 nodes=1 input_ms=0.007 dispatch_ms=0.083 fb_release_ms=0.029
+[2026-11-22 07:35:35.097] [info] [video] Exporting via Arena-backed SIMD pipeline
+[2026-11-22 07:35:35.112] [info] [video] writer join complete
+[2026-11-22 07:35:35.112] [info] [drain-debug] start drain, capacity=6
+[2026-11-22 07:35:35.112] [info] [drain-debug] reap done, busy_count=0
+[2026-11-22 07:35:35.112] [info] [video] trimming framebuffer pool
+[2026-11-22 07:35:35.166] [info] [video] Released framebuffer pool — memory trimmed
+[2026-11-22 07:35:35.166] [info] [video] frame-loop cleanup complete
+[2026-11-22 07:35:35.166] [info] [video] Encoder write blocked duration: 9.35 ms
+[2026-11-22 07:35:35.166] [info] [video_diag] conversion_and_copy_duration_ms: 4 ms
+[2026-11-22 07:35:35.166] [info] [video_diag] conversion_bytes_written=8294400 encoder_staging_copy_bytes=0 encoder_slot_reuses=0
+[2026-11-22 07:35:35.166] [info] [video_adapter] Closed sink — 1 frames written, write_blocked=9.35ms, close=0.03ms
+[2026-11-22 07:35:35.166] [info] [video] render_ms=328.47 encode_ms=68.77 writer_encode_ms=13.49 wall_ms=5490.16 nvml_stop_ms=0.14
+[2026-11-22 07:35:35.166] [info] [video] FFmpeg queue wait duration: 0.06 ms
+[2026-11-22 07:35:35.208] [info] [video] pre-encode artifact verified: 1 frames × 8294400 bytes = 8294400 bytes (format rgba), sha256=212441f3eac5384370a973167788318dd6d4106708a23514bb1c517a5e7a673c
+[2026-11-22 07:35:35.208] [info] [startup-profile] total=1352.62ms logger=0.09ms cli_bootstrap=4.32ms cli_parse=nullms composition=0.22ms plan_read=2.48ms json_parse=9.44ms plan_decode_validate=169.71ms asset_resolve=0.04ms plan_compile=23.30ms unaccounted=197.98ms
+[2026-11-22 07:35:35.209] [info] [video] Wrote exact per-frame timing sidecar: /tmp/TestModernMap1RouteTrimRendersOnVulkan997355887/001/modernmap-trim.raw.timing.json
+[2026-11-22 07:35:35.212] [info] [INFO] job-lifecycle: slot_pool_close_ms=0.0 surface_release_ms=0.0
+[2026-11-22 07:35:35.418] [info] [INFO] job-lifecycle: queue_close_ms=0.0 writer_join_ms=0.0 encoder_reset_ms=3.0 decoder_reset_ms=0.0 full_graph_reset_ms=206.1 sink_ctx_reset_ms=0.0 device_runtime_reset_ms=0.0 device_reservation_reset_ms=0.0
+[2026-11-22 07:35:35.419] [info] [INFO] job-lifecycle: sidecar_write_ms=1.0 session_teardown_ms=209.5
+[2026-11-22 07:35:35.428] [info] [INFO] job-lifecycle: post_sidecar_to_receipt_ms=218.5
+[2026-11-22 07:35:35.428] [info] [INFO] job-lifecycle: execute_ms=5752.0 caller_tail_ms=0.0 receipt_deferred=0

@@ -41,18 +41,18 @@ func TestCatalogCategoriesKeepMotionsIndependentAndComplete(t *testing.T) {
 		"apple_v3": 16, "phrase_apple_clean_v1": 20, "apple_phrase_v1": 15,
 
 		"brush_v1": 23, "text_3d_v1": 10, "documentary_highlighting_v1": 20, "trump_entity_text_v1": 15, "web": 14,
-		"generic_motion_v1": 30,
+		"web_phrase_v1": 30, "generic_motion_v1": 30,
 	}
 	for category, count := range categoryCounts {
 		if ids := Registry.CategoryMotionIDs(category); len(ids) != count {
 			t.Errorf("%s category has %d motions, want %d", category, len(ids), count)
 		}
 	}
-	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 13 {
-		t.Errorf("short phrase runtime registry has %d motions, want 13", len(ids))
+	if ids := Registry.ShortPhraseStyleIDs(); len(ids) != 43 {
+		t.Errorf("short phrase runtime registry has %d motions, want 43", len(ids))
 	}
-	if ids := Registry.PhraseAnimationIDs(); len(ids) != 161 {
-		t.Errorf("phrase planning pool has %d motions, want 161", len(ids))
+	if ids := Registry.PhraseAnimationIDs(); len(ids) != 191 {
+		t.Errorf("phrase planning pool has %d motions, want 191", len(ids))
 	}
 	appleClean := Registry.CategoryMotionIDs("phrase_apple_clean_v1")
 	pool := Registry.PhraseAnimationIDs()
@@ -202,9 +202,10 @@ func TestApplePhrasePackIsInTheCanonicalPoolAndHasNoPerGlyphBlur(t *testing.T) {
 	pool := make(map[string]bool)
 	phrasePool := PhraseMotionPool()
 	// 31 seeded phrase entrances + the 14 typewriter gestures authored for the
-	// short/long phrase pools (10 short, 4 long, split by `targets`).
-	if len(phrasePool) != 45 {
-		t.Fatalf("GPU phrase motion pool has %d entries, want 45", len(phrasePool))
+	// short/long phrase pools (10 short, 4 long, split by `targets`) + the 30
+	// text-only web phrase entrances shared by both lanes.
+	if len(phrasePool) != 75 {
+		t.Fatalf("GPU phrase motion pool has %d entries, want 75", len(phrasePool))
 	}
 	for _, id := range phrasePool {
 		pool[id] = true
@@ -318,13 +319,34 @@ func TestShortPhraseColorShorthandLowersToNativeRGBA(t *testing.T) {
 					continue
 				}
 				for _, key := range property.Keyframes {
-					color, ok := key.Value.([]float64)
-					if !ok || len(color) != 4 {
+					if !isRGBAValue(key.Value) {
 						t.Errorf("%s fill_color frame %d = %#v, want RGBA", id, key.Frame, key.Value)
 					}
 				}
 			}
 		}
+	}
+}
+
+// isRGBAValue accepts both the Go-authored []float64 and the JSON-decoded
+// []any form: web recipes arrive through the canonical catalog, while the
+// legacy short-phrase projection builds slices directly in Go.
+func isRGBAValue(value any) bool {
+	switch color := value.(type) {
+	case []float64:
+		return len(color) == 4
+	case []any:
+		if len(color) != 4 {
+			return false
+		}
+		for _, channel := range color {
+			if _, ok := channel.(float64); !ok {
+				return false
+			}
+		}
+		return true
+	default:
+		return false
 	}
 }
 

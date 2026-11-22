@@ -12,6 +12,9 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 	byPath := make(map[string]string, len(result)+len(compiled))
 	byHash := make(map[string]int, len(jobAssets)+len(compiled))
 	for _, asset := range jobAssets {
+		if isHTTPURL(asset.LogicalPath) {
+			return nil, fmt.Errorf("processor: asset %s logical_path %q is a URL; set source_url and use a workspace-relative logical_path", asset.Hash, asset.LogicalPath)
+		}
 		if previous, ok := byPath[asset.LogicalPath]; ok && !strings.EqualFold(previous, asset.Hash) {
 			return nil, fmt.Errorf("processor: logical asset path %q has conflicting hashes", asset.LogicalPath)
 		}
@@ -22,31 +25,25 @@ func mergeAssets(jobAssets []queue.AssetRef, compiled []overlay.Asset) ([]queue.
 			byHash[key] = len(result) - 1
 		}
 	}
-	// Job manifests may carry a durable URL as the logical path for a
-	// semantic asset. Once compilation gives that asset its canonical local
-	// path, merge by content hash and retain the URL as SourceURL.
+	// Merge the compiler's canonical semantic path into the job manifest by
+	// content hash. URL-backed manifests are rejected above: the worker never
+	// treats logical_path as a fetchable origin.
 	for _, asset := range compiled {
 		if idx, ok := byHash[strings.ToLower(asset.Hash)]; ok {
 			merged := result[idx]
-			// A URL-backed manifest entry is the self-healing case: move it to
-			// the compiler's canonical local path while retaining its source.
-			// Legacy/local refs already name the workspace path and must remain
-			// untouched for backwards compatibility.
-			if !isHTTPURL(merged.LogicalPath) && merged.SourceURL == "" {
-				// A legacy job manifest may name the same bytes with a path
-				// different from the compiler's canonical semantic path. Keep
-				// the legacy alias for callers, and add the canonical path too:
-				// the concrete Chronon plan must always resolve to a materialized
-				// file under its own assets/... reference.
+			// A legacy job manifest may name the same bytes with a path
+			// different from the compiler's canonical semantic path. Keep the
+			// legacy alias for callers, and add the canonical path too: the
+			// concrete Chronon plan must always resolve to a materialized file
+			// under its own assets/... reference. When the producer already
+			// supplied a SourceURL, the canonical path replaces the alias.
+			if merged.SourceURL == "" {
 				next, _, err := appendAssetRef(result, byPath, queue.AssetRef{Hash: asset.Hash, LogicalPath: asset.LogicalPath})
 				if err != nil {
 					return nil, err
 				}
 				result = next
 				continue
-			}
-			if merged.SourceURL == "" && isHTTPURL(merged.LogicalPath) {
-				merged.SourceURL = merged.LogicalPath
 			}
 			merged.LogicalPath = asset.LogicalPath
 			if !strings.EqualFold(merged.Hash, asset.Hash) {

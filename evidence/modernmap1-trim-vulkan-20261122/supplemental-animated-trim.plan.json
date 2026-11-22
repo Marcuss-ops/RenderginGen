@@ -1,0 +1,84 @@
+{
+  "schema": "chronon.render-plan.v3",
+  "version": 3,
+  "job_id": "trim-pixel-gate",
+  "canvas": {
+    "width": 512,
+    "height": 256,
+    "fps_num": 30,
+    "fps_den": 1,
+    "duration_frames": 11
+  },
+  "layers": [
+    {
+      "id": "line",
+      "type": "shape",
+      "size": [
+        512,
+        256
+      ],
+      "position": [
+        0,
+        0
+      ],
+      "start_frame": 0,
+      "duration_frames": 11,
+      "shape": {
+        "type": "path",
+        "path": [
+          {
+            "type": "move_to",
+            "point": [
+              64,
+              128
+            ]
+          },
+          {
+            "type": "line_to",
+            "point": [
+              448,
+              128
+            ]
+          }
+        ],
+        "stroke": {
+          "color": "#00FF00",
+          "width": 8
+        },
+        "operators": [
+          {
+            "kind": "trim",
+            "params": {
+              "start": 0,
+              "end": 0,
+              "animation": {
+                "keyframes": [
+                  {
+                    "frame": 0,
+                    "value": [
+                      0,
+                      0,
+                      0
+                    ]
+                  },
+                  {
+                    "frame": 10,
+                    "value": [
+                      0,
+                      1,
+                      0
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "output": {
+    "path": "/tmp/trim-gate/trim.png",
+    "format": "png"
+  }
+}

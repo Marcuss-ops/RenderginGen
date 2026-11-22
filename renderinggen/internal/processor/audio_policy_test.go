@@ -24,6 +24,17 @@ func TestAudioModeCopyOnlyVocabulary(t *testing.T) {
 	}
 }
 
+func TestValidateAudioModeRejectsTranscode(t *testing.T) {
+	plan := &overlay.Plan{Output: overlay.Output{Audio: &overlay.Audio{Mode: "transcode"}}}
+	if err := validateAudioMode(plan); err == nil {
+		t.Fatal("transcode must fail closed: the native mux copies the source stream")
+	}
+	plan.Output.Audio.Mode = "copy_if_compatible"
+	if err := validateAudioMode(plan); err != nil {
+		t.Fatalf("copy_if_compatible must be accepted: %v", err)
+	}
+}
+
 // TestAudioPolicyDegradationIsReported pins the observability fix: a plan
 // whose ONLY audio directive is an unsupported mode used to compile with no
 // warning at all, so the worker silently copied the source stream where the

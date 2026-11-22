@@ -256,11 +256,13 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 		if route.TrimEnd != nil {
 			trimEnd = *route.TrimEnd
 		}
-		// The contract trim is a static range, and the native Vulkan shape path
-		// ignores an operator-level trim animation (it draws the seeded range,
-		// i.e. nothing). Clip the projected polyline itself instead: the route
-		// then draws natively and still honours [trim_start, trim_end].
-		projectedPoints = trimMapPolyline(projectedPoints, trimStart, trimEnd)
+		if !finite(trimStart) || !finite(trimEnd) || trimStart < 0 || trimEnd > 1 || trimEnd <= trimStart {
+			return nil, fmt.Errorf("overlay: ModernMap1 item %q route %q trim range must satisfy 0 <= trim_start < trim_end <= 1", ri.Item.ID, route.ID)
+		}
+		// Chronon's native path compiler applies the trim operator to the full
+		// polyline (render_plan_compiler_shape_path.cpp), so the route keeps its
+		// authored geometry and draws exactly [trim_start, trim_end]. The old
+		// pre-clip was a workaround for a renderer that ignored the operator.
 		commands := make([]LayerPathCommand, 0, len(projectedPoints))
 		for pointIndex, point := range projectedPoints {
 			commandType := "line_to"
@@ -270,6 +272,7 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 			commands = append(commands, LayerPathCommand{Type: commandType, Point: []float64{point[0], point[1]}})
 		}
 		stroke := &LayerStroke{Color: route.Color, Width: route.WidthPX}
+		trim := LayerPathOperator{Kind: "trim", Params: LayerTrimParams{Start: trimStart, End: trimEnd}}
 		routeLayer := Layer{
 			ID: ri.Item.ID + ":modernmap1:route:" + route.ID, Type: "shape",
 			// Path points are authored in the layer's own [0,size] space and the
@@ -280,7 +283,7 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 			Position:   []float64{-float64(src.Width) / 2, -float64(src.Height) / 2},
 			Size:       []float64{float64(src.Width), float64(src.Height)},
 			StartFrame: ri.Start, DurationFrames: duration,
-			Shape: &LayerShape{Type: "path", Path: commands, Stroke: stroke},
+			Shape: &LayerShape{Type: "path", Path: commands, Operators: []LayerPathOperator{trim}, Stroke: stroke},
 		}
 		if mapMotion != nil {
 			applyMotionRouting(&routeLayer, mapMotion)

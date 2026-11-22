@@ -4,6 +4,7 @@
 package processor
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -82,6 +83,22 @@ func audioModeCopyOnly(mode string) bool {
 	default:
 		return false
 	}
+}
+
+// validateAudioMode is the worker-side half of the contract gate: PipelineGen
+// rejects non-copy modes at request/compile time, and the worker fails closed
+// if an old or foreign plan still carries one. The native mux copies the source
+// stream, so accepting a transcode request would publish audio the caller did
+// not ask for.
+func validateAudioMode(plan *overlay.Plan) error {
+	if plan == nil || plan.Output.Audio == nil {
+		return nil
+	}
+	mode := strings.ToLower(strings.TrimSpace(plan.Output.Audio.Mode))
+	if mode == "" || audioModeCopyOnly(mode) {
+		return nil
+	}
+	return fmt.Errorf("audio mode %q is not supported: the native mux copies the source stream", plan.Output.Audio.Mode)
 }
 
 // audioTargetSampleRateFromPlan is the single typed authority for the OUTPUT
