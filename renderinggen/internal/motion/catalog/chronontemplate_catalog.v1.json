@@ -47406,17 +47406,45 @@
         "short_phrase",
         "caption"
       ],
-      "unit": "glyph",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 60,
       "exit": 15,
       "tracks": [
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 520.0
+            },
+            {
+              "frame": 60,
+              "value": 0.0
+            }
+          ],
+          "easing": "in_out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.1799999475479126
+            },
+            {
+              "frame": 60,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -47425,102 +47453,19 @@
               "value": 0.0
             },
             {
-              "frame": 24,
+              "frame": 22,
               "value": 1.0
             },
             {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0299999713897705
-            },
-            {
-              "frame": 45,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
+              "frame": 60,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_aperture_scan_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 18.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 12.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_depth_dolly; the browser/card surface itself is intentionally omitted."
     },
     {
       "id": "short_phrase_web_split_flap",
@@ -47529,17 +47474,45 @@
         "short_phrase",
         "caption"
       ],
-      "unit": "word",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 46,
       "exit": 15,
       "tracks": [
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 360.0
+            },
+            {
+              "frame": 46,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 16.0
+            },
+            {
+              "frame": 46,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -47552,8 +47525,102 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 46,
               "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_depth_in; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_halftone_dissolve",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 42,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9200000166893005
+            },
+            {
+              "frame": 20,
+              "value": 1.034999966621399
+            },
+            {
+              "frame": 42,
+              "value": 1.0
+            }
+          ],
+          "easing": "in_out_sine"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 14,
+              "value": 1.0
+            },
+            {
+              "frame": 42,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_focus_pulse; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_ink_bloom",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 52,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -180.0
+            },
+            {
+              "frame": 52,
+              "value": 0.0
             }
           ],
           "easing": "out_cubic"
@@ -47563,283 +47630,46 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": -12.0
+              "value": 72.0
             },
             {
-              "frame": 30,
+              "frame": 52,
               "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_split_flap_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 24.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.550000011920929
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_halftone_dissolve",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "glyph",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 30,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_halftone_dissolve_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 70,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.8799999952316284
-                },
-                {
-                  "frame": 70,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_ink_bloom",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "glyph",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 20,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
             }
           ],
           "easing": "out_cubic"
         },
         {
-          "property": "scale",
+          "property": "rotation_y",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.9599999785423279
+              "value": 9.0
             },
             {
-              "frame": 24,
-              "value": 1.0199999809265137
+              "frame": 52,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 180.0
             },
             {
-              "frame": 55,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
+              "frame": 52,
+              "value": 0.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_ink_bloom_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.8199999928474426
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_parallax; the browser/card surface itself is intentionally omitted."
     },
     {
       "id": "short_phrase_web_parallax_depth",
@@ -47848,7 +47678,7 @@
         "short_phrase",
         "caption"
       ],
-      "unit": "word",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
@@ -47856,40 +47686,22 @@
       "render_safe": true,
       "requires_3d": false,
       "requires_camera": false,
-      "enter": 90,
+      "enter": 56,
       "exit": 15,
       "tracks": [
         {
-          "property": "opacity",
+          "property": "position_y",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.0
+              "value": 260.0
             },
             {
-              "frame": 20,
-              "value": 1.0
+              "frame": 38,
+              "value": -12.0
             },
             {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -36.0
-            },
-            {
-              "frame": 50,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
+              "frame": 56,
               "value": 0.0
             }
           ],
@@ -47900,69 +47712,36 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": 1.0499999523162842
+              "value": 0.9399999976158142
             },
             {
-              "frame": 50,
+              "frame": 56,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 56,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_parallax_depth_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18.0
-                },
-                {
-                  "frame": 45,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_scroll_focus; the browser/card surface itself is intentionally omitted."
     },
     {
       "id": "short_phrase_web_slice_glitch",
@@ -47971,17 +47750,71 @@
         "short_phrase",
         "caption"
       ],
-      "unit": "glyph",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 54,
       "exit": 15,
       "tracks": [
+        {
+          "property": "rotation_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -12.0
+            },
+            {
+              "frame": 36,
+              "value": 4.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -24.0
+            },
+            {
+              "frame": 36,
+              "value": -4.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 240.0
+            },
+            {
+              "frame": 36,
+              "value": 20.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -47990,112 +47823,19 @@
               "value": 0.0
             },
             {
-              "frame": 14,
+              "frame": 36,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 54,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
-        },
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 8,
-              "value": -14.0
-            },
-            {
-              "frame": 14,
-              "value": 10.0
-            },
-            {
-              "frame": 20,
-              "value": -6.0
-            },
-            {
-              "frame": 26,
-              "value": 4.0
-            },
-            {
-              "frame": 34,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
-            }
-          ],
-          "easing": "linear"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_slice_glitch_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 6,
-                  "value": 0.0
-                },
-                {
-                  "frame": 8,
-                  "value": 1.0
-                },
-                {
-                  "frame": 12,
-                  "value": 0.0
-                },
-                {
-                  "frame": 14,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 6.0
-                },
-                {
-                  "frame": 34,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "linear"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_stack_fan; the browser/card surface itself is intentionally omitted."
     },
     {
       "id": "short_phrase_web_curtain_reveal",
@@ -48104,17 +47844,177 @@
         "short_phrase",
         "caption"
       ],
-      "unit": "word",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 48,
       "exit": 15,
       "tracks": [
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -15.0
+            },
+            {
+              "frame": 48,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 5.0
+            },
+            {
+              "frame": 48,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -120.0
+            },
+            {
+              "frame": 48,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_tilt_in; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_kinetic_split",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 48,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.2799999713897705
+            },
+            {
+              "frame": 48,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 160.0
+            },
+            {
+              "frame": 48,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 48,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_zoom_in; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_staggered_manifesto",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 42,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -72.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "position_z",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 220.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -48127,290 +48027,15 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 42,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_curtain_reveal_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -34.0
-                },
-                {
-                  "frame": 55,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10.0
-                },
-                {
-                  "frame": 55,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_kinetic_split",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 18,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_kinetic_split_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "from_center",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -26.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.9399999976158142
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_staggered_manifesto",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 18,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_staggered_manifesto_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 22.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 6.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_card_flip_y; the browser/card surface itself is intentionally omitted."
     },
     {
       "id": "short_phrase_web_marquee_sweep",
@@ -48419,7 +48044,7 @@
         "short_phrase",
         "caption"
       ],
-      "unit": "word",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
@@ -48427,9 +48052,81 @@
       "render_safe": true,
       "requires_3d": false,
       "requires_camera": false,
-      "enter": 90,
+      "enter": 32,
       "exit": 15,
       "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.7200000286102295
+            },
+            {
+              "frame": 22,
+              "value": 1.059999942779541
+            },
+            {
+              "frame": 32,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_back"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 12,
+              "value": 1.0
+            },
+            {
+              "frame": 32,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_card_scale_pop; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_card_stack",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 40,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 240.0
+            },
+            {
+              "frame": 40,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -48442,89 +48139,24 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 40,
               "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 42.0
-            },
-            {
-              "frame": 55,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_marquee_sweep_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 18.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_card_slide_left; the browser/card surface itself is intentionally omitted."
     },
     {
-      "id": "short_phrase_web_card_stack",
+      "id": "short_phrase_web_circle_wipe",
       "category": "web_phrase_v1",
       "targets": [
         "short_phrase",
         "caption"
       ],
-      "unit": "word",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
@@ -48532,9 +48164,23 @@
       "render_safe": true,
       "requires_3d": false,
       "requires_camera": false,
-      "enter": 90,
+      "enter": 36,
       "exit": 15,
       "tracks": [
+        {
+          "property": "position_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 180.0
+            },
+            {
+              "frame": 36,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -48547,113 +48193,44 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 36,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_card_stack_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 58.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.8999999761581421
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_card_slide_up; the browser/card surface itself is intentionally omitted."
     },
     {
-      "id": "short_phrase_web_circle_wipe",
+      "id": "short_phrase_web_grid_rhythm",
       "category": "web_phrase_v1",
       "targets": [
         "short_phrase",
         "caption"
       ],
-      "unit": "glyph",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 40,
       "exit": 15,
       "tracks": [
         {
-          "property": "opacity",
+          "property": "position_z",
           "keyframes": [
             {
               "frame": 0,
+              "value": 180.0
+            },
+            {
+              "frame": 40,
               "value": 0.0
-            },
-            {
-              "frame": 20,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
             }
           ],
           "easing": "out_cubic"
@@ -48666,319 +48243,12 @@
               "value": 1.0399999618530273
             },
             {
-              "frame": 50,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
+              "frame": 40,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_circle_wipe_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "from_center",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.9200000166893005
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_grid_rhythm",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "glyph",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 16,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_grid_rhythm_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "smooth",
-            "order": "from_center",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -12.0
-                },
-                {
-                  "frame": 60,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.9399999976158142
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_serif_emphasis",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 20,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_serif_emphasis_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.3499999940395355
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 12.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "fill_color",
-              "easing": "in_out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ]
-                },
-                {
-                  "frame": 30,
-                  "value": [
-                    0.5100000083446503,
-                    0.6850000053644181,
-                    1.0,
-                    1.0
-                  ]
-                },
-                {
-                  "frame": 55,
-                  "value": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ]
-                },
-                {
-                  "frame": 90,
-                  "value": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_diagonal_cut",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -48991,545 +48261,62 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 40,
               "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_x",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -28.0
-            },
-            {
-              "frame": 55,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "position_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 20.0
-            },
-            {
-              "frame": 55,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_diagonal_cut_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            },
-            {
-              "property": "position_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_cursor_focus; the browser/card surface itself is intentionally omitted."
     },
     {
-      "id": "short_phrase_web_count_to_twelve",
+      "id": "short_phrase_web_serif_emphasis",
       "category": "web_phrase_v1",
       "targets": [
         "short_phrase",
         "caption"
       ],
-      "unit": "word",
+      "unit": "layer",
       "duration_bounds": {
         "minimum_frames": 60,
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 46,
       "exit": 15,
       "tracks": [
         {
-          "property": "opacity",
+          "property": "position_z",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.0
+              "value": 240.0
             },
             {
-              "frame": 16,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_count_to_twelve_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.7799999713897705
-                },
-                {
-                  "frame": 30,
-                  "value": 1.0700000524520874
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_word_slot",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 16,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_word_slot_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "scale_y",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.550000011920929
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_end_card",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "glyph",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 24,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "scale",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0299999713897705
-            },
-            {
-              "frame": 50,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_end_card_text",
-          "selector": {
-            "kind": "glyph",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 0
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "tracking",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 2.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_tilt_snap",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
-        {
-          "property": "opacity",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 16,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
-            }
-          ],
-          "easing": "out_cubic"
-        },
-        {
-          "property": "rotation_y",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -14.0
-            },
-            {
-              "frame": 30,
-              "value": 2.0
-            },
-            {
-              "frame": 50,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
+              "frame": 46,
               "value": 0.0
             }
           ],
           "easing": "out_cubic"
         },
         {
-          "property": "position_x",
+          "property": "rotation_x",
           "keyframes": [
             {
               "frame": 0,
-              "value": -18.0
+              "value": 10.0
             },
             {
-              "frame": 50,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
+              "frame": 46,
               "value": 0.0
             }
           ],
           "easing": "out_cubic"
-        }
-      ],
-      "text_animators": [
-        {
-          "id": "short_phrase_web_tilt_snap_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
-            },
-            {
-              "property": "position_x",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 8.0
-                },
-                {
-                  "frame": 45,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ],
-              "easing": "out_cubic"
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "short_phrase_web_glow_pulse",
-      "category": "web_phrase_v1",
-      "targets": [
-        "short_phrase",
-        "caption"
-      ],
-      "unit": "word",
-      "duration_bounds": {
-        "minimum_frames": 60,
-        "maximum_frames": 240
-      },
-      "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
-      "enter": 90,
-      "exit": 15,
-      "tracks": [
+        },
         {
           "property": "opacity",
           "keyframes": [
@@ -49542,104 +48329,367 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 46,
               "value": 1.0
             }
           ],
           "easing": "out_cubic"
         }
       ],
-      "text_animators": [
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_section_spotlight; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_diagonal_cut",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 44,
+      "exit": 15,
+      "tracks": [
         {
-          "id": "short_phrase_web_glow_pulse_text",
-          "selector": {
-            "kind": "word",
-            "shape": "square",
-            "order": "forward",
-            "stagger": 1
-          },
-          "properties": [
+          "property": "position_z",
+          "keyframes": [
             {
-              "property": "opacity",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.6000000238418579
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "linear"
+              "frame": 0,
+              "value": -150.0
             },
             {
-              "property": "fill_color",
-              "easing": "in_out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ]
-                },
-                {
-                  "frame": 30,
-                  "value": [
-                    0.65,
-                    0.775,
-                    1.0,
-                    1.0
-                  ]
-                },
-                {
-                  "frame": 60,
-                  "value": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ]
-                },
-                {
-                  "frame": 90,
-                  "value": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                  ]
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 1.0199999809265137
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ],
-              "easing": "out_cubic"
+              "frame": 44,
+              "value": 0.0
             }
-          ]
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9599999785423279
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 20,
+              "value": 1.0
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
         }
-      ]
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_depth_push; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_count_to_twelve",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 44,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9399999976158142
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_focus_expand; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_word_slot",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 46,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "scale",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.059999942779541
+            },
+            {
+              "frame": 46,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 14,
+              "value": 1.0
+            },
+            {
+              "frame": 46,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_section_zoom; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_end_card",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": false,
+      "requires_camera": false,
+      "enter": 44,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "position_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -24.0
+            },
+            {
+              "frame": 44,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_split_panel; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_tilt_snap",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 42,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "rotation_x",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 6.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -4.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 42,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_tilt_settle; the browser/card surface itself is intentionally omitted."
+    },
+    {
+      "id": "short_phrase_web_glow_pulse",
+      "category": "web_phrase_v1",
+      "targets": [
+        "short_phrase",
+        "caption"
+      ],
+      "unit": "layer",
+      "duration_bounds": {
+        "minimum_frames": 60,
+        "maximum_frames": 240
+      },
+      "render_safe": true,
+      "requires_3d": true,
+      "requires_camera": true,
+      "enter": 44,
+      "exit": 15,
+      "tracks": [
+        {
+          "property": "rotation_y",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -15.0
+            },
+            {
+              "frame": 44,
+              "value": 0.0
+            }
+          ],
+          "easing": "out_cubic"
+        },
+        {
+          "property": "opacity",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.0
+            },
+            {
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ],
+          "easing": "out_cubic"
+        }
+      ],
+      "text_animators": [],
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_yaw_open; the browser/card surface itself is intentionally omitted."
     },
     {
       "id": "short_phrase_web_typewriter_carriage",
@@ -49744,7 +48794,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_typewriter_staccato",
@@ -49851,7 +48902,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_typewriter_line_feed",
@@ -49956,7 +49008,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_highlight_marker_fill",
@@ -50085,7 +49138,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_highlight_word_band",
@@ -50214,7 +49268,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_highlight_emphasis_settle",
@@ -50334,7 +49389,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_geometric_yaw_open",
@@ -50349,8 +49405,8 @@
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
+      "requires_3d": true,
+      "requires_camera": true,
       "enter": 90,
       "exit": 15,
       "tracks": [
@@ -50457,7 +49513,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_geometric_pow_scale",
@@ -50566,7 +49623,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_geometric_pitch_lift",
@@ -50581,8 +49639,8 @@
         "maximum_frames": 240
       },
       "render_safe": true,
-      "requires_3d": false,
-      "requires_camera": false,
+      "requires_3d": true,
+      "requires_camera": true,
       "enter": 90,
       "exit": 15,
       "tracks": [
@@ -50689,7 +49747,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     },
     {
       "id": "short_phrase_web_geometric_depth_push",
@@ -50794,7 +49853,8 @@
             }
           ]
         }
-      ]
+      ],
+      "adaptation_note": ""
     }
   ],
   "overlay_presets": {

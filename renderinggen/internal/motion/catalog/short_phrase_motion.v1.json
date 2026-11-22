@@ -2553,31 +2553,27 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Aperture Scan",
-      "phrase": "Aperture scan",
-      "enter": 90,
-      "word_count": 2,
+      "title": "Browser Depth Dolly",
+      "phrase": "Depth opens the page",
+      "enter": 60,
+      "word_count": 4,
       "selector": {
-        "unit": "glyph",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal"
+        "window": "full"
       },
       "tracks": [
         {
-          "property": "opacity",
-          "easing": "out_cubic",
+          "property": "position_z",
+          "easing": "in_out_cubic",
           "keyframes": [
             {
               "frame": 0,
+              "value": 520.0
+            },
+            {
+              "frame": 60,
               "value": 0.0
-            },
-            {
-              "frame": 24,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
             }
           ]
         },
@@ -2587,84 +2583,34 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": 1.0299999713897705
+              "value": 1.1799999475479126
             },
             {
-              "frame": 45,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
+              "frame": 60,
               "value": 1.0
             }
           ]
-        }
-      ],
-      "text_animators": [
+        },
         {
-          "selector": {
-            "unit": "glyph",
-            "order": "forward",
-            "window": "reveal"
-          },
-          "properties": [
+          "property": "opacity",
+          "easing": "out_cubic",
+          "keyframes": [
             {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
+              "frame": 0,
+              "value": 0.0
             },
             {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 18.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
+              "frame": 22,
+              "value": 1.0
             },
             {
-              "property": "tracking",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 12.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
+              "frame": 60,
+              "value": 1.0
             }
           ]
         }
       ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -2673,9 +2619,9 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_depth_dolly; the browser/card surface itself is intentionally omitted.",
       "timing": {
-        "min_frames": 180,
+        "min_frames": 195,
         "max_frames": 210,
         "in_frames": 90,
         "hold_frames": 105,
@@ -2691,16 +2637,44 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Split Flap",
-      "phrase": "Signal becomes meaning",
-      "enter": 90,
-      "word_count": 3,
+      "title": "Browser Depth In",
+      "phrase": "The page comes forward",
+      "enter": 46,
+      "word_count": 4,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 360.0
+            },
+            {
+              "frame": 46,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "rotation_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 16.0
+            },
+            {
+              "frame": 46,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -2714,95 +2688,13 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 46,
               "value": 1.0
             }
           ]
-        },
-        {
-          "property": "position_y",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -12.0
-            },
-            {
-              "frame": 30,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
-            }
-          ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 24.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "scale_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.550000011920929
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -2811,7 +2703,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_depth_in; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2829,16 +2721,34 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Halftone Dissolve",
-      "phrase": "Dots become language",
-      "enter": 90,
-      "word_count": 3,
+      "title": "Browser Focus Pulse",
+      "phrase": "Focus finds the page",
+      "enter": 42,
+      "word_count": 4,
       "selector": {
-        "unit": "glyph",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal_soft"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "scale",
+          "easing": "in_out_sine",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9200000166893005
+            },
+            {
+              "frame": 20,
+              "value": 1.034999966621399
+            },
+            {
+              "frame": 42,
+              "value": 1.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -2848,63 +2758,17 @@
               "value": 0.0
             },
             {
-              "frame": 30,
+              "frame": 14,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 42,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "glyph",
-            "order": "forward",
-            "window": "reveal_soft"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 70,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.8799999952316284
-                },
-                {
-                  "frame": 70,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -2913,7 +2777,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_focus_pulse; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -2931,104 +2795,74 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Ink Bloom",
-      "phrase": "Ink finds its edge",
-      "enter": 90,
-      "word_count": 4,
+      "title": "Browser Parallax",
+      "phrase": "Layers move apart",
+      "enter": 52,
+      "word_count": 3,
       "selector": {
-        "unit": "glyph",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal_soft"
+        "window": "full"
       },
       "tracks": [
         {
-          "property": "opacity",
+          "property": "position_x",
           "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
+              "value": -180.0
+            },
+            {
+              "frame": 52,
               "value": 0.0
-            },
-            {
-              "frame": 20,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
             }
           ]
         },
         {
-          "property": "scale",
+          "property": "position_y",
           "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.9599999785423279
+              "value": 72.0
             },
             {
-              "frame": 24,
-              "value": 1.0199999809265137
-            },
-            {
-              "frame": 55,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
+              "frame": 52,
+              "value": 0.0
             }
           ]
-        }
-      ],
-      "text_animators": [
+        },
         {
-          "selector": {
-            "unit": "glyph",
-            "order": "forward",
-            "window": "reveal_soft"
-          },
-          "properties": [
+          "property": "rotation_y",
+          "easing": "out_cubic",
+          "keyframes": [
             {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
+              "frame": 0,
+              "value": 9.0
             },
             {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.8199999928474426
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
+              "frame": 52,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 180.0
+            },
+            {
+              "frame": 52,
+              "value": 0.0
             }
           ]
         }
       ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3037,7 +2871,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_parallax; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3055,48 +2889,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Parallax Depth",
-      "phrase": "Depth behind the page",
-      "enter": 90,
-      "word_count": 4,
+      "title": "Browser Scroll Focus",
+      "phrase": "Scroll into focus",
+      "enter": 56,
+      "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
         {
-          "property": "opacity",
+          "property": "position_y",
           "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": 0.0
+              "value": 260.0
             },
             {
-              "frame": 20,
-              "value": 1.0
+              "frame": 38,
+              "value": -12.0
             },
             {
-              "frame": 90,
-              "value": 1.0
-            }
-          ]
-        },
-        {
-          "property": "position_x",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -36.0
-            },
-            {
-              "frame": 50,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
+              "frame": 56,
               "value": 0.0
             }
           ]
@@ -3107,66 +2923,34 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": 1.0499999523162842
+              "value": 0.9399999976158142
             },
             {
-              "frame": 50,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
+              "frame": 56,
               "value": 1.0
             }
           ]
-        }
-      ],
-      "text_animators": [
+        },
         {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
+          "property": "opacity",
+          "easing": "out_cubic",
+          "keyframes": [
             {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
+              "frame": 0,
+              "value": 0.0
             },
             {
-              "property": "position_x",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18.0
-                },
-                {
-                  "frame": 45,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 56,
+              "value": 1.0
             }
           ]
         }
       ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3175,7 +2959,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_scroll_focus; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3193,16 +2977,70 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Slice Glitch",
-      "phrase": "Slices realign",
-      "enter": 90,
-      "word_count": 2,
+      "title": "Browser Stack Fan",
+      "phrase": "Cards find their stack",
+      "enter": 54,
+      "word_count": 4,
       "selector": {
-        "unit": "glyph",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "rotation_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -12.0
+            },
+            {
+              "frame": 36,
+              "value": 4.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "rotation_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -24.0
+            },
+            {
+              "frame": 36,
+              "value": -4.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 240.0
+            },
+            {
+              "frame": 36,
+              "value": 20.0
+            },
+            {
+              "frame": 54,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -3212,109 +3050,17 @@
               "value": 0.0
             },
             {
-              "frame": 14,
+              "frame": 36,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 54,
               "value": 1.0
-            }
-          ]
-        },
-        {
-          "property": "position_x",
-          "easing": "linear",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 0.0
-            },
-            {
-              "frame": 8,
-              "value": -14.0
-            },
-            {
-              "frame": 14,
-              "value": 10.0
-            },
-            {
-              "frame": 20,
-              "value": -6.0
-            },
-            {
-              "frame": 26,
-              "value": 4.0
-            },
-            {
-              "frame": 34,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "glyph",
-            "order": "forward",
-            "window": "reveal"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 6,
-                  "value": 0.0
-                },
-                {
-                  "frame": 8,
-                  "value": 1.0
-                },
-                {
-                  "frame": 12,
-                  "value": 0.0
-                },
-                {
-                  "frame": 14,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_x",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 6.0
-                },
-                {
-                  "frame": 34,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3323,9 +3069,9 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_stack_fan; the browser/card surface itself is intentionally omitted.",
       "timing": {
-        "min_frames": 180,
+        "min_frames": 195,
         "max_frames": 210,
         "in_frames": 90,
         "hold_frames": 105,
@@ -3341,100 +3087,60 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Curtain Reveal",
-      "phrase": "The page opens",
-      "enter": 90,
-      "word_count": 3,
+      "title": "Browser Tilt In",
+      "phrase": "Tilt into the page",
+      "enter": 48,
+      "word_count": 4,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal"
+        "window": "full"
       },
       "tracks": [
         {
-          "property": "opacity",
+          "property": "rotation_y",
           "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
+              "value": -15.0
+            },
+            {
+              "frame": 48,
               "value": 0.0
-            },
-            {
-              "frame": 20,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
             }
           ]
-        }
-      ],
-      "text_animators": [
+        },
         {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "reveal"
-          },
-          "properties": [
+          "property": "rotation_x",
+          "easing": "out_cubic",
+          "keyframes": [
             {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
+              "frame": 0,
+              "value": 5.0
             },
             {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -34.0
-                },
-                {
-                  "frame": 55,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
+              "frame": 48,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -120.0
             },
             {
-              "property": "tracking",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10.0
-                },
-                {
-                  "frame": 55,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
+              "frame": 48,
+              "value": 0.0
             }
           ]
         }
       ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3443,7 +3149,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_tilt_in; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3461,16 +3167,44 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Kinetic Split",
-      "phrase": "Split the frame",
-      "enter": 90,
-      "word_count": 3,
+      "title": "Browser Zoom In",
+      "phrase": "Zoom into the story",
+      "enter": 48,
+      "word_count": 4,
       "selector": {
-        "unit": "word",
-        "order": "from_center",
-        "window": "band"
+        "unit": "layer",
+        "order": "forward",
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.2799999713897705
+            },
+            {
+              "frame": 48,
+              "value": 1.0
+            }
+          ]
+        },
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 160.0
+            },
+            {
+              "frame": 48,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -3484,77 +3218,13 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 48,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "from_center",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -26.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.9399999976158142
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3563,7 +3233,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_browser_zoom_in; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3581,16 +3251,44 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Staggered Manifesto",
-      "phrase": "Three beats land",
-      "enter": 90,
+      "title": "Card Flip Y",
+      "phrase": "The card turns",
+      "enter": 42,
       "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "rotation_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -72.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 220.0
+            },
+            {
+              "frame": 42,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -3600,81 +3298,17 @@
               "value": 0.0
             },
             {
-              "frame": 18,
+              "frame": 20,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 42,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 22.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "tracking",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 6.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3683,7 +3317,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_card_flip_y; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3701,16 +3335,34 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Marquee Sweep",
-      "phrase": "The line keeps moving",
-      "enter": 90,
+      "title": "Card Scale Pop",
+      "phrase": "Cards pop into place",
+      "enter": 32,
       "word_count": 4,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_back",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.7200000286102295
+            },
+            {
+              "frame": 22,
+              "value": 1.059999942779541
+            },
+            {
+              "frame": 32,
+              "value": 1.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -3720,81 +3372,17 @@
               "value": 0.0
             },
             {
-              "frame": 16,
+              "frame": 12,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 32,
               "value": 1.0
-            }
-          ]
-        },
-        {
-          "property": "position_x",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 42.0
-            },
-            {
-              "frame": 55,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "tracking",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 18.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3803,7 +3391,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_card_scale_pop; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3821,16 +3409,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Card Stack",
-      "phrase": "Cards find their stack",
-      "enter": 90,
+      "title": "Card Slide Left",
+      "phrase": "Slide across the page",
+      "enter": 40,
       "word_count": 4,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 240.0
+            },
+            {
+              "frame": 40,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -3840,81 +3442,17 @@
               "value": 0.0
             },
             {
-              "frame": 18,
+              "frame": 16,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 40,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "reveal"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 58.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.8999999761581421
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -3923,7 +3461,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_card_slide_left; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -3941,16 +3479,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Circle Wipe",
-      "phrase": "One point one field",
-      "enter": 90,
+      "title": "Card Slide Up",
+      "phrase": "Rise into the page",
+      "enter": 36,
       "word_count": 4,
       "selector": {
-        "unit": "glyph",
-        "order": "from_center",
-        "window": "reveal_soft"
+        "unit": "layer",
+        "order": "forward",
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 180.0
+            },
+            {
+              "frame": 36,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -3960,81 +3512,17 @@
               "value": 0.0
             },
             {
-              "frame": 20,
+              "frame": 18,
               "value": 1.0
             },
             {
-              "frame": 90,
-              "value": 1.0
-            }
-          ]
-        },
-        {
-          "property": "scale",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0399999618530273
-            },
-            {
-              "frame": 50,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
+              "frame": 36,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "glyph",
-            "order": "from_center",
-            "window": "reveal_soft"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.9200000166893005
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4043,7 +3531,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_card_slide_up; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4061,16 +3549,44 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Grid Rhythm",
-      "phrase": "Order from the grid",
-      "enter": 90,
-      "word_count": 4,
+      "title": "Web Cursor Focus",
+      "phrase": "Cursor finds focus",
+      "enter": 40,
+      "word_count": 3,
       "selector": {
-        "unit": "glyph",
-        "order": "from_center",
-        "window": "reveal_soft"
+        "unit": "layer",
+        "order": "forward",
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 180.0
+            },
+            {
+              "frame": 40,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.0399999618530273
+            },
+            {
+              "frame": 40,
+              "value": 1.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4080,81 +3596,17 @@
               "value": 0.0
             },
             {
-              "frame": 16,
+              "frame": 18,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 40,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "glyph",
-            "order": "from_center",
-            "window": "reveal_soft"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -12.0
-                },
-                {
-                  "frame": 60,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.9399999976158142
-                },
-                {
-                  "frame": 60,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4163,7 +3615,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_cursor_focus; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4181,16 +3633,44 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Serif Emphasis",
-      "phrase": "Emphasis without noise",
-      "enter": 90,
+      "title": "Web Section Spotlight",
+      "phrase": "Spotlight the section",
+      "enter": 46,
       "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 240.0
+            },
+            {
+              "frame": 46,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "rotation_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 10.0
+            },
+            {
+              "frame": 46,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4204,81 +3684,13 @@
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 46,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.3499999940395355
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 12.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "fill_blue",
-              "easing": "in_out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 30,
-                  "value": 0.699999988079071
-                },
-                {
-                  "frame": 55,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4287,7 +3699,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_section_spotlight; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4305,16 +3717,44 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Diagonal Cut",
-      "phrase": "Cut through the frame",
-      "enter": 90,
+      "title": "Web Rect Depth Push",
+      "phrase": "Push through the page",
+      "enter": 44,
       "word_count": 4,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_z",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -150.0
+            },
+            {
+              "frame": 44,
+              "value": 0.0
+            }
+          ]
+        },
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9599999785423279
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4324,117 +3764,17 @@
               "value": 0.0
             },
             {
-              "frame": 18,
+              "frame": 20,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 44,
               "value": 1.0
-            }
-          ]
-        },
-        {
-          "property": "position_x",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": -28.0
-            },
-            {
-              "frame": 55,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
-            }
-          ]
-        },
-        {
-          "property": "position_y",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 20.0
-            },
-            {
-              "frame": 55,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
-              "value": 0.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "reveal"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 50,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_x",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": -18.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "position_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 10.0
-                },
-                {
-                  "frame": 50,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4443,7 +3783,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_depth_push; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4461,16 +3801,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Count To Twelve",
-      "phrase": "Count every beat",
-      "enter": 90,
+      "title": "Web Rect Focus Expand",
+      "phrase": "Expand the focus",
+      "enter": 44,
       "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 0.9399999976158142
+            },
+            {
+              "frame": 44,
+              "value": 1.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4480,67 +3834,17 @@
               "value": 0.0
             },
             {
-              "frame": 16,
+              "frame": 18,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 44,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.7799999713897705
-                },
-                {
-                  "frame": 30,
-                  "value": 1.0700000524520874
-                },
-                {
-                  "frame": 55,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4549,7 +3853,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_focus_expand; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4567,16 +3871,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Word Slot",
-      "phrase": "Each word takes its slot",
-      "enter": 90,
-      "word_count": 5,
+      "title": "Web Rect Section Zoom",
+      "phrase": "Zoom the section",
+      "enter": 46,
+      "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "scale",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": 1.059999942779541
+            },
+            {
+              "frame": 46,
+              "value": 1.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4586,63 +3904,17 @@
               "value": 0.0
             },
             {
-              "frame": 16,
+              "frame": 14,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 46,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "scale_y",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.550000011920929
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4651,9 +3923,9 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_section_zoom; the browser/card surface itself is intentionally omitted.",
       "timing": {
-        "min_frames": 210,
+        "min_frames": 195,
         "max_frames": 210,
         "in_frames": 90,
         "hold_frames": 105,
@@ -4669,16 +3941,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web End Card",
-      "phrase": "Make it move",
-      "enter": 90,
+      "title": "Web Rect Split Panel",
+      "phrase": "Split the page",
+      "enter": 44,
       "word_count": 3,
       "selector": {
-        "unit": "glyph",
+        "unit": "layer",
         "order": "forward",
         "window": "full"
       },
       "tracks": [
+        {
+          "property": "position_x",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -24.0
+            },
+            {
+              "frame": 44,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4688,81 +3974,17 @@
               "value": 0.0
             },
             {
-              "frame": 24,
+              "frame": 18,
               "value": 1.0
             },
             {
-              "frame": 90,
-              "value": 1.0
-            }
-          ]
-        },
-        {
-          "property": "scale",
-          "easing": "out_cubic",
-          "keyframes": [
-            {
-              "frame": 0,
-              "value": 1.0299999713897705
-            },
-            {
-              "frame": 50,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
+              "frame": 44,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "glyph",
-            "order": "forward",
-            "window": "full"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "tracking",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 2.0
-                },
-                {
-                  "frame": 40,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4771,7 +3993,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_split_panel; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4789,31 +4011,27 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Tilt Snap",
-      "phrase": "Tilt into place",
-      "enter": 90,
+      "title": "Web Rect Tilt Settle",
+      "phrase": "Tilt and settle",
+      "enter": 42,
       "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "reveal"
+        "window": "full"
       },
       "tracks": [
         {
-          "property": "opacity",
+          "property": "rotation_x",
           "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
+              "value": 6.0
+            },
+            {
+              "frame": 42,
               "value": 0.0
-            },
-            {
-              "frame": 16,
-              "value": 1.0
-            },
-            {
-              "frame": 90,
-              "value": 1.0
             }
           ]
         },
@@ -4823,88 +4041,34 @@
           "keyframes": [
             {
               "frame": 0,
-              "value": -14.0
+              "value": -4.0
             },
             {
-              "frame": 30,
-              "value": 2.0
-            },
-            {
-              "frame": 50,
-              "value": 0.0
-            },
-            {
-              "frame": 90,
+              "frame": 42,
               "value": 0.0
             }
           ]
         },
         {
-          "property": "position_x",
+          "property": "opacity",
           "easing": "out_cubic",
           "keyframes": [
             {
               "frame": 0,
-              "value": -18.0
-            },
-            {
-              "frame": 50,
               "value": 0.0
             },
             {
-              "frame": 90,
-              "value": 0.0
+              "frame": 18,
+              "value": 1.0
+            },
+            {
+              "frame": 42,
+              "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "reveal"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 45,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "position_x",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 8.0
-                },
-                {
-                  "frame": 45,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -4913,7 +4077,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_tilt_settle; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,
@@ -4931,16 +4095,30 @@
         "caption"
       ],
       "runtime_enabled": true,
-      "title": "Web Glow Pulse",
-      "phrase": "A pulse of light",
-      "enter": 90,
-      "word_count": 4,
+      "title": "Web Rect Yaw Open",
+      "phrase": "Yaw into view",
+      "enter": 44,
+      "word_count": 3,
       "selector": {
-        "unit": "word",
+        "unit": "layer",
         "order": "forward",
-        "window": "band"
+        "window": "full"
       },
       "tracks": [
+        {
+          "property": "rotation_y",
+          "easing": "out_cubic",
+          "keyframes": [
+            {
+              "frame": 0,
+              "value": -15.0
+            },
+            {
+              "frame": 44,
+              "value": 0.0
+            }
+          ]
+        },
         {
           "property": "opacity",
           "easing": "out_cubic",
@@ -4950,85 +4128,17 @@
               "value": 0.0
             },
             {
-              "frame": 20,
+              "frame": 18,
               "value": 1.0
             },
             {
-              "frame": 90,
+              "frame": 44,
               "value": 1.0
             }
           ]
         }
       ],
-      "text_animators": [
-        {
-          "selector": {
-            "unit": "word",
-            "order": "forward",
-            "window": "band"
-          },
-          "properties": [
-            {
-              "property": "opacity",
-              "easing": "linear",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.6000000238418579
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            },
-            {
-              "property": "fill_blue",
-              "easing": "in_out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 0.0
-                },
-                {
-                  "frame": 30,
-                  "value": 0.5
-                },
-                {
-                  "frame": 60,
-                  "value": 0.0
-                },
-                {
-                  "frame": 90,
-                  "value": 0.0
-                }
-              ]
-            },
-            {
-              "property": "scale",
-              "easing": "out_cubic",
-              "keyframes": [
-                {
-                  "frame": 0,
-                  "value": 1.0199999809265137
-                },
-                {
-                  "frame": 40,
-                  "value": 1.0
-                },
-                {
-                  "frame": 90,
-                  "value": 1.0
-                }
-              ]
-            }
-          ]
-        }
-      ],
+      "text_animators": [],
       "text_overlays": [],
       "accents": [],
       "font_size": 0.0,
@@ -5037,7 +4147,7 @@
       "emphasis": [],
       "exit": "reverse",
       "decor": null,
-      "adaptation_note": "",
+      "adaptation_note": "Text-only projection of the real web category motion web_rect_yaw_open; the browser/card surface itself is intentionally omitted.",
       "timing": {
         "min_frames": 195,
         "max_frames": 210,

@@ -49,16 +49,20 @@ type Scene struct {
 	Byline   string
 	Context  []string
 	Phrase   string
+	// MotionID is the web-category motion applied to the phrase layer. Empty
+	// keeps the historical long/short default.
+	MotionID string
 	Frames   int
 }
 
 type palette struct {
-	paper  string
-	ink    string
-	muted  string
-	accent string
-	marker string
-	rule   string
+	paper     string
+	ink       string
+	phraseInk string
+	muted     string
+	accent    string
+	marker    string
+	rule      string
 }
 
 // DefaultLong is the long-phrase editorial page. The phrase is the only loud
@@ -119,10 +123,6 @@ func BuildPlan(scene Scene) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	ink, err := rgba(colors.ink)
-	if err != nil {
-		return nil, err
-	}
 	marker, err := rgba(colors.marker)
 	if err != nil {
 		return nil, err
@@ -145,9 +145,9 @@ func BuildPlan(scene Scene) ([]byte, error) {
 	)
 
 	if scene.Mode == "long" {
-		items = append(items, longBody(scene, colors, ink, marker, durationMS)...)
+		items = append(items, longBody(scene, colors, marker, durationMS)...)
 	} else {
-		items = append(items, shortBody(scene, colors, ink, marker, durationMS)...)
+		items = append(items, shortBody(scene, colors, marker, durationMS)...)
 	}
 
 	items = append(items,
@@ -174,7 +174,7 @@ func BuildPlan(scene Scene) ([]byte, error) {
 	return json.MarshalIndent(plan, "", "  ")
 }
 
-func longBody(scene Scene, colors palette, ink, marker []float64, duration int64) []map[string]any {
+func longBody(scene Scene, colors palette, marker []float64, duration int64) []map[string]any {
 	items := make([]map[string]any, 0, 10)
 	// Two context lines above the phrase, the rest below. The phrase owns the
 	// visual centre so the page reads as one editorial unit.
@@ -205,12 +205,12 @@ func longBody(scene Scene, colors palette, ink, marker []float64, duration int64
 	items = append(items,
 		shapeItem("web_phrase_marker", Width/2-mw/2, centerY-mh/2, mw, mh, marker, 0.94, 400, duration),
 		phraseItem("web_phrase_text", strings.Join(lines, "\n"), Width/2, centerY, mw, mh, fontSize,
-			boldFamily, colors.ink, "phrase_apple_clean_01_blur_soft_reveal", 0, duration),
+			boldFamily, colors.phraseInk, scenePhraseMotion(scene), 0, duration),
 	)
 	return items
 }
 
-func shortBody(scene Scene, colors palette, ink, marker []float64, duration int64) []map[string]any {
+func shortBody(scene Scene, colors palette, marker []float64, duration int64) []map[string]any {
 	items := make([]map[string]any, 0, 8)
 	fontSize := 104.0
 	lines := wrapPhrase(scene.Phrase, fontSize, 2)
@@ -225,13 +225,23 @@ func shortBody(scene Scene, colors palette, ink, marker []float64, duration int6
 	items = append(items,
 		shapeItem("web_phrase_marker", Width/2-mw/2, centerY-mh/2, mw, mh, marker, 0.96, 350, duration),
 		phraseItem("web_phrase_text", strings.Join(lines, "\n"), Width/2, centerY, mw, mh, fontSize,
-			boldFamily, colors.ink, "typewriter_impact_push_short", 0, duration),
+			boldFamily, colors.phraseInk, scenePhraseMotion(scene), 0, duration),
 	)
 	for index, line := range scene.Context {
 		items = append(items, textItem(fmt.Sprintf("web_context_%d", index), line,
 			Width/2, 832+float64(index)*48, 1560, 40, 28, regularFamily, colors.muted, 0, duration))
 	}
 	return items
+}
+
+func scenePhraseMotion(scene Scene) string {
+	if strings.TrimSpace(scene.MotionID) != "" {
+		return strings.TrimSpace(scene.MotionID)
+	}
+	if scene.Mode == "long" {
+		return "phrase_apple_clean_01_blur_soft_reveal"
+	}
+	return "typewriter_impact_push_short"
 }
 
 func textItem(id, text string, centerX, centerY, width, height, fontSize float64, family, fill string, startMS, endMS int64) map[string]any {
@@ -355,21 +365,23 @@ func paletteFor(theme string) (palette, error) {
 	switch theme {
 	case "light":
 		return palette{
-			paper:  "#F4F2EC",
-			ink:    "#141414",
-			muted:  "#6D7379",
-			accent: "#B7410E",
-			marker: "#F0F500",
-			rule:   "#C9C6BD",
+			paper:     "#F4F2EC",
+			ink:       "#141414",
+			phraseInk: "#141414",
+			muted:     "#6D7379",
+			accent:    "#B7410E",
+			marker:    "#F0F500",
+			rule:      "#C9C6BD",
 		}, nil
 	case "dark":
 		return palette{
-			paper:  "#0B0E13",
-			ink:    "#F5F2E8",
-			muted:  "#A6ADB5",
-			accent: "#FB923C",
-			marker: "#F0F500",
-			rule:   "#2A3038",
+			paper:     "#0B0E13",
+			ink:       "#F5F2E8",
+			phraseInk: "#141414",
+			muted:     "#A6ADB5",
+			accent:    "#FB923C",
+			marker:    "#F0F500",
+			rule:      "#2A3038",
 		}, nil
 	default:
 		return palette{}, fmt.Errorf("webphrase: unknown theme %q", theme)
