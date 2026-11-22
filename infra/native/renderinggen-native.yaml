@@ -1,13 +1,21 @@
 worker:
   id: renderinggen-local
   pipeline_workers: 3
-  # Match PipelineGen's certified RENDERINGGEN_GPU_SLOTS=3 admission contract.
   # The daemon serializes GPU execution; these lanes keep CPU prep/post work
   # pipelined without claiming extra daemon execution capacity. If
   # p50(renderinggen_worker_lane_wait_seconds) ever dominates p50(render),
   # add a daemon socket to chronon.socket_paths or lower gpu_lanes — raising
   # gpu_lanes against one daemon only grows the wait.
-  gpu_lanes: 3
+  #
+  # 2026-11-22: 3 -> 2. Run R28 aborted every overlay item that needed the glow
+  # effect stack with `vmaCreateImage failed VkResult=-2` (VK_ERROR_OUT_OF_
+  # DEVICE_MEMORY); three concurrent GPU sessions plus Ollama resident left
+  # ~6 GB free of 16 GB, and EffectStackNode's strict native policy has no
+  # software fallback. At 2 lanes the same run completed with 15.4 GB free.
+  # Keep this value and PipelineGen's RENDERINGGEN_GPU_SLOTS in the same commit
+  # (shipped drop-in: refactored/scripts/systemd/pipelinegen.service.d/
+  # gpu-slots.conf); a redeploy that reinstates 3 reopens the OOM.
+  gpu_lanes: 2
 queue:
   endpoint: http://127.0.0.1:8081
 artifact_store:

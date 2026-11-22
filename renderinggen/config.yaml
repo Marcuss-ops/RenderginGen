@@ -3,13 +3,19 @@ worker:
   # Pipeline (CPU/I/O) workers stay ahead of the GPU stages; the Vulkan B2 deep
   # ring (Chronon kSubmissionRingDepth=6) removed the per-batch drain stall.
   pipeline_workers: 3
-  # Keep the worker at the certified three-lane admission contract. Chronon
-  # daemon execution is serialized per socket; additional lanes pipeline CPU
-  # preparation and post-processing, while PipelineGen declares the matching
-  # RENDERINGGEN_GPU_SLOTS value.
+  # Chronon daemon execution is serialized per socket; additional lanes
+  # pipeline CPU preparation and post-processing, while PipelineGen declares
+  # the matching RENDERINGGEN_GPU_SLOTS value.
   # Keep PipelineGen's RENDERINGGEN_GPU_SLOTS equal to this value — the shipped
   # systemd drop-in is scripts/systemd/pipelinegen.service.d/gpu-slots.conf.
-  gpu_lanes: 3
+  #
+  # 2026-11-22: 3 -> 2. With three concurrent GPU sessions plus Ollama resident,
+  # the glow effect stack died on `vmaCreateImage failed VkResult=-2`
+  # (VK_ERROR_OUT_OF_DEVICE_MEMORY) and the native policy has no software
+  # fallback, so every affected overlay item failed. Two lanes left 15.4 GB of
+  # 16.3 GB free and the same job completed. Rationale mirrored in
+  # infra/native/renderinggen-native.yaml.
+  gpu_lanes: 2
 
 queue:
   endpoint: https://queue.pipelinegen.example
