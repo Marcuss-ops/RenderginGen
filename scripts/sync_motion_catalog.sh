@@ -36,6 +36,9 @@ short_phrase_embedded="$repo_root/$short_phrase_target"
 # aggregate, so it is a generated copy of the same emitted bytes, never a
 # hand-maintained second source.
 template_aggregate="$template_dir/catalog/chronontemplate_catalog.v1.json"
+# ChrononTemplate's own short-phrase contract test and tooling read this
+# generated copy; it must come from the same short-phrase emitter output.
+template_short_phrase="$template_dir/catalog/short_phrase_motion.v1.json"
 # PipelineGen keeps the same artifact as its motion-catalog fixture. It is a
 # third copy of the emitted bytes, so the gate covers it too; a standalone
 # RenderingGen checkout without the sibling repository skips it.
@@ -114,6 +117,14 @@ if [[ "$check_only" == "1" ]]; then
         echo "sync_motion_catalog: $short_phrase_target is stale; run $0 to refresh it" >&2
         exit 1
     fi
+    if [[ ! -f "$template_short_phrase" ]]; then
+        echo "sync_motion_catalog: ChrononTemplate short-phrase aggregate is missing; run $0" >&2
+        exit 1
+    fi
+    if ! cmp -s "$template_short_phrase" "$short_phrase_emitted"; then
+        echo "sync_motion_catalog: ChrononTemplate short-phrase aggregate differs from the emitted catalog; run $0" >&2
+        exit 1
+    fi
     # Parity gate: the ChrononTemplate aggregate is generated from the same
     # emitter output, so it must be byte-identical to the embedded copy.
     if [[ ! -f "$template_aggregate" ]]; then
@@ -136,7 +147,8 @@ mkdir -p "$(dirname "$embedded")"
 cp "$emitted" "$embedded"
 cp "$emitted" "$template_aggregate"
 cp "$short_phrase_emitted" "$short_phrase_embedded"
+cp "$short_phrase_emitted" "$template_short_phrase"
 if [[ -d "$(dirname "$pipelinegen_target")" ]]; then
     cp "$emitted" "$pipelinegen_target"
 fi
-echo "sync_motion_catalog: wrote $target, $template_aggregate, $short_phrase_target and the PipelineGen fixture"
+echo "sync_motion_catalog: wrote $target, $template_aggregate, $short_phrase_target, $template_short_phrase and the PipelineGen fixture"

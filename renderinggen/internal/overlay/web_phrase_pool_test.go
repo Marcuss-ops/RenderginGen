@@ -22,6 +22,20 @@ func TestWebPhrasePoolReachesBothRuntimesAndLowers(t *testing.T) {
 		t.Fatalf("phrase_motion_pool exposes %d web gestures, want 30", len(web))
 	}
 
+	// The same text-only entrance must be offered by both phrase pickers. The
+	// flat pool alone is not enough: a picker that filters by targets would
+	// otherwise hide every web recipe from the long lane.
+	shortIDs := useCaseMotionIDs(t, "short_important_phrase")
+	longIDs := useCaseMotionIDs(t, "important_phrase")
+	for _, id := range web {
+		if !containsString(shortIDs, id) {
+			t.Fatalf("short_important_phrase omits web gesture %q", id)
+		}
+		if !containsString(longIDs, id) {
+			t.Fatalf("important_phrase omits web gesture %q", id)
+		}
+	}
+
 	shortWeb := 0
 	for _, id := range motion.Registry.ShortPhraseStyleIDs() {
 		if strings.HasPrefix(id, "short_phrase_web_") {

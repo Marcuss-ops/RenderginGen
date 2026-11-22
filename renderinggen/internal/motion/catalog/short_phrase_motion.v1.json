@@ -2550,7 +2550,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Depth Dolly",
@@ -2634,7 +2635,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Depth In",
@@ -2718,7 +2720,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Focus Pulse",
@@ -2792,7 +2795,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Parallax",
@@ -2886,7 +2890,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Scroll Focus",
@@ -2974,7 +2979,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Stack Fan",
@@ -3084,7 +3090,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Tilt In",
@@ -3164,7 +3171,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Browser Zoom In",
@@ -3248,7 +3256,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Card Flip Y",
@@ -3332,7 +3341,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Card Scale Pop",
@@ -3406,7 +3416,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Card Slide Left",
@@ -3476,7 +3487,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Card Slide Up",
@@ -3546,7 +3558,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Cursor Focus",
@@ -3630,7 +3643,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Section Spotlight",
@@ -3714,7 +3728,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Rect Depth Push",
@@ -3798,7 +3813,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Rect Focus Expand",
@@ -3868,7 +3884,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Rect Section Zoom",
@@ -3938,7 +3955,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Rect Split Panel",
@@ -4008,7 +4026,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Rect Tilt Settle",
@@ -4092,7 +4111,8 @@
       "subcategory": "web",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Web Rect Yaw Open",
@@ -4162,7 +4182,8 @@
       "subcategory": "typewriter",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Typewriter Carriage",
@@ -4282,7 +4303,8 @@
       "subcategory": "typewriter",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Typewriter Staccato",
@@ -4404,7 +4426,8 @@
       "subcategory": "typewriter",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Typewriter Line Feed",
@@ -4524,7 +4547,8 @@
       "subcategory": "highlighting",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Highlight Marker Fill",
@@ -4648,7 +4672,8 @@
       "subcategory": "highlighting",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Highlight Word Band",
@@ -4772,7 +4797,8 @@
       "subcategory": "highlighting",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Highlight Emphasis Settle",
@@ -4892,7 +4918,8 @@
       "subcategory": "geometric",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Geometric Yaw Open",
@@ -5030,7 +5057,8 @@
       "subcategory": "geometric",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Geometric Pow Scale",
@@ -5154,7 +5182,8 @@
       "subcategory": "geometric",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Geometric Pitch Lift",
@@ -5292,7 +5321,8 @@
       "subcategory": "geometric",
       "targets": [
         "short_phrase",
-        "caption"
+        "caption",
+        "important_phrase"
       ],
       "runtime_enabled": true,
       "title": "Geometric Depth Push",

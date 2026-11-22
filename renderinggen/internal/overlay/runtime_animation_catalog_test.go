@@ -140,9 +140,28 @@ func TestRuntimeAnimationUseCasesSeparateCountedCompositions(t *testing.T) {
 		t.Fatal("image_stack must not be a picker category")
 	}
 	for _, id := range byID["short_important_phrase"].MotionIDs {
+		if strings.HasPrefix(id, "short_phrase_web_") {
+			continue
+		}
 		if containsString(byID["important_phrase"].MotionIDs, id) {
 			t.Errorf("short-phrase motion %q also appears in the important_phrase picker", id)
 		}
+	}
+	// The web phrase family is the explicit shared exception: all 30
+	// text-only entrances must be offered by both phrase pickers.
+	webShort, webLong := 0, 0
+	for _, id := range byID["short_important_phrase"].MotionIDs {
+		if strings.HasPrefix(id, "short_phrase_web_") {
+			webShort++
+		}
+	}
+	for _, id := range byID["important_phrase"].MotionIDs {
+		if strings.HasPrefix(id, "short_phrase_web_") {
+			webLong++
+		}
+	}
+	if webShort != 30 || webLong != 30 {
+		t.Errorf("web phrase coverage = %d short / %d long, want 30/30", webShort, webLong)
 	}
 	// The counted compositions reuse the item motions of their own target
 	// (image layers, map plates) instead of publishing a second family; the

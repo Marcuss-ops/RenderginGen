@@ -380,8 +380,13 @@ func collectRuntimeAnimationMotionGroups(options []RuntimeMotionOption, definiti
 		if shortPhrase {
 			groups.shortPhrases = append(groups.shortPhrases, option.ID)
 		}
-		// The two picker categories share an item kind but must stay disjoint.
-		if !shortPhrase && motionDefinitionAdmitsTarget(definition, TargetImportantPhrase) {
+		// The two picker categories share an item kind and are disjoint by
+		// default: a short-only family must not leak into the long picker. The
+		// web phrase family explicitly declares both targets because one
+		// text-only entrance is valid for short and long copy; that declaration
+		// is the opt-in, not a category special case.
+		sharedPhrase := shortPhrase && containsString(definition.Targets, TargetImportantPhrase)
+		if motionDefinitionAdmitsTarget(definition, TargetImportantPhrase) && (!shortPhrase || sharedPhrase) {
 			groups.phrases = append(groups.phrases, option.ID)
 		}
 		// The image picker is intentionally curated to the same fourteen reusable
