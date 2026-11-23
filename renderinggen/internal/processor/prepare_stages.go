@@ -262,6 +262,46 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	if err := validateMapRasterAssets(ws.Root(), st.plan); err != nil {
 		return err
 	}
+	// Still images have no need to reach Chronon at their catalog resolution.
+	// Create a separate display-bound derivative (never overwriting the
+	// content-addressed source), publish it under its own hash, and point the
+	// compiled plan at it. Map rasters are excluded by prescalePlanImages.
+	prescaleStart := time.Now()
+	sourceHashes := make(map[string]string, len(st.assets)+len(st.renamed))
+	for _, asset := range st.assets {
+		if asset.Hash != "" {
+			sourceHashes[asset.LogicalPath] = asset.Hash
+		}
+	}
+	// st.renamed is newPath -> producerPath. The plan references newPath,
+	// while st.assets still carries the producer path and its hash.
+	for newPath, producerPath := range st.renamed {
+		if hash := sourceHashes[producerPath]; hash != "" {
+			sourceHashes[newPath] = hash
+		}
+	}
+	prescaled, err := prescalePlanImages(
+		ws.Root(), st.plan, filepath.Join(p.jobsRoot, ".prescaled-images"), sourceHashes)
+	if err != nil {
+		return err
+	}
+	if err := p.applyPrescaledImages(ctx, st, prescaled); err != nil {
+		return err
+	}
+	if len(prescaled) > 0 {
+		var before, after int64
+		cached := 0
+		for _, image := range prescaled {
+			before += image.OriginalBytes
+			after += int64(image.Bytes)
+			if image.Cached {
+				cached++
+			}
+		}
+		workerlog.ByJobID(job.ID).Infof(
+			"pre-scaled %d image(s) before Chronon: %d bytes -> %d bytes, cache_hits=%d, %dms",
+			len(prescaled), before, after, cached, time.Since(prescaleStart).Milliseconds())
+	}
 	if err := materializeBuiltinFonts(ws.Root(), st.plan); err != nil {
 		return err
 	}
@@ -432,7 +472,10 @@ func (p *Processor) preparePlanOutput(st *prepareState) error {
 	}
 	if st.audioInert {
 		st.metrics[metricnames.AudioInertParams] = 1
-		workerlog.ByJobID(st.job.ID).Warnf("audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
+		// CR-16: this is a per-clip factory fact, not an anomaly. At Warn it
+		// produced one line per clip for a policy the plan already declares;
+		// Debug keeps it available without flooding production logs.
+		workerlog.ByJobID(st.job.ID).Debugf("audio codec/sample_rate/channels are inert (Chronon copies source audio, no transcode); mode=%q codec=%q sr=%d ch=%d",
 			st.plan.Output.Audio.Mode, st.plan.Output.Audio.Codec, st.plan.Output.Audio.SampleRate, st.plan.Output.Audio.Channels)
 	}
 	return nil

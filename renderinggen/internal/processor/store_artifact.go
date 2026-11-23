@@ -301,7 +301,70 @@ func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queu
 	}
 	artifact.Metrics[metricnames.ChrononTimingPreserved] = 1
 	artifact.Metrics[metricnames.ChrononTimingBytes] = float64(size)
+	p.preserveTimingSummarySidecar(ctx, artifact, outputPath+".timing.json", hash, jobID)
 	workerlog.ByJobID(jobID).Infof("raw timing sidecar preserved (sha256=%s bytes=%d)", hash, size)
+}
+
+// timingSummarySuffix names the compact companion stored next to the raw
+// sidecar. It is derived from the raw content address, so a consumer that has
+// the raw reference can fetch the summary without a second queue field.
+const timingSummarySuffix = ".summary.json"
+
+// timingSummaryMaxSourceBytes bounds the one read needed to build the summary.
+// The raw document is normally a few MiB; a larger file is left raw-only rather
+// than turning a diagnostic optimization into an unbounded allocation.
+const timingSummaryMaxSourceBytes = 64 << 20
+
+// preserveTimingSummarySidecar writes the compact projection of the raw
+// timing sidecar next to it, under `<raw-key>.summary.json`. The summary is the
+// same JSON object minus the unbounded per-frame array; it keeps every other
+// section (schema, phases, memory, video) so the producer can project metrics
+// without downloading the raw document. Fail-open: the raw artifact is already
+// published, and a missing summary only means the consumer falls back to raw.
+func (p *Processor) preserveTimingSummarySidecar(ctx context.Context, artifact *queue.Artifact, path, rawHash, jobID string) {
+	if p == nil || artifact == nil || rawHash == "" {
+		return
+	}
+	info, err := os.Stat(path)
+	if err != nil || info.Size() == 0 {
+		return
+	}
+	if info.Size() > timingSummaryMaxSourceBytes {
+		workerlog.ByJobID(jobID).Warnf("timing summary skipped: raw sidecar is %d bytes (cap %d)", info.Size(), int64(timingSummaryMaxSourceBytes))
+		return
+	}
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		workerlog.ByJobID(jobID).Warnf("timing summary read failed: %v", err)
+		return
+	}
+	var document map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &document); err != nil {
+		workerlog.ByJobID(jobID).Warnf("timing summary parse failed: %v", err)
+		return
+	}
+	if _, present := document["frame_times_ms"]; !present {
+		// Nothing to omit: do not publish a duplicate of the raw document.
+		return
+	}
+	delete(document, "frame_times_ms")
+	document["frame_times_omitted"] = json.RawMessage("true")
+	summary, err := json.Marshal(document)
+	if err != nil {
+		workerlog.ByJobID(jobID).Warnf("timing summary marshal failed: %v", err)
+		return
+	}
+	key := rawHash + timingSummarySuffix
+	if err := p.store.PutReader(ctx, key, bytes.NewReader(summary), int64(len(summary))); err != nil {
+		workerlog.ByJobID(jobID).Warnf("timing summary store failed: %v", err)
+		return
+	}
+	if artifact.Metrics == nil {
+		artifact.Metrics = map[string]float64{}
+	}
+	artifact.Metrics[metricnames.ChrononTimingSummaryPreserved] = 1
+	artifact.Metrics[metricnames.ChrononTimingSummaryBytes] = float64(len(summary))
+	workerlog.ByJobID(jobID).Infof("timing summary preserved (key=%s bytes=%d)", key, len(summary))
 }
 
 // noteTimingSidecarMissing records the fail-open absence of the raw timing

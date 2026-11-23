@@ -140,6 +140,10 @@ const (
 	DriveUploadBytes          = "drive_upload_bytes"
 	ChrononTimingPreserved    = "chronon_timing_preserved"
 	ChrononTimingBytes        = "chronon_timing_bytes"
+	// The compact companion the hot producer path reads instead of the raw
+	// per-frame document. The raw remains content-addressed for post-mortems.
+	ChrononTimingSummaryPreserved = "chronon_timing_summary_preserved"
+	ChrononTimingSummaryBytes     = "chronon_timing_summary_bytes"
 	// ChrononTelemetrySchemaRead carries the accepted timing schema as a
 	// numeric code (2 or 3) because the artifact metric map has no label
 	// dimension. ChrononTelemetrySourceTiming is the source counter (1 = the

@@ -99,6 +99,9 @@ func (j *Job) ParentID() string { return j.st.parent() }
 
 // Infof/Warnf/Errorf are the printf-shaped helpers used by the converted call
 // sites, so a conversion stays a one-line change.
+func (j *Job) Debugf(format string, args ...any) {
+	j.emit(slog.LevelDebug, fmt.Sprintf(format, args...))
+}
 func (j *Job) Infof(format string, args ...any) { j.emit(slog.LevelInfo, fmt.Sprintf(format, args...)) }
 func (j *Job) Warnf(format string, args ...any) { j.emit(slog.LevelWarn, fmt.Sprintf(format, args...)) }
 func (j *Job) Errorf(format string, args ...any) {

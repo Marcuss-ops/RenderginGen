@@ -209,6 +209,25 @@ func TestProcessPreservesRawTimingSidecarReference(t *testing.T) {
 		t.Fatalf("preserved timing bytes = %q, want the raw sidecar verbatim", storedTiming)
 	}
 
+	// The compact companion is fetchable next to the raw address and carries
+	// every section except the unbounded per-frame array.
+	summaryKey := wantTimingHash + ".summary.json"
+	summary, err := store.Get(context.Background(), summaryKey)
+	if err != nil {
+		t.Fatalf("get preserved timing summary: %v", err)
+	}
+	if strings.Contains(string(summary), "frame_times_ms") {
+		t.Fatalf("timing summary must omit the per-frame array: %s", summary)
+	}
+	if !strings.Contains(string(summary), `"schema":"chronon3d.frame-timing.v3"`) ||
+		!strings.Contains(string(summary), `"exclusive_wall_timeline"`) {
+		t.Fatalf("timing summary lost the bounded sections: %s", summary)
+	}
+	if artifact.Metrics[metricnames.ChrononTimingSummaryPreserved] != 1 ||
+		artifact.Metrics[metricnames.ChrononTimingSummaryBytes] != float64(len(summary)) {
+		t.Fatalf("timing summary metrics missing: %+v", artifact.Metrics)
+	}
+
 	// The worker-local ledger mirrors the reference.
 	rec, ok := ledger.Get(validJob().ID)
 	if !ok {
