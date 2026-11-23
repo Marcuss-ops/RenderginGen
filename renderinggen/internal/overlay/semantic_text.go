@@ -1,8 +1,3 @@
-// semantic_text_accents.go owns the phrase/brush visual-accent lowering: the
-// recipe components a brush motion emits beside its text layer, and the text
-// block anchor they are laid out against. It is part of the semantic lowering
-// chain driven by semantic_compile.go, which dispatches to it from the text
-// lane.
 package overlay
 
 import (
@@ -13,6 +8,25 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
+// compileTextLayer lowers a text kind to a single text layer through the
+// spec seam: the role resolver owns every semantic decision (wrap discipline,
+// preset style, box, fit policy, motion target) and hands this function a
+// fully resolved spec, so the lowering below stays semantic-agnostic. Text is
+// mandatory: PipelineGen owns the displayed text and RenderingGen never
+// invents one (there is no entity_ref fallback).
+func compileTextLayer(ri resolvedItem, src *semanticPlan, layerID string) (Layer, error) {
+	spec, err := resolveTextSpec(ri, src)
+	if err != nil {
+		return Layer{}, err
+	}
+	return compileResolvedText(layerID, ri.Start, ri.End, spec)
+}
+
+// Phrase/brush visual-accent lowering: the
+// recipe components a brush motion emits beside its text layer, and the text
+// block anchor they are laid out against. It is part of the semantic lowering
+// chain driven by semantic_compile.go, which dispatches to it from the text
+// lane.
 // Brush motions target text as well as images. Their recipe components must be
 // emitted beside the phrase layer; the ordinary text motion lowering only
 // consumes tracks and would otherwise silently omit the authored brush stroke.
@@ -119,4 +133,43 @@ func brushTextAnchor(text Layer, src *semanticPlan) Layer {
 	}
 	anchor.Size = []float64{width, height}
 	return anchor
+}
+
+const (
+	// officialCyrillicFontPath is used for semantic text whose language needs
+	// glyph coverage that Poppins-Bold does not provide. DejaVu Sans is already
+	// part of the worker's certified asset bundle and covers the Cyrillic
+	// scripts used by the multilingual runtime.
+	officialCyrillicFontPath = "assets/fonts/DejaVuSans.ttf"
+)
+
+// OfficialFontPathForLanguage keeps the visual preset unchanged for Latin
+// languages while selecting a font with actual Cyrillic coverage for semantic
+// text. The language comes from the same localized overlay plan that carries
+// the text, so this decision is made before Chronon lays out glyphs.
+//
+// godlike/06 SSOT: this is the ONLY owner of the "which language burns which
+// primary font" rule. The batch builder derives the fonts a job must DECLARE
+// from this same function, because the worker resolves a job's assets against
+// its workspace and Chronon scans the primary font's directory for fallback: a
+// plan font the manifest does not declare does not exist for the shaper and the
+// Cyrillic render fails in preflight.
+func OfficialFontPathForLanguage(language string) string {
+	parts := strings.FieldsFunc(strings.ToLower(strings.TrimSpace(language)), func(r rune) bool {
+		return r == '-' || r == '_'
+	})
+	for _, part := range parts {
+		if part == "cyrl" {
+			return officialCyrillicFontPath
+		}
+	}
+	if len(parts) == 0 {
+		return officialFontPath
+	}
+	switch parts[0] {
+	case "az", "be", "bg", "kk", "ky", "mk", "mn", "ru", "sr", "tg", "uk", "uz":
+		return officialCyrillicFontPath
+	default:
+		return officialFontPath
+	}
 }

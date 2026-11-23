@@ -1,5 +1,12 @@
 package overlay
 
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"strings"
+)
+
 // The struct fields below are the compiler's projection of
 // contracts/overlay-plan.v1.schema.json. The two declarations must describe
 // EXACTLY the same property set in both directions —
@@ -471,4 +478,195 @@ type SemanticImageLayer struct {
 	CaptionLayout       string               `json:"caption_layout,omitempty"`
 	Params              map[string]any       `json:"params"`
 	Frame               *semanticSourceFrame `json:"frame,omitempty"`
+}
+
+// This file owns the structured payload of the two data compositions the
+// runtime catalog publishes: metric_stat and timeline_date. The blocks are
+// typed for the same reason SemanticMap is — a schema-valid document cannot be
+// silently dropped, and DisallowUnknownFields can only reject what the Go
+// mirror actually declares.
+//
+// The block stays OPTIONAL on the wire. A plan that carries no structured value
+// (the presentation route, which transports the displayed text only) keeps
+// compiling exactly as before, and legacy plans are unaffected. What is
+// enforced is the inverse direction: once a producer DECLARES a block it must be
+// complete and it must belong to the item's data target, so a half-filled
+// metric fails loudly instead of being displayed as if it had been validated.
+// That is the guarantee the runtime catalog's data_fields entries advertise.
+
+// SemanticMetricData is the worker mirror of the metric_stat payload.
+type SemanticMetricData struct {
+	Value     string `json:"value"`
+	Unit      string `json:"unit"`
+	Label     string `json:"label,omitempty"`
+	Delta     string `json:"delta,omitempty"`
+	Precision *int   `json:"precision,omitempty"`
+}
+
+// SemanticDateData is the worker mirror of the timeline_date payload.
+type SemanticDateData struct {
+	Value    string `json:"value"`
+	End      string `json:"end,omitempty"`
+	Format   string `json:"format,omitempty"`
+	Timezone string `json:"timezone,omitempty"`
+	Ordering *int   `json:"ordering,omitempty"`
+}
+
+// validateSemanticDataBlocks enforces the declared metric/date payload against
+// the item it belongs to. The target comes from the same resolver the motion
+// gate uses (template MotionTarget first, then the semantic kind), so a plan
+// cannot smuggle a metric block onto a phrase card or a date block onto a
+// metric card and have it accepted by one gate while the other disagrees.
+func validateSemanticDataBlocks(item semanticItem, kind ItemKind) error {
+	if item.Metric == nil && item.Date == nil {
+		return nil
+	}
+	if item.Metric != nil && item.Date != nil {
+		return fmt.Errorf("overlay: item %q declares both metric and date blocks; one card owns one structured payload", item.ID)
+	}
+	target := semanticTextMotionTarget(item, kind)
+
+	if metric := item.Metric; metric != nil {
+		if target != dataMetricTarget {
+			return fmt.Errorf("overlay: item %q declares metric but resolves to motion target %q, not %q", item.ID, target, dataMetricTarget)
+		}
+		if strings.TrimSpace(metric.Value) == "" {
+			return fmt.Errorf("overlay: item %q metric.value is required", item.ID)
+		}
+		if strings.TrimSpace(metric.Unit) == "" {
+			return fmt.Errorf("overlay: item %q metric.unit is required", item.ID)
+		}
+		if precision := metric.Precision; precision != nil && (*precision < 0 || *precision > dataPrecisionLimit) {
+			return fmt.Errorf("overlay: item %q metric.precision %d is outside 0..%d", item.ID, *precision, dataPrecisionLimit)
+		}
+	}
+
+	if date := item.Date; date != nil {
+		if target != dataDateTarget {
+			return fmt.Errorf("overlay: item %q declares date but resolves to motion target %q, not %q", item.ID, target, dataDateTarget)
+		}
+		if strings.TrimSpace(date.Value) == "" {
+			return fmt.Errorf("overlay: item %q date.value is required", item.ID)
+		}
+		if ordering := date.Ordering; ordering != nil && (*ordering < 0 || *ordering > dataOrderingLimit) {
+			return fmt.Errorf("overlay: item %q date.ordering %d is outside 0..%d", item.ID, *ordering, dataOrderingLimit)
+		}
+	}
+	return nil
+}
+
+// semanticItem must remain a json.Unmarshaler. Its contract below is invoked by
+// the encoding/json reflection path, so no file in this repository can name the
+// call site: without the assertion a signature that drifted off the interface
+// would not fail to build, it would silently stop validating every item. The
+// assertion is also the only form in which the dead-export ratchet can see that
+// UnmarshalJSON is wired (see stdlibInterfaceMethods in internal/architecture).
+var _ json.Unmarshaler = (*semanticItem)(nil)
+
+// UnmarshalJSON is the wire boundary for one semantic item. PipelineGen owns
+// entity selection/editorial data; RenderingGen only validates and lowers it.
+// Keep wire-only identity/timing fields out of the render model while still
+// requiring them where the contract says they are authoritative.
+func (i *semanticItem) UnmarshalJSON(data []byte) error {
+	type alias semanticItem
+	var decoded alias
+	// DisallowUnknownFields here is load-bearing, not decoration: because
+	// semanticItem implements json.Unmarshaler, the outer plan decoder hands
+	// this method the item's raw bytes and its own DisallowUnknownFields stops
+	// applying. A plain json.Unmarshal silently DROPPED any item-level field
+	// outside the contract — including the nested map block, whose schema and
+	// SemanticMap mirror forbid additional properties precisely so map
+	// geometry and legal attribution can never be discarded unnoticed.
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&decoded); err != nil {
+		return err
+	}
+
+	*i = semanticItem(decoded)
+
+	// The producer (PipelineGen OverlayItem) declares start_us/duration_us
+	// with omitempty: a zero StartUS is dropped from the wire, and a zero
+	// DurationUS marks the legacy millisecond path with fallback to
+	// StartMs/EndMs. Default instead of rejecting so timeline-start items
+	// (start_us=0) and legacy-ms items keep decoding.
+	if i.StartUS == nil && i.DurationUS != nil {
+		zero := int64(0)
+		i.StartUS = &zero
+	}
+	if i.StartUS != nil && i.DurationUS == nil {
+		i.DurationUS = nil
+		i.StartUS = nil
+	}
+	if i.StartUS != nil {
+		if *i.StartUS < 0 || *i.DurationUS <= 0 || *i.StartUS > int64(^uint64(0)>>1)-*i.DurationUS {
+			return fmt.Errorf("overlay: item %q has invalid start_us/duration_us", i.ID)
+		}
+		endUS := *i.StartUS + *i.DurationUS
+		if endUS > int64(^uint64(0)>>1)-999 {
+			return fmt.Errorf("overlay: item %q end_us overflows millisecond projection", i.ID)
+		}
+		if i.StartMS != *i.StartUS/1000 || i.EndMS != (endUS+999)/1000 {
+			return fmt.Errorf("overlay: item %q start_ms/end_ms diverge from start_us/duration_us", i.ID)
+		}
+		if i.DurationMS != nil && *i.DurationMS != (endUS+999)/1000-*i.StartUS/1000 {
+			return fmt.Errorf("overlay: item %q duration_ms %d diverges from canonical microsecond projection", i.ID, *i.DurationMS)
+		}
+	} else if i.DurationMS != nil {
+		if *i.DurationMS <= 0 {
+			return fmt.Errorf("overlay: item %q duration_ms must be positive", i.ID)
+		}
+		if want := i.EndMS - i.StartMS; *i.DurationMS != want {
+			return fmt.Errorf("overlay: item %q duration_ms %d does not match end_ms-start_ms %d", i.ID, *i.DurationMS, want)
+		}
+	}
+
+	spec := templateSpecFor(i.Template)
+	kind, err := spec.resolveKind(i.Kind, i.ID)
+	if err != nil {
+		return err
+	}
+	// The optional metric/date payload is validated on the same pass that
+	// resolves the kind, so "this block belongs to this card" is decided once,
+	// by the same resolver the motion gate uses.
+	if err := validateSemanticDataBlocks(*i, kind); err != nil {
+		return err
+	}
+	if isShapeKind(kind) && i.Template != "" {
+		if !spec.Registered || !isShapeKind(spec.Kind) {
+			return fmt.Errorf("overlay: item %q shape template %q is not registered", i.ID, i.Template)
+		}
+	}
+	if len(i.ImageLayers) > 0 && (kind == KindEntityImage || isImageKind(kind)) {
+		// Composite image declarations carry their own independently timed
+		// layers. A parent duration is not consumed by the compiler, but when
+		// PipelineGen supplies it, the usual positive/matching check above
+		// still applies. Require an explicit kind and preset for entity cards.
+		if kind == KindEntityImage && (strings.TrimSpace(i.Kind) == "" || strings.TrimSpace(i.PresetID) == "") {
+			return fmt.Errorf("overlay: composite entity image %q requires kind and preset_id from PipelineGen", i.ID)
+		}
+		return nil
+	}
+	if !isEntityKind(kind) {
+		return nil
+	}
+	if strings.TrimSpace(i.EntityID) == "" {
+		return fmt.Errorf("overlay: entity item %q requires entity_id from PipelineGen", i.ID)
+	}
+	if strings.TrimSpace(i.Kind) == "" {
+		return fmt.Errorf("overlay: entity item %q requires kind from PipelineGen", i.ID)
+	}
+	if strings.TrimSpace(i.PresetID) == "" {
+		return fmt.Errorf("overlay: entity item %q requires preset_id from PipelineGen", i.ID)
+	}
+	if strings.TrimSpace(i.Text) == "" {
+		return fmt.Errorf("overlay: entity item %q requires text from PipelineGen", i.ID)
+	}
+	if i.DurationMS == nil && i.DurationUS == nil {
+		return fmt.Errorf("overlay: entity item %q requires duration_ms or duration_us from PipelineGen", i.ID)
+	}
+	if len(i.Assets) > 0 && strings.TrimSpace(i.ImagePresetID) == "" {
+		return fmt.Errorf("overlay: entity item %q with image requires image_preset_id from PipelineGen", i.ID)
+	}
+	return nil
 }

@@ -222,6 +222,7 @@ func buildPreparedPackage(plan *Plan, language string, assets []Asset) (Prepared
 		pkg.Overlays = append(pkg.Overlays, prepared)
 	}
 
+	sanitizePreparedPackage(&pkg)
 	sort.Slice(pkg.TextRuns, func(i, j int) bool { return pkg.TextRuns[i].Key < pkg.TextRuns[j].Key })
 	sort.Slice(pkg.Assets, func(i, j int) bool { return pkg.Assets[i].Key < pkg.Assets[j].Key })
 	canonical := pkg

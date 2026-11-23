@@ -14,8 +14,9 @@
 // semantic_compile.go the semantic→concrete lowering driver (the single
 // resolve → compile pass and the per-kind dispatch), the per-kind compilers in
 // semantic_entity_compile.go / semantic_image_compile.go /
-// semantic_text_compile.go / semantic_group_compile.go /
-// semantic_video_compile.go / semantic_text_accents.go, subtitle_burn.go the
+// semantic_text.go / semantic_frame.go / semantic_effects.go /
+// semantic_map.go / semantic_map_modern.go / semantic_video_compile.go,
+// subtitle_burn.go the
 // ASS subtitle lowering and semantic_helpers.go the preset/motion helpers.
 package overlay
 

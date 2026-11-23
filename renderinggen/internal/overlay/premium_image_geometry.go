@@ -33,7 +33,7 @@ func roundedRectPath(width, height, radius float64) []LayerPathCommand {
 // geometry that gives each spelling its shape, so the recipe lowering and the
 // phrase-accent remap cannot spell a path kind the geometry does not know (or
 // drop one it does). NOTE: these are PATH kinds of recipe components; the
-// shape types of semantic_shape.go are a different vocabulary that happens to
+// shape types of semantic_entity_compile.go are a different vocabulary that happens to
 // share the "arrow" spelling.
 const (
 	PathKindArrow           = "arrow"
