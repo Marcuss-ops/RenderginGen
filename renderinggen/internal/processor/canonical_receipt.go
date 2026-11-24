@@ -172,6 +172,8 @@ func writeCanonicalOverlayReceipt(path string, probe media.ProbeResult, sha stri
 		return fmt.Errorf("write canonical receipt: %w", err)
 	}
 	if err := os.Rename(tempReceipt, receiptPath); err != nil {
+		// Best-effort cleanup of the unpublished temp receipt; the rename error
+		// is the returned failure.
 		_ = os.Remove(tempReceipt)
 		return fmt.Errorf("publish canonical receipt: %w", err)
 	}

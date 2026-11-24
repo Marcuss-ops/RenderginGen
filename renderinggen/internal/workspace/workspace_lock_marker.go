@@ -34,6 +34,8 @@ func reclaimStaleMarker(marker string) bool {
 	if err := os.Rename(marker, stale); err != nil {
 		return false
 	}
+	// The marker has already been renamed out of the live name; a cleanup
+	// failure cannot resurrect the lock and is not a reclaim failure.
 	_ = os.Remove(stale)
 	return true
 }

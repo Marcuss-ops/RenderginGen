@@ -52,8 +52,14 @@ type Processor struct {
 	// nil falls back to the real overlay compiler.
 	compiler        semanticCompiler
 	assetPrefetcher chronon.AssetPrefetcher
-	drive           drive.Publisher     // nil = external publication disabled
-	recorder        artifactdb.Recorder // nil = artifact ledger disabled
+	// prefetchInflight bounds cache warm-up concurrency for THIS processor.
+	// NewWithOptions installs the shipped bound (prefetchMaxInflight); a
+	// zero-value Processor gets the same default lazily. It is processor-scoped
+	// so independent workers in one process cannot starve each other's warm-up.
+	prefetchInflight chan struct{}
+	prefetchOnce     sync.Once
+	drive            drive.Publisher     // nil = external publication disabled
+	recorder         artifactdb.Recorder // nil = artifact ledger disabled
 
 	// phaseHook, when set, receives the wall-clock duration of each pipeline
 	// phase so benchmarks can report asset_fetch/prepare/render/publish ms
@@ -325,6 +331,7 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		softwareRenderer:          opts.SoftwareRenderer,
 		compiler:                  overlaySemanticCompiler{cameraBaker: opts.CameraBaker},
 		assetPrefetcher:           opts.AssetPrefetcher,
+		prefetchInflight:          make(chan struct{}, prefetchMaxInflight),
 		phaseHook:                 opts.PhaseHook,
 		gpuGapHook:                opts.GPUGapHook,
 		laneWaitHook:              opts.LaneWaitHook,

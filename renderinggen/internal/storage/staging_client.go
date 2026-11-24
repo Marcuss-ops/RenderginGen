@@ -48,6 +48,9 @@ func (c *Client) PutStaged(ctx context.Context, session string, r io.Reader) (st
 	return uploader.StoreStaged(ctx, session, r)
 }
 
+// Close failures on the pre-stream error paths are secondary to the stat/type
+// error returned; the streaming path below still reports Close's error.
+//
 // PutStagedFile publishes a finished local file without a separate pre-upload
 // hash pass: the bytes stream to the staging route while their SHA-256 is
 // computed and the store verifies the same address server-side. It replaces the
@@ -180,5 +183,7 @@ func (h *HTTP) abortStaged(session string) {
 	if err != nil {
 		return
 	}
+	// The body is drained and discarded; a close failure cannot change the
+	// successful status or the caller's result.
 	_ = resp.Body.Close()
 }

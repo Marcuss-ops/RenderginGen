@@ -178,8 +178,7 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 // Each request is additionally bounded by the IPC client's own service
 // timeout, so the detached goroutines cannot accumulate.
 //
-// prefetchInflight bounds warm-up concurrency process-wide. Four in flight
-// keeps the warm-up ahead of the render without a thundering herd. The
+// prefetchMaxInflight bounds warm-up concurrency per processor. The
 // semaphore is acquired inside the detached goroutine (or the goroutine
 // exits on ctx cancellation), so the bound never blocks the prepare stage
 // it serves.
@@ -187,9 +186,23 @@ const (
 	prefetchMaxImages = 3
 	prefetchMaxVideos = 6
 	prefetchTimeout   = 30 * time.Second
+	// prefetchMaxInflight is the per-processor warm-up concurrency ceiling.
+	// Four in flight keeps the warm-up ahead of the render without a herd.
+	prefetchMaxInflight = 4
 )
 
-var prefetchInflight = make(chan struct{}, 4)
+// prefetchSlots returns this processor's warm-up semaphore. NewWithOptions
+// installs it; a zero-value Processor (tests build struct literals directly)
+// lazily gets the same default. The semaphore is processor-scoped so two
+// workers in one process cannot consume each other's warm-up budget.
+func (p *Processor) prefetchSlots() chan struct{} {
+	p.prefetchOnce.Do(func() {
+		if p.prefetchInflight == nil {
+			p.prefetchInflight = make(chan struct{}, prefetchMaxInflight)
+		}
+	})
+	return p.prefetchInflight
+}
 
 func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, assets []queue.AssetRef) {
 	if p == nil || p.assetPrefetcher == nil {
@@ -236,12 +249,13 @@ func (p *Processor) prefetchWarmAssets(ctx context.Context, jobID, root string, 
 	// WithoutCancel goroutines writing into Chronon after the job is gone.
 	// Fire-and-forget is preserved: the bound lives inside the goroutines, so
 	// this function never blocks the prepare→GPU handoff.
+	slots := p.prefetchSlots()
 	for _, path := range selected {
 		path := path
 		go func() {
 			select {
-			case prefetchInflight <- struct{}{}:
-				defer func() { <-prefetchInflight }()
+			case slots <- struct{}{}:
+				defer func() { <-slots }()
 			case <-ctx.Done():
 				return
 			}

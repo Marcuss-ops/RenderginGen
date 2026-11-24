@@ -75,6 +75,8 @@ func TelemetrySchemaOf(raw json.RawMessage) string {
 	var header struct {
 		Schema string `json:"schema"`
 	}
+	// Schema detection is best-effort: an unparseable header leaves the empty
+	// schema, which callers treat as legacy.
 	_ = json.Unmarshal(raw, &header)
 	return header.Schema
 }
@@ -585,9 +587,13 @@ func ReadMediaReceipt(outputPath string) (MediaReceipt, error) {
 	var presence struct {
 		Timing map[string]json.RawMessage `json:"timing_ms"`
 	}
+	// The typed receipt above already proved the document decodes. This
+	// optional projection only normalizes legacy timing keys; absent or
+	// malformed timing_ms stays nil instead of becoming a fake measurement.
 	_ = json.Unmarshal(data, &presence)
 	if receipt.Timing.FFProbeMS == nil {
 		if raw, ok := presence.Timing["probe_ms"]; ok {
+			// A legacy probe_ms that is not a float is left absent.
 			_ = json.Unmarshal(raw, &receipt.Timing.FFProbeMS)
 		}
 	}

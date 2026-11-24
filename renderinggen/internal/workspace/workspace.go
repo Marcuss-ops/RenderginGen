@@ -47,6 +47,11 @@ type PathResolver func(ctx context.Context, asset queue.AssetRef) (ResolvedAsset
 
 var errWorkspaceBusy = errors.New("workspace: already owned by another worker")
 
+// Close errors on constructor failure paths are deliberately discarded: the
+// constructor is already returning the operation failure and a secondary close
+// error must not replace it. Cleanup() on the success path still propagates
+// its cleanup errors.
+//
 // Workspace is a per-job directory tree prepared for a render.
 type Workspace struct {
 	root      string
@@ -490,6 +495,24 @@ func (w *Workspace) assetPath(logical string) (string, error) {
 	return candidate, nil
 }
 
+// releaseStaleCandidate closes the handles held for one stale candidate. The
+// caller is returning a primary error or moving to the next entry, so a
+// secondary close/unlock failure is deliberately not propagated: it would
+// replace the outcome that actually stopped the sweep.
+func releaseStaleCandidate(jobFS *os.Root, lockFile, registry *os.File) {
+	if lockFile != nil {
+		_ = unlockWorkspaceSlot(lockFile)
+		_ = lockFile.Close()
+	}
+	if registry != nil {
+		_ = unlockWorkspaceSlot(registry)
+		_ = registry.Close()
+	}
+	if jobFS != nil {
+		_ = jobFS.Close()
+	}
+}
+
 // CleanupStale removes old workspace directories. A valid lease marker protects
 // active work; a process lock independently protects live owners even if the
 // marker is missing, stale, or being refreshed. Lock entries are removed only
@@ -545,60 +568,42 @@ func CleanupStale(root string, olderThan time.Duration) error {
 		}
 		registry, registryErr := acquireLockRegistry(rootFS)
 		if registryErr != nil {
-			_ = jobFS.Close()
+			releaseStaleCandidate(jobFS, nil, nil)
 			return registryErr
 		}
 		lockFile, lockErr := openWorkspaceLock(rootFS, entry.Name())
 		if lockErr != nil {
-			_ = unlockWorkspaceSlot(registry)
-			_ = registry.Close()
-			_ = jobFS.Close()
+			releaseStaleCandidate(jobFS, nil, registry)
 			return fmt.Errorf("workspace: open stale candidate lock: %w", lockErr)
 		}
 		locked, lockErr := lockWorkspaceSlot(lockFile, true)
 		if lockErr != nil {
 			_ = lockFile.Close()
-			_ = unlockWorkspaceSlot(registry)
-			_ = registry.Close()
-			_ = jobFS.Close()
+			releaseStaleCandidate(jobFS, nil, registry)
 			return fmt.Errorf("workspace: lock stale candidate: %w", lockErr)
 		}
 		if !locked {
 			_ = lockFile.Close()
-			_ = unlockWorkspaceSlot(registry)
-			_ = registry.Close()
-			_ = jobFS.Close()
+			releaseStaleCandidate(jobFS, nil, registry)
 			continue
 		}
 		leaseRaw, leaseReadErr := jobFS.ReadFile(leaseMarkerName)
-		_ = jobFS.Close()
+		releaseStaleCandidate(jobFS, nil, nil)
 		if leaseReadErr == nil {
 			if lease, parseErr := time.Parse(time.RFC3339Nano, strings.TrimSpace(string(leaseRaw))); parseErr == nil && lease.After(time.Now()) {
-				_ = unlockWorkspaceSlot(lockFile)
-				_ = lockFile.Close()
-				_ = unlockWorkspaceSlot(registry)
-				_ = registry.Close()
+				releaseStaleCandidate(nil, lockFile, registry)
 				continue
 			}
 		}
 		if err := rootFS.RemoveAll(entry.Name()); err != nil {
-			_ = unlockWorkspaceSlot(lockFile)
-			_ = lockFile.Close()
-			_ = unlockWorkspaceSlot(registry)
-			_ = registry.Close()
+			releaseStaleCandidate(nil, lockFile, registry)
 			return fmt.Errorf("workspace: remove stale %s: %w", path, err)
 		}
 		if err := rootFS.Remove(workspaceLockName(entry.Name())); err != nil && !os.IsNotExist(err) {
-			_ = unlockWorkspaceSlot(lockFile)
-			_ = lockFile.Close()
-			_ = unlockWorkspaceSlot(registry)
-			_ = registry.Close()
+			releaseStaleCandidate(nil, lockFile, registry)
 			return fmt.Errorf("workspace: remove stale lock for %s: %w", path, err)
 		}
-		_ = unlockWorkspaceSlot(lockFile)
-		_ = lockFile.Close()
-		_ = unlockWorkspaceSlot(registry)
-		_ = registry.Close()
+		releaseStaleCandidate(nil, lockFile, registry)
 	}
 	return nil
 }
@@ -625,8 +630,12 @@ func (w *Workspace) Cleanup() error {
 					cleanupErr = fmt.Errorf("workspace: remove per-job lock entry: %w", err)
 				}
 			}
-			_ = unlockWorkspaceSlot(registry)
-			_ = registry.Close()
+			if err := unlockWorkspaceSlot(registry); err != nil && cleanupErr == nil {
+				cleanupErr = fmt.Errorf("workspace: unlock lock registry: %w", err)
+			}
+			if err := registry.Close(); err != nil && cleanupErr == nil {
+				cleanupErr = fmt.Errorf("workspace: close lock registry: %w", err)
+			}
 		}
 
 	} else if w.jobsFS != nil {

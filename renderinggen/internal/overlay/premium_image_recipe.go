@@ -220,21 +220,6 @@ func premiumLayerActive(layer *Layer, animation *LayerAnimation) bool {
 	return true
 }
 
-func imageRecipeEffectID(kind string) string {
-	switch kind {
-	case "glow":
-		return "light.glow"
-	case "bloom":
-		return "light.bloom"
-	case "drop_shadow":
-		return "light.drop_shadow"
-	case "gaussian_blur":
-		return "blur.gaussian"
-	default:
-		return ""
-	}
-}
-
 // SyncPremiumComponentTransform mirrors an image's transform onto a linked
 // frame component while preserving the component's authored Z offset.
 func SyncPremiumComponentTransform(image, component *Layer) {
@@ -524,7 +509,7 @@ func applyPremiumComponentEffects(layer *Layer, image Layer, component motion.Im
 	// shorthand effect and keep its V3 param track beside it.
 	for i := range layer.Effects {
 		for _, track := range component.EffectParamTracks {
-			if imageRecipeEffectID(layer.Effects[i].Type) != track.EffectID || len(track.Track.Keyframes) == 0 {
+			if motion.ImageRecipeEffectID(layer.Effects[i].Type) != track.EffectID || len(track.Track.Keyframes) == 0 {
 				continue
 			}
 			if layer.Effects[i].Params == nil {

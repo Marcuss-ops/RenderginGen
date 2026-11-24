@@ -146,8 +146,7 @@ func canonicalizeOutputMP4(ctx context.Context, path, profileID string, accepted
 // avcC) returns false and the caller falls back to the x264 recipe.
 func remuxCanonicalV3(ctx context.Context, path string, profile media.OutputProfile) (bool, error) {
 	temp := path + ".canonical-remux.tmp.mp4"
-	_ = os.Remove(temp)
-	defer os.Remove(temp)
+	defer os.Remove(temp) // best-effort: the temp path is ours and the primary error is returned
 	args := []string{
 		"-hide_banner", "-loglevel", "error", "-y",
 		"-i", path,
@@ -190,8 +189,7 @@ func remuxCanonicalV3(ctx context.Context, path string, profile media.OutputProf
 func encodeCanonicalOutput(ctx context.Context, path string, profile media.OutputProfile, profileID string) (bool, error) {
 	keepAudio := !isCanonicalOverlayV3(profileID)
 	temp := path + ".canonical.tmp.mp4"
-	_ = os.Remove(temp)
-	defer os.Remove(temp)
+	defer os.Remove(temp) // best-effort temp cleanup; ffmpeg overwrites it with -y
 	cmd := exec.CommandContext(ctx, "ffmpeg", canonicalOutputFFmpegArgs(path, temp, keepAudio, profile.FPSNum, profile.FPSDen)...)
 	if output, err := cmd.CombinedOutput(); err != nil {
 		return false, fmt.Errorf("ffmpeg canonical encode: %w: %s", err, output)

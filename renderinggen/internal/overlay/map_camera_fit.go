@@ -28,7 +28,7 @@ func resolveFeatureCameraMove(registry *geofeatures.Registry, selector string, p
 	if canvasWidth <= 0 || canvasHeight <= 0 {
 		return SemanticMapCameraMove{}, geofeatures.Feature{}, fmt.Errorf("canvas dimensions must be positive")
 	}
-	feature, err := resolveFeature(registry, selector)
+	feature, err := registry.Resolve(selector)
 	if err != nil {
 		return SemanticMapCameraMove{}, geofeatures.Feature{}, err
 	}
@@ -53,11 +53,4 @@ func resolveFeatureCameraMove(registry *geofeatures.Registry, selector string, p
 		From: from, To: SemanticMapPoint{Latitude: feature.Centroid[1], Longitude: feature.Centroid[0]},
 		StartZoom: float64(startZoom), EndZoom: float64(finalLODZoom),
 	}, feature, nil
-}
-
-func resolveFeature(registry *geofeatures.Registry, selector string) (geofeatures.Feature, error) {
-	if strings.HasPrefix(selector, "country:") || strings.HasPrefix(selector, "admin1:") || selector == geofeatures.WorldID {
-		return registry.ByID(selector)
-	}
-	return registry.ByName(selector)
 }

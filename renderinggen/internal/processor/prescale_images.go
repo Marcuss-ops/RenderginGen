@@ -264,6 +264,9 @@ func loadPrescaledCache(cachePath string, width, height int) ([]byte, bool) {
 	return data, true
 }
 
+// Temp cleanup below is best-effort: the write/chmod/rename error is the
+// failure that explains why the file was not installed, and the temp name is
+// inside our own destination directory.
 func writeAtomicFile(path string, data []byte) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return err

@@ -50,8 +50,11 @@ func main() {
 	if err != nil {
 		fail(err)
 	}
-	if dump, err := json.MarshalIndent(result.Plan, "", "  "); err == nil {
-		_ = os.WriteFile("/tmp/chainpan_compiled.json", dump, 0o644)
+	dump, err := json.MarshalIndent(result.Plan, "", "  ")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "chainpancheck: marshal compiled plan: %v\n", err)
+	} else if err := os.WriteFile("/tmp/chainpan_compiled.json", dump, 0o644); err != nil {
+		fmt.Fprintf(os.Stderr, "chainpancheck: write compiled plan dump: %v\n", err)
 	}
 	for _, layer := range result.Plan.Layers {
 		if !strings.Contains(layer.ID, "seg") {

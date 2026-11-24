@@ -23,8 +23,12 @@ func syncParentDir(dir string) {
 	if err != nil {
 		return
 	}
-	_ = dfd.Sync()
-	_ = dfd.Close()
+	if err := dfd.Sync(); err != nil {
+		log.Printf("storage: sync L2 parent directory %s: %v", dir, err)
+	}
+	if err := dfd.Close(); err != nil {
+		log.Printf("storage: close L2 parent directory %s: %v", dir, err)
+	}
 }
 
 // reportEvictionFailure logs an unremovable cache object at most once per

@@ -524,11 +524,31 @@ func (c *countingPrefetcher) PrefetchAsset(_ context.Context, _ string) error {
 	return nil
 }
 
-// TestPrefetchWarmAssetsIsGloballyBounded pins the process-wide concurrency
+// TestPrefetchWarmAssetsUsesProcessorScopedBound pins the state ownership:
+// two processors do not share a warm-up semaphore, and each defaults to four
+// slots. The global channel used to serialize all warm-up in the process.
+func TestPrefetchWarmAssetsUsesProcessorScopedBound(t *testing.T) {
+	first := &Processor{}
+	second := &Processor{}
+	if first.prefetchSlots() == second.prefetchSlots() {
+		t.Fatal("two processors share one prefetch semaphore")
+	}
+	for name, proc := range map[string]*Processor{"first": first, "second": second} {
+		if got := cap(proc.prefetchSlots()); got != prefetchMaxInflight {
+			t.Fatalf("%s processor prefetch slots = %d, want %d", name, got, prefetchMaxInflight)
+		}
+	}
+	constructed := New("", "", "", "", nil, nil)
+	if got := cap(constructed.prefetchSlots()); got != prefetchMaxInflight {
+		t.Fatalf("constructed processor prefetch slots = %d, want %d", got, prefetchMaxInflight)
+	}
+}
+
+// TestPrefetchWarmAssetsIsProcessorBounded pins the per-processor concurrency
 // ceiling plus the per-job video cap: ten video assets select at most
 // prefetchMaxVideos (6) warm-ups, attempted with never more than four
 // concurrently, no matter how video-heavy a single job is.
-func TestPrefetchWarmAssetsIsGloballyBounded(t *testing.T) {
+func TestPrefetchWarmAssetsIsProcessorBounded(t *testing.T) {
 	prefetcher := &countingPrefetcher{done: make(chan struct{}), total: prefetchMaxVideos}
 	proc := &Processor{assetPrefetcher: prefetcher}
 	assets := make([]queue.AssetRef, 0, 10)

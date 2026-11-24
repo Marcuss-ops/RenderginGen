@@ -203,6 +203,8 @@ func isWritableDirectory(path string) bool {
 	}
 	name := probe.Name()
 	if err := probe.Close(); err != nil {
+		// The close failure already made the directory unwritable for this
+		// probe; removing the temp file is best-effort cleanup.
 		_ = os.Remove(name)
 		return false
 	}

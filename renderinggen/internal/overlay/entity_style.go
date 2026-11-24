@@ -393,6 +393,9 @@ func (reg *entityStyleRegistryType) query(tags []string) []int {
 // know which selector was remapped.
 var entityStyleAliasWarned sync.Map
 
+// The key set is finite: LoadOrStore is reached only after a successful
+// entityStyleAliases lookup, never for an arbitrary producer selector.
+
 var entityStyleAliases = map[string]string{
 	"center_top":         "01_entity_pitch_lift_text_below",
 	"vertical_editorial": "02_entity_yaw_flip_text_below",

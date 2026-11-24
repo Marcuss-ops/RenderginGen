@@ -1,6 +1,7 @@
 package processor
 
 import (
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -22,7 +23,11 @@ func dumpCompiledPlan(jobID string, plan []byte) {
 		return
 	}
 	if err := os.MkdirAll(dir, 0o755); err != nil {
+		log.Printf("processor: create plan dump directory %s: %v", dir, err)
 		return
 	}
-	_ = os.WriteFile(filepath.Join(dir, jobID+".plan.json"), plan, 0o644)
+	path := filepath.Join(dir, jobID+".plan.json")
+	if err := os.WriteFile(path, plan, 0o644); err != nil {
+		log.Printf("processor: write plan dump %s: %v", path, err)
+	}
 }

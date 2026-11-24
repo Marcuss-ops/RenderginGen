@@ -212,7 +212,8 @@ func (s *Store) StagingFinalize(session, digest string) error {
 	if got != digest {
 		// The caller named a content address the bytes do not have: discard
 		// the pending object rather than leaving a tempting wrong-keyed pair
-		// behind (the same fail-closed posture as a rejected PUT).
+		// behind (the same fail-closed posture as a rejected PUT). The abort
+		// is best-effort; the mismatch is the result the caller must see.
 		_ = s.stagingAbortLocked(session)
 		return fmt.Errorf("%w: session %s, asserted %s, content %s",
 			ErrContentAddressMismatch, session, digest, got)
@@ -247,6 +248,7 @@ func (s *Store) StagingFinalize(session, digest string) error {
 	if err := os.Rename(pendingPath, p); err != nil {
 		return err
 	}
+	// The sidecar is advisory; the installed bytes are already content-addressed.
 	_ = os.Remove(s.stagingDigestPath(session))
 	dir, err := os.Open(filepath.Dir(p))
 	if err != nil {

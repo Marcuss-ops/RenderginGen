@@ -55,6 +55,7 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 	positions, err := readGOPPacketTable(stdout)
 	if errors.Is(err, errGOPCadenceInvalid) {
 		cancel()
+		// Wait reaps the canceled child; the cadence failure is the result.
 		_ = cmd.Wait()
 		return false, false, 0
 	}
@@ -169,6 +170,8 @@ func expectJSONDelim(dec *json.Decoder, want json.Delim) error {
 // was never observed (distinct from a decoded but non-uniform cadence).
 func failProbe(cancel context.CancelFunc, cmd *exec.Cmd, path string, cause error) (bool, bool, int) {
 	cancel()
+	// Wait is required to reap the canceled child; its error is not the probe
+	// result (the decode cause below is).
 	_ = cmd.Wait()
 	log.Printf("media: ffprobe %s: closed-GOP probe decode failed: %v (closed_gop=false, uncertifiable)", path, cause)
 	return false, true, 0

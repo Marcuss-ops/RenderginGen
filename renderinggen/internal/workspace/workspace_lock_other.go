@@ -11,7 +11,9 @@ import (
 
 // The fallback serializes each advisory lock file with a sibling marker. It is
 // cooperative and intended for local filesystems. Stale markers are reclaimed
-// only after their process ID is confirmed absent on this host.
+// only after their process ID is confirmed absent on this host. Marker removal
+// after a failed write/close is best-effort: the write/close error is returned
+// and names the reason the lock was not published.
 func lockWorkspaceSlot(file *os.File, nonblocking bool) (bool, error) {
 	marker := file.Name() + ".held"
 	for {

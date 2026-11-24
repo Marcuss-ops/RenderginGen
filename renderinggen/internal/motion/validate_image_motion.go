@@ -79,14 +79,17 @@ func validateImageMotionTrack(id, owner string, track TrackDefinition) error {
 
 func imageRecipeHasEffect(component ImageMotionComponent, id string) bool {
 	for _, effect := range component.Effects {
-		if imageRecipeEffectID(effect.Type) == id {
+		if ImageRecipeEffectID(effect.Type) == id {
 			return true
 		}
 	}
 	return false
 }
 
-func imageRecipeEffectID(kind string) string {
+// ImageRecipeEffectID maps a semantic image-effect kind to the renderer
+// effect ID. The overlay compiler and the motion validator must share this
+// mapping; a second copy drifts silently when a new effect is added.
+func ImageRecipeEffectID(kind string) string {
 	switch kind {
 	case "glow":
 		return "light.glow"
@@ -101,7 +104,7 @@ func imageRecipeEffectID(kind string) string {
 	}
 }
 
-func imageRecipeEffectSupported(kind string) bool { return imageRecipeEffectID(kind) != "" }
+func imageRecipeEffectSupported(kind string) bool { return ImageRecipeEffectID(kind) != "" }
 
 func validateImageRecipeEffect(motionID, componentID string, effect ImageMotionEffect) error {
 	allowed := map[string]map[string]bool{

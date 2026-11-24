@@ -194,6 +194,17 @@ func (r *Registry) ByName(name string) (Feature, error) {
 	return clone(r.byID[ids[0]]), nil
 }
 
+// Resolve owns the producer selector vocabulary: canonical country:/admin1:
+// IDs and "world" resolve by ID, everything else resolves by name. Both the
+// overlay camera fit and the tactical fill path call this instead of keeping
+// their own copy of the rule.
+func (r *Registry) Resolve(selector string) (Feature, error) {
+	if strings.HasPrefix(selector, "country:") || strings.HasPrefix(selector, "admin1:") || selector == WorldID {
+		return r.ByID(selector)
+	}
+	return r.ByName(selector)
+}
+
 // ByNameUnder resolves a feature name only among children of the named parent.
 func (r *Registry) ByNameUnder(name, parentID string) (Feature, error) {
 	if r == nil {

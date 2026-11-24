@@ -323,7 +323,9 @@ func (p *DaemonPool) Shutdown(ctx context.Context) {
 }
 
 // reap waits for the child's single Wait result, escalating to a kill if the
-// process is still alive after a grace period.
+// process is still alive after a grace period. Kill is best-effort: the
+// process may have exited between the timeout and the call; the reap below is
+// authoritative.
 func (p *DaemonPool) reap(handle daemonHandle) {
 	if handle.exit == nil {
 		return
@@ -341,7 +343,8 @@ func (p *DaemonPool) reap(handle daemonHandle) {
 
 // killStarted kills the daemons this pool started and reaps them; used only on
 // the start-failure path, where the daemons may not be serving yet and must not
-// be left behind.
+// be left behind. A kill failure cannot change the startup error already being
+// returned; the exit wait still reaps any process that did start.
 func (p *DaemonPool) killStarted() {
 	for _, handle := range p.handles {
 		if handle.cmd == nil {
@@ -375,6 +378,7 @@ func startDaemon(ctx context.Context, socketPath string, opts DaemonOptions) (da
 
 	timeout := startupTimeout(opts.StartupTimeout)
 	if err := waitForDaemon(ctx, socketPath, exit, timeout); err != nil {
+		// The readiness failure is returned; kill is best-effort cleanup.
 		_ = cmd.Process.Kill()
 		// wait() is idempotent, so this cannot deadlock when the readiness wait
 		// already observed the exit — the bug this handle was introduced for.

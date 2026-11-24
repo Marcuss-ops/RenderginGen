@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 
@@ -116,20 +117,29 @@ func (s *Server) handle(w http.ResponseWriter, _ *http.Request) {
 	_, _ = w.Write(buf.Bytes())
 }
 
+// writeHealthJSON reports an encode failure. The HTTP status is already
+// committed, so the handler cannot change the response; the log is the only
+// remaining signal (and a client disconnect is not a server fault).
+func writeHealthJSON(w http.ResponseWriter, payload any) {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		log.Printf("health: encode response: %v", err)
+	}
+}
+
 // handleProgress serves the current render progress. When no render is in
 // flight (or no tracker is installed) it answers 200 with status "idle".
 func (s *Server) handleProgress(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	if s.progress == nil {
-		_ = json.NewEncoder(w).Encode(map[string]any{"status": "idle"})
+		writeHealthJSON(w, map[string]any{"status": "idle"})
 		return
 	}
 	p := s.progress()
 	if p == nil {
-		_ = json.NewEncoder(w).Encode(map[string]any{"status": "idle"})
+		writeHealthJSON(w, map[string]any{"status": "idle"})
 		return
 	}
-	_ = json.NewEncoder(w).Encode(map[string]any{
+	writeHealthJSON(w, map[string]any{
 		"status":        "rendering",
 		"job_id":        p.JobID,
 		"stage":         "chronon_render",
@@ -147,6 +157,8 @@ func (s *Server) Run(ctx context.Context) error {
 		<-ctx.Done()
 		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
+		// Run's ListenAndServe error is the shutdown result; a secondary
+		// Shutdown error here has nowhere actionable to go.
 		_ = s.srv.Shutdown(shutdownCtx)
 	}()
 	err := s.srv.ListenAndServe()

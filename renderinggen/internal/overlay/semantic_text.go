@@ -40,10 +40,8 @@ func compileTextVisualAccentLayers(ri resolvedItem, src *semanticPlan, text Laye
 	}
 	// SSOT typography (typography_ssot.go): no motion branch may change the
 	// font. The payload's font_family (or the preset/language default) owns
-	// the face for every animation. ModernTypewriterDefaultFontFamily stays
-	// as the documented constant for callers that explicitly opt into it via
-	// params.font_family, but it is never forced here.
-	_ = ModernTypewriterDefaultFontFamily
+	// the face for every animation, and no motion branch forces a typeface
+	// here.
 	var layers []Layer
 	if definition == nil || definition.Category != "brush_v1" {
 		layers = []Layer{text}

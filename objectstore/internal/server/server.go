@@ -35,6 +35,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -98,6 +99,15 @@ func (s *Server) Handler() http.Handler {
 // store is holding bytes that contradict their own address: the caller must
 // re-publish the object (or restore it), and any reader that already trusted
 // it may have used the wrong bytes.
+// encodeJSON reports a response-encoding failure. The status line is already
+// committed, so the handler cannot change the response; the log is the only
+// actionable signal (and a client disconnect is not a server fault).
+func encodeJSON(w http.ResponseWriter, payload any) {
+	if err := json.NewEncoder(w).Encode(payload); err != nil {
+		log.Printf("objectstore: encode response: %v", err)
+	}
+}
+
 func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 	key := r.PathValue("key")
 	check, err := s.store.Verify(key)
@@ -111,7 +121,7 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 		return
 	case errors.Is(err, store.ErrIntegrityViolation):
 		w.WriteHeader(http.StatusConflict)
-		_ = json.NewEncoder(w).Encode(map[string]any{
+		encodeJSON(w, map[string]any{
 			"ok":         false,
 			"key":        key,
 			"sha256":     check.SHA256,
@@ -123,7 +133,7 @@ func (s *Server) verify(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	_ = json.NewEncoder(w).Encode(map[string]any{
+	encodeJSON(w, map[string]any{
 		"ok":         true,
 		"key":        key,
 		"sha256":     check.SHA256,
@@ -235,5 +245,5 @@ func (s *Server) health(w http.ResponseWriter, _ *http.Request) {
 		identity := s.build()
 		payload["build"] = identity
 	}
-	_ = json.NewEncoder(w).Encode(payload)
+	encodeJSON(w, payload)
 }

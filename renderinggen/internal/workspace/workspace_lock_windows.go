@@ -13,6 +13,9 @@ const workspaceStillActive = 259
 
 var workspaceHeldLocks sync.Map // map[*os.File]windows.Handle
 
+// CloseHandle failures on these failure paths are best-effort: the handle was
+// never published in workspaceHeldLocks, and the wait error/result is the
+// caller's outcome.
 func lockWorkspaceSlot(file *os.File, nonblocking bool) (bool, error) {
 	name, err := windows.UTF16PtrFromString("Local\\RenderingGen-" + file.Name())
 	if err != nil {

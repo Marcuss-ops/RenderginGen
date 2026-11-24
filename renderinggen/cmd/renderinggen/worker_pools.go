@@ -33,6 +33,19 @@ func closeJobLog(jobLog *workerlog.Job, jobID string) {
 	}
 }
 
+// cleanupPreparedWorkspace releases a workspace whose hand-off failed. The job
+// is already failing, so cleanup cannot change the outcome, but a failed
+// cleanup must be visible: the jobs root is frequently tmpfs and a systematic
+// leak would otherwise be silent.
+func cleanupPreparedWorkspace(prepared *processor.PreparedJob, jobID string) {
+	if prepared == nil || prepared.Workspace == nil {
+		return
+	}
+	if err := prepared.Workspace.Cleanup(); err != nil {
+		log.Printf("worker: cleanup workspace for job %s: %v", jobID, err)
+	}
+}
+
 // preppedJob is a claimed job whose CPU preparation succeeded; it is ready
 // for the GPU lane. The workspace transfers ownership to the GPU lane.
 type preppedJob struct {
@@ -199,17 +212,17 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			case prepCh <- &preppedJob{job: job, prepared: prepared, laneWaitStarted: laneWaitStart}:
 				return nil
 			case <-jobCtx.Done():
-				_ = prepared.Workspace.Cleanup()
+				cleanupPreparedWorkspace(prepared, job.ID)
 				return jobCtx.Err()
 			case <-ctx.Done():
-				_ = prepared.Workspace.Cleanup()
+				cleanupPreparedWorkspace(prepared, job.ID)
 				return ctx.Err()
 			}
 		})
 		if handoffErr != nil {
 			if ctx.Err() != nil {
 				if prepared != nil {
-					_ = prepared.Workspace.Cleanup()
+					cleanupPreparedWorkspace(prepared, job.ID)
 				}
 				closeJobLog(jobLog, job.ID)
 				return

@@ -199,6 +199,32 @@ func TestEntityStyleRegistryLookupCoversAllStyles(t *testing.T) {
 	}
 }
 
+// entityStyleAliasWarned is process-wide, but its key set cannot grow beyond
+// the alias table: only known aliases reach LoadOrStore. This pins that bound
+// and the alias targets, so a future lookup path cannot turn the warning set
+// into an unbounded cache keyed by producer input.
+func TestEntityStyleAliasWarningStateIsBounded(t *testing.T) {
+	before := syncMapLen(&entityStyleAliasWarned)
+	for alias, wantID := range entityStyleAliases {
+		if _, ok := entityStyleByID(wantID); !ok {
+			t.Fatalf("alias %q targets unknown style %q", alias, wantID)
+		}
+		got, ok := LookupEntityStyle(alias)
+		if !ok || got.ID != wantID {
+			t.Fatalf("alias %q = %+v, %v; want %q", alias, got, ok, wantID)
+		}
+	}
+	if added := syncMapLen(&entityStyleAliasWarned) - before; added < 0 || added > len(entityStyleAliases) {
+		t.Fatalf("alias warning state grew by %d keys for %d aliases", added, len(entityStyleAliases))
+	}
+}
+
+func syncMapLen(values *sync.Map) int {
+	count := 0
+	values.Range(func(any, any) bool { count++; return true })
+	return count
+}
+
 func applyBadgeRandomizationForTest(style entityStyleVariant, planID, videoID, itemID string) entityStyleVariant {
 	applyBadgeRuntimeRandomization(&style, style.ID, planID, videoID, itemID)
 	return style

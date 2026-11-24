@@ -143,7 +143,7 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: territory box must be a valid canvas fraction")
 	}
 
-	feature, err := resolveFeature(registry, selector)
+	feature, err := registry.Resolve(selector)
 	if err != nil {
 		return Sample{}, geofeatures.Feature{}, Fit{}, err
 	}
@@ -299,13 +299,6 @@ func Slug(name string) string {
 		}
 	}
 	return strings.Trim(builder.String(), "-")
-}
-
-func resolveFeature(registry *geofeatures.Registry, selector string) (geofeatures.Feature, error) {
-	if strings.HasPrefix(selector, "country:") || strings.HasPrefix(selector, "admin1:") || selector == geofeatures.WorldID {
-		return registry.ByID(selector)
-	}
-	return registry.ByName(selector)
 }
 
 // unwrapRings makes each ring continuous across the antimeridian and shifts it

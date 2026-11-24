@@ -58,6 +58,8 @@ func materializeBuiltinFonts(root string, plan *overlay.Plan) error {
 		_, writeErr := out.Write(data)
 		closeErr := out.Close()
 		if writeErr != nil || closeErr != nil {
+			// Best-effort removal of the partial target; the write/close error is
+			// the staging failure returned below.
 			_ = os.Remove(target)
 			return fmt.Errorf("processor: stage bundled font %q: %v", font, errors.Join(writeErr, closeErr))
 		}

@@ -448,6 +448,10 @@ func (c *Client) LocalPath(ctx context.Context, hash string) (string, int64, err
 	return path, actual, nil
 }
 
+// Close failures on error paths are deliberately discarded: the open/read/
+// write error is the one that explains the failure. The success path still
+// returns Close's error.
+//
 // PutFile stores a local file in L3 and warms L2. The file is hashed from the
 // same open descriptor that is uploaded, before the store call: a caller that
 // names the wrong address must not put those bytes into L3 at all, and the

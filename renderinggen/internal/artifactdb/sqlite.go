@@ -111,10 +111,12 @@ func migrate(db *sql.DB) error {
 			return fmt.Errorf("artifactdb: begin migration %d: %w", i+1, err)
 		}
 		if _, err := tx.Exec(step.ddl); err != nil {
+			// Rollback is best-effort: the DDL error is the migration failure.
 			_ = tx.Rollback()
 			return fmt.Errorf("artifactdb: apply migration %d: %w", i+1, err)
 		}
 		if _, err := tx.Exec(versionStamp(i + 1)); err != nil {
+			// Rollback is best-effort: the stamp error is the migration failure.
 			_ = tx.Rollback()
 			return fmt.Errorf("artifactdb: stamp migration %d: %w", i+1, err)
 		}
