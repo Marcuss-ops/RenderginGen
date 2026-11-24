@@ -42,12 +42,6 @@ type resolvedItem struct {
 	Preset      PresetDefinition
 	ImagePreset PresetDefinition
 	Map         *resolvedMap
-	// LegacyCompositeImage marks an image_layers item with no group_motion_id.
-	// It only compiles when the plan carries legacy_composite_replay; the
-	// marker is counted separately so a sealed replay is never confused with
-	// a new plan that should have declared a group recipe.
-	LegacyCompositeImage  bool
-	LegacyCompositeReplay bool
 }
 
 // decodeSemanticPlan performs the ONE strict decode of a semantic overlay
@@ -77,17 +71,6 @@ func decodeSemanticPlan(raw []byte) (semanticPlan, error) {
 		return semanticPlan{}, err
 	}
 	return src, nil
-}
-
-// compileSemantic is the internal one-shot entry (decode + lower). The
-// processor's hot path goes through CompileSemantic, which decodes the raw
-// document exactly once and hands the decoded plan to compileSemanticDecoded.
-func compileSemantic(raw []byte) (*Plan, []Asset, Stats, []string, error) {
-	src, err := decodeSemanticPlan(raw)
-	if err != nil {
-		return nil, nil, Stats{}, nil, fmt.Errorf("overlay: decode semantic plan: %w", err)
-	}
-	return compileSemanticDecoded(&src, CompileOptions{})
 }
 
 // compileSemanticDecoded lowers an ALREADY-decoded semantic plan. It is the
@@ -251,8 +234,6 @@ func resolveSemanticItems(src *semanticPlan) ([]resolvedItem, error) {
 			PresetID: presentation.PresetID, Preset: presentation.Preset,
 			ImagePreset: presentation.ImagePreset, Map: mapSpec,
 		}
-		ri.LegacyCompositeImage = len(item.ImageLayers) > 0 && strings.TrimSpace(item.GroupMotionID) == ""
-		ri.LegacyCompositeReplay = ri.LegacyCompositeImage && src.LegacyCompositeReplay
 		out = append(out, ri)
 	}
 	if err := validateMapComposition(src.MapCompositionID, out); err != nil {

@@ -114,7 +114,7 @@ func TestAutoFitEntityPortraitCoversLandscape(t *testing.T) {
 }
 
 func duoSoftGroupPlan(motionID string) []byte {
-	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"duo-soft-%s","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","group_motion_id":%q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"left","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/left.png"},{"asset_id":"right","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/right.png"}],"image_layers":[{"id":"left","asset_id":"left","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"right","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}]}]}`,
+	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"duo-soft-%s","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","group_motion_id":%q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"left","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/left.png"},{"asset_id":"right","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/right.png"}],"image_layers":[{"id":"left","asset_id":"left","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"right","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}]}]}`,
 		motionID, motionID))
 }
 

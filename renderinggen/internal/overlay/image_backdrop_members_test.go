@@ -17,16 +17,16 @@ func compositeBackdropAsset(id string) string {
 
 func TestImageBackdropProjectsOntoCompositeEntityPortraits(t *testing.T) {
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"composite-backdrop","video_id":"composite-backdrop",
 		"width":1280,"height":720,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"items":[{
-			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right",
 			"start_ms":0,"end_ms":3000,
 			"asset_refs":[%s,%s],
 			"image_layers":[
-				{"id":"left","asset_id":"left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
-				{"id":"right","asset_id":"right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
+				{"id":"left","asset_id":"left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
+				{"id":"right","asset_id":"right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
 			],
 			"params":{"image_backdrop":{"zoom":1.25,"blur_px":34}}
 		}]
@@ -165,16 +165,16 @@ func TestImageBackdropProjectsOntoChainSegmentsAndStaysCentred(t *testing.T) {
 // and every backdrop precedes the photo layers (draw order).
 func TestImageBackdropGridIsEmittedOnceForComposite(t *testing.T) {
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"composite-backdrop-grid","video_id":"composite-backdrop-grid",
 		"width":1280,"height":720,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"items":[{
-			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right",
 			"start_ms":0,"end_ms":3000,
 			"asset_refs":[%s,%s],
 			"image_layers":[
-				{"id":"left","asset_id":"left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
-				{"id":"right","asset_id":"right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
+				{"id":"left","asset_id":"left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-230,"position_y":0,"fit":"contain"}},
+				{"id":"right","asset_id":"right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":230,"position_y":0,"fit":"contain"}}
 			],
 			"params":{"image_backdrop":{"zoom":1.25,"blur_px":34,"grid":{"style":"lines","color":"#7FA8C8","spacing_px":64,"line_width_px":1,"opacity":0.12}}}
 		}]

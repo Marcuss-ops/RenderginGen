@@ -1320,10 +1320,6 @@
       },
       "description": "Heterogeneous animation groups. Each group owns one shared timeline and one motion per role across phrases, images, captions and metric/date cards. Members must not carry their own motion."
     },
-    "legacy_composite_replay": {
-      "type": "boolean",
-      "description": "Explicit replay marker for sealed plans that predate group_motion_id. New plans must declare a certified group recipe and fail closed without it."
-    },
     "scene_camera": {
       "$ref": "#/$defs/scene_camera",
       "description": "Optional whole-scene camera. Claims the single scene camera controller slot: it conflicts with entity camera motion and map camera moves."
@@ -2873,11 +2869,11 @@
           "group_motion_id": {
             "type": "string",
             "minLength": 1,
-            "description": "One certified image-group animation selected once for the complete image_layers group. A reusable group animation applies the same motion to every member regardless of image count."
+            "description": "One certified image-group animation selected once for the complete image_layers group. The group owns the choreography: a child that declares motion_id or motion_params alongside it is rejected. A reusable group animation applies the same motion to every member regardless of image count."
           },
           "image_layers": {
             "type": "array",
-            "description": "Optional image layers for a composite (two or more) image item. A single image uses the parent item's asset_refs/motion_id/motion_params. Each child asset_id references the parent asset_refs; times are relative to the parent. New plans put the one choreography on the parent group_motion_id and leave child motion_id/motion_params empty; per-child motion is accepted only as a legacy replay shape.",
+            "description": "Optional image layers for a composite (two or more) image item. A single image uses the parent item's asset_refs/motion_id/motion_params. Each child asset_id references the parent asset_refs; times are relative to the parent. New plans put the one choreography on the parent group_motion_id and leave child motion_id/motion_params empty; declaring child motion alongside group_motion_id is rejected. Entity groups without group_motion_id may use per-child motion.",
             "minItems": 2,
             "maxItems": 5,
             "items": {
@@ -2934,11 +2930,11 @@
                 },
                 "motion_id": {
                   "type": "string",
-                  "description": "Legacy-only per-child motion override. New composites leave this empty; the parent group_motion_id owns the whole group."
+                  "description": "Per-child motion override for an entity-group member. It must be empty when the parent item declares group_motion_id; the group owns the whole choreography."
                 },
                 "motion_params": {
                   "type": "object",
-                  "description": "Open motion-plugin parameters; enter_frames/exit_frames are optional integer frame counts from 0 to 240 (0 keeps the catalog/preset window)."
+                  "description": "Open motion-plugin parameters for an entity-group child. It must be empty when the parent item declares group_motion_id. enter_frames/exit_frames are optional integer frame counts from 0 to 240 (0 keeps the catalog/preset window)."
                 },
                 "caption": {
                   "type": "string",

@@ -47,9 +47,10 @@
 3. **PASS** — test `Composite|Sequence|Group|Camera` verdi, incluso il composite
    a tre immagini e `TestSizedCompileMatchesThePostFitOnACameraSequence`, che
    prova che il sized compile non introduce un fit per-source nella sequence.
-4. **PASS** — `compileLegacyCompositeImageLayers` è raggiungibile solo con
-   `legacy_composite_replay` (gate esistente invariato) oppure dal dispatcher
-   sequence, che non lo attraversa.
+4. **PASS (storico)** — all'epoca `compileLegacyCompositeImageLayers` era
+   raggiungibile solo con `legacy_composite_replay` oppure dal dispatcher
+   sequence, che non lo attraversava. Il path e il marker sono stati rimossi il
+   2026-11-24 con `TICKET-LEGACY-COMPOSITE-REPLAY-REMOVAL-2026-12-31`.
 
 ## Verifica eseguita
 

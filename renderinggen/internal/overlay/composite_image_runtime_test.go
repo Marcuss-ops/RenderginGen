@@ -295,20 +295,20 @@ func compileDistinctCompositePlanAt(t *testing.T, width, height int) (string, Co
 		t.Fatal("composite fixture assets must contain different image bytes")
 	}
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"composite-image-runtime","video_id":"composite-image-runtime",
 		"width":%d,"height":%d,"fps_num":%d,"fps_den":1,"duration_ms":%d,
 		"background":{"kind":"color","color":[0.04,0.05,0.07,1]},
 		"items":[{
-			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"id":"image-pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right",
 			"start_ms":0,"end_ms":%d,"duration_ms":%d,
 			"asset_refs":[
 				{"asset_id":"image-left","sha256":%q,"url":"https://fixtures.example/image-left.png","media_type":"image/png"},
 				{"asset_id":"image-right","sha256":%q,"url":"https://fixtures.example/image-right.png","media_type":"image/png"}
 			],
 			"image_layers":[
-			{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","motion_params":{"enter_frames":8},"caption":"Ada Lovelace","caption_motion_id":"text_word_rise","params":{"width":%d,"height":%d,"position_x":-%d,"position_y":0,"fit":"contain"}},
-			{"id":"image-right","asset_id":"image-right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","motion_params":{"enter_frames":8},"caption":"Grace Hopper","caption_motion_id":"text_word_stagger","params":{"width":%d,"height":%d,"position_x":%d,"position_y":0,"fit":"contain"}}
+			{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":2000,"preset_id":"image_focus_in","caption":"Ada Lovelace","caption_motion_id":"text_word_rise","params":{"width":%d,"height":%d,"position_x":-%d,"position_y":0,"fit":"contain"}},
+			{"id":"image-right","asset_id":"image-right","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","caption":"Grace Hopper","caption_motion_id":"text_word_stagger","params":{"width":%d,"height":%d,"position_x":%d,"position_y":0,"fit":"contain"}}
 			]
 		},{
 			"id":"single-image","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
@@ -347,8 +347,13 @@ func compileDistinctCompositePlanAt(t *testing.T, width, height int) (string, Co
 	if left.Animation == nil || right.Animation == nil || len(left.Animation.Tracks) == 0 || len(right.Animation.Tracks) == 0 {
 		t.Fatalf("composite children did not retain animation tracks: %+v / %+v", left.Animation, right.Animation)
 	}
-	if left.Animation.Tracks[0].Property == right.Animation.Tracks[0].Property && left.Animation.Tracks[0].Keyframes[0].Value == right.Animation.Tracks[0].Keyframes[0].Value {
-		t.Fatalf("composite children did not retain distinct motion tracks: %+v / %+v", left.Animation, right.Animation)
+	if len(left.Animation.Tracks) != len(right.Animation.Tracks) {
+		t.Fatalf("composite children did not share the group choreography: %+v / %+v", left.Animation, right.Animation)
+	}
+	for index := range left.Animation.Tracks {
+		if left.Animation.Tracks[index].Property != right.Animation.Tracks[index].Property {
+			t.Fatalf("composite children did not share the group choreography: %+v / %+v", left.Animation, right.Animation)
+		}
 	}
 	return assetsRoot, compiled
 }

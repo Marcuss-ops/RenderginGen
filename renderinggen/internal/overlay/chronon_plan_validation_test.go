@@ -119,15 +119,15 @@ func chrononJSONReport(stdout []byte) []byte {
 	return stdout
 }
 
-// compositeGroupPlanPayload is the legacy composite replay fixture used by the
-// parity and validator tests: two members with opposite source aspects and a
-// caption each.
+// compositeGroupPlanPayload is the composite group fixture used by the parity
+// and validator tests: two members with opposite source aspects and a caption
+// each.
 func compositeGroupPlanPayload(planID string) []byte {
 	return []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":%q,"video_id":%q,
 		"width":1920,"height":1080,"fps_num":30,"fps_den":1,"duration_ms":6000,
-		"items":[{"id":"cmp","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":"image_scale_in",
+		"items":[{"id":"cmp","kind":"image","template_id":"IMAGE_OVERLAY","preset_id":"image_scale_in","group_motion_id":"image_group_slide_right",
 			"start_ms":0,"end_ms":6000,
 			"asset_refs":[
 				{"asset_id":"wide","sha256":%q,"url":"https://fixtures.example/wide.png","media_type":"image/png"},

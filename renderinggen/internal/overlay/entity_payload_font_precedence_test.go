@@ -105,10 +105,10 @@ func TestEntityCaptionWithoutPayloadFontUsesLanguageDefault(t *testing.T) {
 
 func TestCompositeCaptionsUseCanonicalParentTypographyOverChildAnimationStyles(t *testing.T) {
 	plan := map[string]any{
-		"schema_version": "renderinggen.overlay-plan.v1", "legacy_composite_replay": true, "plan_id": "composite-caption-style", "video_id": "video",
+		"schema_version": "renderinggen.overlay-plan.v1", "plan_id": "composite-caption-style", "video_id": "video",
 		"width": 1920, "height": 1080, "fps_num": 30, "fps_den": 1,
 		"items": []any{map[string]any{
-			"id": "pair", "kind": "image", "template_id": "IMAGE_OVERLAY", "preset_id": "image_scale_in",
+			"id": "pair", "kind": "image", "template_id": "IMAGE_OVERLAY", "preset_id": "image_scale_in", "group_motion_id": "image_group_slide_right",
 			"params":   map[string]any{"font_family": "inter", "glow_size": 4.0, "style": map[string]any{"fill": "#111111"}},
 			"start_ms": 0, "end_ms": 5000,
 			"asset_refs": []any{

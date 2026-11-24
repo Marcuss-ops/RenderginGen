@@ -12,7 +12,7 @@ const imageEffectsAssetRef = `{"asset_id":"effect-photo","sha256":"bbbbbbbbbbbbb
 const imageEffectsSecondAssetRef = `{"asset_id":"effect-photo-2","sha256":"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc","url":"https://example.test/effect-2.png","media_type":"image/png"}`
 
 func imageEffectsPlan(extra string) []byte {
-	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-effects","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[%s]%s}]}`,
+	return []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-effects","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[%s]%s}]}`,
 		imageEffectsAssetRef, extra))
 }
 
@@ -99,7 +99,7 @@ func TestStandaloneImageBackdropUsesSameImageAndCapsZoom(t *testing.T) {
 	if _, err := CompileSemantic(imageEffectsPlan(`,"params":{"image_backdrop":{"zoom":10.01}}`)); err == nil {
 		t.Fatal("backdrop zoom above 10x must fail closed")
 	}
-	composite := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-backdrop-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{}}}]}`,
+	composite := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-backdrop-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{}}}]}`,
 		imageEffectsAssetRef, imageEffectsSecondAssetRef))
 	compositeResult, err := CompileSemantic(composite)
 	if err != nil {
@@ -115,7 +115,7 @@ func TestStandaloneImageBackdropUsesSameImageAndCapsZoom(t *testing.T) {
 		backdrops["assets/semantic/effect-photo-2.png"] != "duo:right:image-backdrop" {
 		t.Fatalf("composite backdrop layers = %+v; want one backdrop per portrait asset", compositeResult.Plan.Layers)
 	}
-	badAsset := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-backdrop-bad-asset","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{"asset_id":"missing"}}}]}`,
+	badAsset := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-backdrop-bad-asset","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"duo","kind":"image","template_id":"image_popup","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in"}],"params":{"image_backdrop":{"asset_id":"missing"}}}]}`,
 		imageEffectsAssetRef, imageEffectsSecondAssetRef))
 	if _, err := CompileSemantic(badAsset); err == nil || !strings.Contains(err.Error(), "undeclared asset") {
 		t.Fatalf("composite backdrop bad asset error = %v, want undeclared-asset validation", err)
@@ -239,7 +239,7 @@ func TestImageFramePayloadControlsShadowAndBorder(t *testing.T) {
 // TestCompositeImageRuntimeEffectsDecorateEveryChild proves item-level runtime
 // effects decorate every image_layers child surface, not only the first one.
 func TestCompositeImageRuntimeEffectsDecorateEveryChild(t *testing.T) {
-	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-effects-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-duo","kind":"image","template_id":"image_popup","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-300,"position_y":0}},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":300,"position_y":0}}],"params":{"effects":[{"type":"vignette","params":{"amount":0.22,"radius":0.75,"softness":0.6}}]}}]}`,
+	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-effects-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-duo","kind":"image","template_id":"image_popup","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-300,"position_y":0}},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":300,"position_y":0}}],"params":{"effects":[{"type":"vignette","params":{"amount":0.22,"radius":0.75,"softness":0.6}}]}}]}`,
 		imageEffectsAssetRef, imageEffectsSecondAssetRef))
 	result, err := CompileSemantic(raw)
 	if err != nil {
@@ -264,7 +264,7 @@ func TestCompositeImageRuntimeEffectsDecorateEveryChild(t *testing.T) {
 // contract: items that request no runtime decoration compile byte-identical to
 // the pre-feature output (no synthetic effect stack).
 func TestCompositeChildrenKeepIndependentRuntimeEffects(t *testing.T) {
-	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-effects-independent","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-duo","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-300,"position_y":0,"effects":[{"type":"glow","params":{"radius":120,"intensity":0.2}}]}},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":300,"position_y":0,"effects":[{"type":"noise","params":{"amount":0.06,"size":1,"seed":7,"animated":true,"color_mode":"rgb"}}]}}]}]}`,
+	raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-effects-independent","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"fx-duo","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,"asset_refs":[%s,%s],"image_layers":[{"id":"left","asset_id":"effect-photo","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-300,"position_y":0,"effects":[{"type":"glow","params":{"radius":120,"intensity":0.2}}]}},{"id":"right","asset_id":"effect-photo-2","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":300,"position_y":0,"effects":[{"type":"noise","params":{"amount":0.06,"size":1,"seed":7,"animated":true,"color_mode":"rgb"}}]}}]}]}`,
 		imageEffectsAssetRef, imageEffectsSecondAssetRef))
 	result, err := CompileSemantic(raw)
 	if err != nil {

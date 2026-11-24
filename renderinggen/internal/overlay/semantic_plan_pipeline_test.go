@@ -11,7 +11,6 @@ func stagePipelineFixture(t *testing.T) []byte {
 	t.Helper()
 	return []byte(`{
 		"schema_version":"renderinggen.overlay-plan.v1",
-		"legacy_composite_replay":true,
 		"plan_id":"stage-pipeline","video_id":"stage-pipeline",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"background":{"kind":"color","color":[0.02,0.02,0.02,1]},

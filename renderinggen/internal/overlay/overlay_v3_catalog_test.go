@@ -130,7 +130,7 @@ func TestBrushPhraseVariantsCompileForWrappedLongCopy(t *testing.T) {
 	}
 	for _, id := range ids {
 		t.Run(id, func(t *testing.T) {
-			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"brush-long-%[1]s","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.02,0.02,0.025,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":%[3]q,"start_ms":0,"end_ms":5000}]}`, id, id, phrase))
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"brush-long-%[1]s","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"background":{"kind":"color","color":[0.02,0.02,0.025,1]},"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":%[3]q,"start_ms":0,"end_ms":5000}]}`, id, id, phrase))
 			result, err := CompileSemantic(raw)
 			if err != nil {
 				t.Fatalf("compile long phrase with %q: %v", id, err)
@@ -177,7 +177,7 @@ func TestEveryGeneratedImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 
 	for _, id := range ids {
 		t.Run(id, func(t *testing.T) {
-			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id))
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"image-%[1]s","kind":"image","template_id":"image_popup","preset_id":"image_focus_in","motion_id":%[2]q,"start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"test-image","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/test-image.png","media_type":"image/png"}]}]}`, id, id))
 			result, err := CompileSemantic(raw)
 			if err != nil {
 				t.Fatalf("compile generated image motion %q: %v", id, err)
@@ -245,24 +245,24 @@ func TestEveryGeneratedImageMotionReachesTheChrononRenderPlan(t *testing.T) {
 	}
 }
 
-// TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan is the runtime
-// counterpart to the registry inventory test: every selectable family ID must
-// resolve, lower to a text layer and survive serialization into Chronon's plan.
-func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) {
+// TestCompositeEntityImageLayersKeepIndependentTimingAndSharedGroupMotion
+// proves the group recipe owns the choreography while each child keeps its
+// authored asset, window and caption.
+func TestCompositeEntityImageLayersKeepIndependentTimingAndSharedGroupMotion(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"composite-entities","video_id":"composite-entities",
 		"width":1920,"height":1080,"fps_num":24,"fps_den":1,
 		"items":[{
-			"id":"ada+grace","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"id":"ada+grace","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right",
 			"start_ms":1000,"end_ms":7500,"duration_ms":6500,
 			"asset_refs":[
 				{"asset_id":"ada","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/ada.jpg","media_type":"image/jpeg"},
 				{"asset_id":"grace","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/grace.jpg","media_type":"image/jpeg"}
 			],
 			"image_layers":[
-				{"id":"ada","asset_id":"ada","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","caption":"Ada Lovelace","params":{"width":422,"height":453,"position_x":-460.8,"position_y":0,"fit":"contain"}},
-				{"id":"grace","asset_id":"grace","start_ms":1500,"end_ms":6500,"preset_id":"image_scale_in","motion_id":"image_25d_yaw_flip_in","caption":"Grace Hopper","params":{"width":422,"height":453,"position_x":460.8,"position_y":0,"fit":"contain"}}
+				{"id":"ada","asset_id":"ada","start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","caption":"Ada Lovelace","params":{"width":422,"height":453,"position_x":-460.8,"position_y":0,"fit":"contain"}},
+				{"id":"grace","asset_id":"grace","start_ms":1500,"end_ms":6500,"preset_id":"image_scale_in","caption":"Grace Hopper","params":{"width":422,"height":453,"position_x":460.8,"position_y":0,"fit":"contain"}}
 			]
 		}]
 	}`)
@@ -280,17 +280,17 @@ func TestCompositeEntityImageLayersKeepIndependentTimingAndMotion(t *testing.T) 
 	if first.StartFrame != 24 || first.DurationFrames != 120 || second.StartFrame != 60 || second.DurationFrames != 120 {
 		t.Fatalf("staggered layer frames = [%d,+%d), [%d,+%d), want [24,+120), [60,+120)", first.StartFrame, first.DurationFrames, second.StartFrame, second.DurationFrames)
 	}
-	if !first.EntityImage || !second.EntityImage || first.Enable3D || !second.Enable3D {
-		t.Fatalf("entity-image or 2.5D routing lost: first=%+v second=%+v", first, second)
+	if !first.EntityImage || !second.EntityImage || first.Enable3D || second.Enable3D {
+		t.Fatalf("entity-image routing lost or unexpected 3D: first=%+v second=%+v", first, second)
 	}
 	if len(first.Position) != 2 || first.Position[0] != -460.8 || len(second.Position) != 2 || second.Position[0] != 460.8 {
 		t.Fatalf("paired geometry = %v / %v", first.Position, second.Position)
 	}
 	if first.Animation == nil || second.Animation == nil || len(first.Animation.Tracks) == 0 || len(second.Animation.Tracks) == 0 {
-		t.Fatalf("both child motions must lower independently: %+v / %+v", first.Animation, second.Animation)
+		t.Fatalf("group choreography missing from a child: %+v / %+v", first.Animation, second.Animation)
 	}
-	if reflect.DeepEqual(first.Animation.Tracks, second.Animation.Tracks) {
-		t.Fatal("independently selected image motions collapsed to the same animation tracks")
+	if !reflect.DeepEqual(first.Animation.Tracks, second.Animation.Tracks) {
+		t.Fatal("the group recipe must apply the same choreography to every member")
 	}
 	if len(result.Assets) != 2 {
 		t.Fatalf("composite prepared assets = %d, want both image assets", len(result.Assets))
@@ -316,15 +316,10 @@ func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
 					"asset_id": id, "sha256": digest,
 					"url": "https://example.test/" + id + ".jpg", "media_type": "image/jpeg",
 				})
-				motionID := "image_focus_reveal"
-				if index%2 == 1 {
-					motionID = "image_25d_yaw_flip_in"
-				}
 				layer := map[string]any{
 					"id": id, "asset_id": id, "start_ms": index * 250,
 					"end_ms": index*250 + 5000, "preset_id": "image_focus_in",
-					"motion_id": motionID,
-					"params":    map[string]any{"width": 300, "height": 360, "position_x": index*450 - (count-1)*225, "position_y": 0, "fit": "contain"},
+					"params": map[string]any{"width": 300, "height": 360, "position_x": index*450 - (count-1)*225, "position_y": 0, "fit": "contain"},
 				}
 				if index < captionCount {
 					captionMotionID := "text_fade_up"
@@ -338,12 +333,13 @@ func TestCompositeEntityImageLayerCountsTwoThroughFiveCompile(t *testing.T) {
 				layers = append(layers, layer)
 			}
 			document := map[string]any{
-				"schema_version": "renderinggen.overlay-plan.v1", "legacy_composite_replay": true, "plan_id": fmt.Sprintf("multi-%d", count),
+				"schema_version": "renderinggen.overlay-plan.v1", "plan_id": fmt.Sprintf("multi-%d", count),
 				"video_id": "multi", "width": 1920, "height": 1080, "fps_num": 24, "fps_den": 1,
 				"items": []any{map[string]any{
 					"id": fmt.Sprintf("group-%d", count), "kind": "entity_image", "template_id": "image_popup",
-					"composition_id": compositionIDs[count],
-					"preset_id":      "image_focus_in", "start_ms": 0, "end_ms": parentEnd, "duration_ms": parentEnd,
+					"group_motion_id": "image_group_slide_right",
+					"composition_id":  compositionIDs[count],
+					"preset_id":       "image_focus_in", "start_ms": 0, "end_ms": parentEnd, "duration_ms": parentEnd,
 					"asset_refs": assets, "image_layers": layers,
 				}},
 			}
@@ -425,9 +421,9 @@ func TestCompositeImageRejectsMoreThanCatalogMaximum(t *testing.T) {
 
 func TestCompositeEntityCaptionsRejectOverlappingBounds(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"caption-overlap","video_id":"caption-overlap",
+		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"caption-overlap","video_id":"caption-overlap",
 		"width":1280,"height":720,"fps_num":24,"fps_den":1,
-		"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"duration_ms":5000,
+		"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,"duration_ms":5000,
 		"asset_refs":[
 			{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},
 			{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],
@@ -442,9 +438,9 @@ func TestCompositeEntityCaptionsRejectOverlappingBounds(t *testing.T) {
 
 func TestCompositeEntityCaptionsWithDisjointWindowsMayReuseLayout(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"caption-sequential","video_id":"caption-sequential",
+		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"caption-sequential","video_id":"caption-sequential",
 		"width":1280,"height":720,"fps_num":24,"fps_den":1,
-		"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":6000,"duration_ms":6000,
+		"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":6000,"duration_ms":6000,
 		"asset_refs":[
 			{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},
 			{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],
@@ -471,7 +467,7 @@ func TestCompositeEntityCaptionsWithDisjointWindowsMayReuseLayout(t *testing.T) 
 }
 
 func TestCompositeImageContractRejectsUndeclaredAssetAndInvalidWindow(t *testing.T) {
-	base := `{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"bad-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],"image_layers":[{"id":"a","asset_id":"a","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in"},{"id":"b","asset_id":"%s","start_ms":2000,"end_ms":%s%s}]}]}`
+	base := `{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"bad-composite","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,"asset_refs":[{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"https://example.test/a.jpg"},{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"https://example.test/b.jpg"}],"image_layers":[{"id":"a","asset_id":"a","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in"},{"id":"b","asset_id":"%s","start_ms":2000,"end_ms":%s%s}]}]}`
 	for _, test := range []struct {
 		name, asset, end, preset string
 	}{
@@ -503,7 +499,7 @@ func TestMultipleAssetsMustMatchExplicitImageRepresentation(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"unlayered-images","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[` + tc.item + `]}`)
+			raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"unlayered-images","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[` + tc.item + `]}`)
 			_, err := CompileSemantic(raw)
 			if err == nil || !strings.Contains(err.Error(), tc.want) {
 				t.Fatalf("multiple image assets error = %v, want substring %q", err, tc.want)
@@ -584,7 +580,7 @@ func TestEveryPhraseFamilyMotionReachesTheChrononRenderPlan(t *testing.T) {
 		}
 		seen[id] = true
 		t.Run(id, func(t *testing.T) {
-			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"phrase-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase-%[1]s","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":"EVERY PHRASE MOTION MUST LOWER","start_ms":0,"end_ms":5000}]}`, id, id))
+			raw := []byte(fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-motion-%[1]s","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,"items":[{"id":"phrase-%[1]s","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%[2]q,"text":"EVERY PHRASE MOTION MUST LOWER","start_ms":0,"end_ms":5000}]}`, id, id))
 			result, err := CompileSemantic(raw)
 			if err != nil {
 				t.Fatalf("compile phrase motion %q: %v", id, err)
@@ -791,7 +787,7 @@ func TestPhraseDefaultPresetIsTheSingleModernTextPreset(t *testing.T) {
 	if definition.Style.Stroke == nil || definition.Style.Shadow == nil {
 		t.Fatalf("phrase default preset lost legibility styling: %+v", definition.Style)
 	}
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"phrase-default","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"depth_parallax_reveal","text":"A MODERN 2.5D TITLE","start_ms":0,"end_ms":5000}]}`)
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"phrase-default","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":"depth_parallax_reveal","text":"A MODERN 2.5D TITLE","start_ms":0,"end_ms":5000}]}`)
 	result, err := CompileSemantic(raw)
 	if err != nil {
 		t.Fatal(err)

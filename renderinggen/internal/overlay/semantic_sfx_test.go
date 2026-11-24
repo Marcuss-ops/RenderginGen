@@ -21,7 +21,7 @@ const semanticSFXSHA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 
 func semanticSFXPlan(soundEffect string) []byte {
 	return []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"semantic-sfx-test","video_id":"source-video",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"items":[{
@@ -70,19 +70,19 @@ func TestCompileSemanticImageSFXLowersToChrononV3AudioClip(t *testing.T) {
 
 func TestCompileSemanticCompositeSFXUsesFirstVisibleChildAndCapsClip(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"composite-sfx-test","video_id":"source-video",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":3000,
 		"items":[{
-			"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right",
 			"start_ms":0,"end_ms":2000,"duration_ms":2000,
 			"asset_refs":[
 				{"asset_id":"later","sha256":"` + semanticSFXSHA + `","url":"assets/semantic/later.png","media_type":"image/png"},
 				{"asset_id":"earlier","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"assets/semantic/earlier.png","media_type":"image/png"}
 			],
 			"image_layers":[
-				{"id":"later","asset_id":"later","start_ms":500,"end_ms":1200,"preset_id":"image_focus_in","motion_params":{},"params":{"width":100,"height":100}},
-				{"id":"earlier","asset_id":"earlier","start_ms":100,"end_ms":220,"preset_id":"image_focus_in","motion_params":{},"params":{"width":100,"height":100}}
+				{"id":"later","asset_id":"later","start_ms":500,"end_ms":1500,"preset_id":"image_focus_in","params":{"width":100,"height":100}},
+				{"id":"earlier","asset_id":"earlier","start_ms":100,"end_ms":1100,"preset_id":"image_focus_in","params":{"width":100,"height":100}}
 			],
 			"sound_effect":{"asset_ref":{"asset_id":"cue","sha256":"` + semanticSFXSHA + `","url":"assets/semantic/cue.m4a","media_type":"audio/mp4"},"start_offset_ms":100,"duration_ms":120,"gain_db":-6}
 		}]
@@ -147,7 +147,7 @@ func TestImageSFXRealChrononRenderHasBoundedNonSilentAudio(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"image-sfx-e2e","video_id":"image-sfx-e2e",
+		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"image-sfx-e2e","video_id":"image-sfx-e2e",
 		"width":160,"height":90,"fps_num":24,"fps_den":1,"duration_ms":500,
 		"background":{"kind":"color","color":[0.02,0.02,0.02,1]},
 		"items":[{"id":"photo","kind":"image","template_id":"image_popup","preset_id":"image_focus_in",
@@ -275,7 +275,7 @@ func canonicalSFXPlan(t *testing.T, durationMS int, composite bool) []byte {
 		item += `"asset_refs":[` + asset("a") + `],"params":{"width":320,"height":240},`
 	}
 	item += `"sound_effect":` + sfx + `}`
-	return []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"sfx-canonical","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,"items":[` + item + `]}`)
+	return []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"sfx-canonical","video_id":"v","width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,"items":[` + item + `]}`)
 }
 
 func TestSoundEffectUsesCanonicalMicrosecondWindow(t *testing.T) {

@@ -98,14 +98,14 @@ func cameraPanPlan(count int, motionID string) []byte {
 	}
 	if count == 1 {
 		return []byte(fmt.Sprintf(`{
-			"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"camera-pan-single","video_id":"camera-pan-single",
+			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"camera-pan-single","video_id":"camera-pan-single",
 			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,
 			"items":[{"id":"image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in",
 			"composition_id":"single_image","motion_id":%q,"start_ms":0,"end_ms":4000,
 			"params":{"position_x":0,"position_y":0},"asset_refs":[%s]}]}`, motionID, assets[0]))
 	}
 	return []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"camera-pan-strip","video_id":"camera-pan-strip",
+		"schema_version":"renderinggen.overlay-plan.v1","plan_id":"camera-pan-strip","video_id":"camera-pan-strip",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":4000,
 		"items":[{"id":"strip","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
 		"composition_id":"multiple_images","group_motion_id":%q,"start_ms":0,"end_ms":4000,

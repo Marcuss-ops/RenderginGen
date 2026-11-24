@@ -25,7 +25,7 @@ func effectTypesOf(t *testing.T, result CompileResult, layerID string) []string 
 // TestEntityCardRuntimeEffectsDecoratePortrait proves the entity-card path
 // applies params.effects even though it does not lower through compileImageItem.
 func TestEntityCardRuntimeEffectsDecoratePortrait(t *testing.T) {
-	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"entity-effects","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,
+	raw := []byte(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"entity-effects","video_id":"v","width":1280,"height":720,"fps_num":24,"fps_den":1,
 		"items":[{"id":"person","entity_id":"person:ada","kind":"entity_card","template_id":"PERSON","preset_id":"phrase_default",
 		"image_preset_id":"image_focus_in","text":"Ada Lovelace","start_ms":0,"end_ms":3000,"duration_ms":3000,
 		"params":{"effects":[{"type":"vignette","params":{"amount":0.2,"radius":0.8,"softness":0.5}}]},

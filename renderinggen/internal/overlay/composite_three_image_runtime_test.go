@@ -27,12 +27,12 @@ func TestCompositeThreeNearbyImagesRenderAllThreeStaggered(t *testing.T) {
 	singleSHA := fixtureSHA256(t, filepath.Join(assetsRoot, "assets", "semantic", "image-single.png"))
 
 	raw := []byte(fmt.Sprintf(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"composite-three-image-runtime","video_id":"composite-three-image-runtime",
 		"width":%d,"height":%d,"fps_num":%d,"fps_den":1,"duration_ms":%d,
 		"background":{"kind":"color","color":[0.04,0.05,0.07,1]},
 		"items":[{
-			"id":"image-trio","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+			"id":"image-trio","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in","group_motion_id":"image_group_slide_right",
 			"start_ms":0,"end_ms":%d,"duration_ms":%d,
 			"asset_refs":[
 				{"asset_id":"image-left","sha256":%q,"url":"https://fixtures.example/image-left.png","media_type":"image/png"},
@@ -40,9 +40,9 @@ func TestCompositeThreeNearbyImagesRenderAllThreeStaggered(t *testing.T) {
 				{"asset_id":"image-single","sha256":%q,"url":"https://fixtures.example/image-single.png","media_type":"image/png"}
 			],
 			"image_layers":[
-				{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal","motion_params":{"enter_frames":8},"params":{"width":250,"height":230,"position_x":-300,"position_y":0,"fit":"contain"}},
-				{"id":"image-single","asset_id":"image-single","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_fade_reveal","motion_params":{"enter_frames":8},"params":{"width":250,"height":230,"position_x":0,"position_y":0,"fit":"contain"}},
-				{"id":"image-right","asset_id":"image-right","start_ms":1500,"end_ms":3000,"preset_id":"image_focus_in","motion_id":"image_scale_reveal","motion_params":{"enter_frames":8},"params":{"width":250,"height":230,"position_x":300,"position_y":0,"fit":"contain"}}
+				{"id":"image-left","asset_id":"image-left","start_ms":0,"end_ms":3000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":-300,"position_y":0,"fit":"contain"}},
+				{"id":"image-single","asset_id":"image-single","start_ms":750,"end_ms":3000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":0,"position_y":0,"fit":"contain"}},
+				{"id":"image-right","asset_id":"image-right","start_ms":1500,"end_ms":3000,"preset_id":"image_focus_in","params":{"width":250,"height":230,"position_x":300,"position_y":0,"fit":"contain"}}
 			]
 		}]
 	}`, compositeRuntimeWidth, compositeRuntimeHeight, compositeRuntimeFPS, compositeRuntimeEndMS,

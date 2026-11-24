@@ -231,26 +231,20 @@ const (
 // Ledger facts mirrored into the local artifact database (counts, bytes and
 // media facts the mirror projects as numbers).
 const (
-	OverlayItemCount   = "overlay_item_count"
-	OverlayRenderBatch = "overlay_render_batch"
-	// Legacy composite image replay. The artifact metric map has no label
-	// dimension, so the "reason" is encoded by two counters: every admitted
-	// image_layers item, and the subset admitted by the explicit sealed-plan
-	// replay marker. A fresh render must leave both at zero.
-	LegacyCompositeImageItems  = "overlay_legacy_composite_image_items"
-	LegacyCompositeImageReplay = "overlay_legacy_composite_image_replay"
-	EntityCount                = "entity_count"
-	ImportantPhraseCount       = "important_phrase_count"
-	ImportantWordCount         = "important_word_count"
-	ImageCount                 = "image_count"
-	LightLeakCount             = "light_leak_count"
-	InputBytes                 = "input_bytes"
-	OutputBytes                = "output_bytes"
-	FrameCount                 = "frame_count"
-	DurationUS                 = "duration_us"
-	Width                      = "width"
-	Height                     = "height"
-	FPS                        = "fps"
+	OverlayItemCount     = "overlay_item_count"
+	OverlayRenderBatch   = "overlay_render_batch"
+	EntityCount          = "entity_count"
+	ImportantPhraseCount = "important_phrase_count"
+	ImportantWordCount   = "important_word_count"
+	ImageCount           = "image_count"
+	LightLeakCount       = "light_leak_count"
+	InputBytes           = "input_bytes"
+	OutputBytes          = "output_bytes"
+	FrameCount           = "frame_count"
+	DurationUS           = "duration_us"
+	Width                = "width"
+	Height               = "height"
+	FPS                  = "fps"
 )
 
 // Chronon-owned telemetry is projected behind this prefix: the keys are the
@@ -317,7 +311,6 @@ var vocab = map[string]string{
 	L2CacheCorrupt: UnitCount,
 
 	OverlayItemCount: UnitCount, OverlayRenderBatch: UnitCount,
-	LegacyCompositeImageItems: UnitCount, LegacyCompositeImageReplay: UnitCount,
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,
 	OutputBytes: UnitBytes, FrameCount: UnitCount, DurationUS: UnitUS,

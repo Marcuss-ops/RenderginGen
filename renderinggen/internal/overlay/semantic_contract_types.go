@@ -54,11 +54,6 @@ type semanticPlan struct {
 	MapCompositionID string                   `json:"map_composition_id,omitempty"`
 	Items            []semanticItem           `json:"items"`
 	AnimationGroups  []semanticAnimationGroup `json:"animation_groups,omitempty"`
-	// LegacyCompositeReplay is the explicit replay marker for sealed
-	// pre-group_motion_id composites. New plans must name group_motion_id;
-	// without this marker image_layers fail closed instead of silently taking
-	// the child-by-child legacy path. It is not emitted by PipelineGen.
-	LegacyCompositeReplay bool `json:"legacy_composite_replay,omitempty"`
 	// assetSizes carries the probed pixel size of every materialized image this
 	// compile must lay out. nil means the blind compile (no I/O yet): cards that
 	// await their source aspect keep their transient markers and a later
@@ -466,8 +461,9 @@ type SemanticImageLayer struct {
 	CaptionStartMS int64  `json:"caption_start_ms,omitempty"`
 	CaptionEndMS   int64  `json:"caption_end_ms,omitempty"`
 	PresetID       string `json:"preset_id"`
-	// MotionID/MotionParams are legacy-only for composites. New plans leave
-	// them empty because the parent GroupMotionID owns the choreography.
+	// MotionID/MotionParams are per-child controls for entity-group members.
+	// They must be empty when the parent item declares GroupMotionID, because
+	// the group recipe owns the choreography; validation rejects the conflict.
 	MotionID            string               `json:"motion_id,omitempty"`
 	MotionParams        map[string]any       `json:"motion_params,omitempty"`
 	Caption             string               `json:"caption,omitempty"`

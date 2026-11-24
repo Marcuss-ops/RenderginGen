@@ -47,8 +47,7 @@ type imageRecipeSelection struct {
 //
 // The dispatcher owns no lowering of its own: it validates the recipe
 // selection once, then hands the item to its one choreography — standalone
-// (single asset, light leak), or multi-card (group recipe, premium stack,
-// sealed legacy replay).
+// (single asset, light leak), or multi-card (group recipe, premium stack).
 func compileImageItemCore(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	recipes, err := resolveImageRecipes(ri)
 	if err != nil {
@@ -185,9 +184,9 @@ func compileAssetlessLightLeak(ri resolvedItem, src *semanticPlan, visualAccents
 	return out, nil
 }
 
-// compileMultiImageItem lowers the card stacks: a certified group recipe, a
-// premium multi-image recipe, or the sealed legacy replay when the plan
-// carries its explicit marker.
+// compileMultiImageItem lowers the card stacks: a certified group recipe or a
+// premium multi-image recipe. A composite without group_motion_id has no
+// lowering: the pre-group_motion_id replay path was removed.
 func compileMultiImageItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry, recipes imageRecipeSelection) ([]Layer, error) {
 	if recipes.group != nil {
 		if !recipes.group.GroupRecipe.SupportsCount(len(ri.Item.ImageLayers)) {
@@ -210,19 +209,11 @@ func compileMultiImageItem(ri resolvedItem, src *semanticPlan, registry *assetRe
 	}
 	// A new plan always names one group choreography. Reaching this point with
 	// that field set means the certified recipe is missing: refuse the plan
-	// instead of silently lowering children through the legacy per-child path
-	// (which would either animate a second owner or render a static group).
+	// instead of lowering children through a second animation path.
 	if strings.TrimSpace(ri.Item.GroupMotionID) != "" {
-		return nil, fmt.Errorf("overlay: item %q group_motion_id %q has no certified group recipe; legacy per-child replay refused", ri.Item.ID, ri.Item.GroupMotionID)
+		return nil, fmt.Errorf("overlay: item %q group_motion_id %q has no certified group recipe", ri.Item.ID, ri.Item.GroupMotionID)
 	}
-	// Sealed replay path: a pre-group_motion_id plan keeps its per-child
-	// motion_id only when it carries the explicit replay marker. A new plan
-	// that forgot the group recipe (or a producer that regressed) fails closed
-	// instead of silently taking a second animation path.
-	if !src.LegacyCompositeReplay {
-		return nil, fmt.Errorf("overlay: item %q has image_layers without group_motion_id; new plans must declare a certified group recipe (sealed plans replay only with legacy_composite_replay=true)", ri.Item.ID)
-	}
-	return compileLegacyCompositeImageLayers(ri, src, registry)
+	return nil, fmt.Errorf("overlay: item %q has image_layers without group_motion_id; new plans must declare a certified group recipe", ri.Item.ID)
 }
 
 // resolveImageRecipeMotion resolves the item's registered motion and selects
@@ -255,40 +246,11 @@ func resolveAssetPaths(registry *assetRegistry, refs []SemanticAssetRef) map[str
 	return paths
 }
 
-// legacyCompositeReplayDeadline is the declared end of the sealed-plan replay
-// window. It is deliberately a constant rather than a runtime clock check: the
-// path must be deleted (not silently refused) once the window closes, and
-// TestLegacyCompositeReplayWindowExpires fails the unit gate after this date
-// while it still exists.
-const legacyCompositeReplayDeadline = "2026-12-31"
-
-// compileLegacyCompositeImageLayers is the replay path for sealed plans that
-// predate group_motion_id. It is a thin wrapper over the shared member
-// lowering plus the legacy child-grid rule, and it is reachable ONLY behind
-// legacy_composite_replay. New producer plans use compileImageGroupRecipe
-// through the parent group_motion_id and entity groups use the same member
-// lowering directly — neither needs this replay entry point.
-func compileLegacyCompositeImageLayers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
-	_, imageRecipe, err := resolveImageRecipeMotion(ri.Item.MotionID, false)
-	if err != nil {
-		return nil, err
-	}
-	layers, gridSource, err := compileCompositeImageMembers(ri, src, registry, premiumImageRecipeDefinition(imageRecipe))
-	if err != nil {
-		return nil, err
-	}
-	if _, itemGrid := ri.Params["grid"]; !itemGrid && gridSource != nil {
-		return addStandaloneImageGrid(*gridSource, src, layers)
-	}
-	return layers, nil
-}
-
 // compileCompositeImageMembers lowers every image_layers member through the
-// shared single-layer path with its own motion, preset and caption. It is the
-// modern multi-card primitive: both the sealed legacy replay and entity_group
-// call it, and neither re-implements per-child lowering. The caller owns the
-// item-level grid decision (returned as gridSource) because an item-level
-// params.grid must win over a child-declared one exactly once.
+// shared single-layer path with its own preset and caption. Entity groups call
+// it and do not re-implement per-child lowering. The caller owns the item-level
+// grid decision through addCompositeGridOnce, so an item-level params.grid wins
+// over a child-declared one exactly once.
 func compileCompositeImageMembers(ri resolvedItem, src *semanticPlan, registry *assetRegistry, premium *motion.MotionDefinition) ([]Layer, *resolvedItem, error) {
 	assets := resolveAssetPaths(registry, ri.Item.Assets)
 
@@ -344,6 +306,16 @@ func compileCompositeImageMembers(ri resolvedItem, src *semanticPlan, registry *
 	// which lowers it only when the item itself declares no params.grid. This
 	// keeps a multi-card item from stacking one grid per member.
 	return layers, gridSource, nil
+}
+
+// addCompositeGridOnce lowers the one grid a composite owns: an item-level
+// params.grid always wins; otherwise the first child that declared one is used.
+// The full-canvas grid is bound to the item lifetime, not to a member.
+func addCompositeGridOnce(ri resolvedItem, src *semanticPlan, gridSource *resolvedItem, layers []Layer) ([]Layer, error) {
+	if _, itemGrid := ri.Params["grid"]; !itemGrid && gridSource != nil {
+		return addStandaloneImageGrid(*gridSource, src, layers)
+	}
+	return layers, nil
 }
 
 // compileSingleImageLayer is shared by standalone images and composite
@@ -578,6 +550,12 @@ func validateSemanticImageLayers(item semanticItem, kind ItemKind) error {
 		}
 		if strings.TrimSpace(layer.PresetID) == "" {
 			return fmt.Errorf("overlay: item %q image layer %q requires preset_id", item.ID, layer.ID)
+		}
+		// A group recipe owns the whole choreography. Accepting a child motion
+		// here would silently drop it, so the conflict is rejected explicitly.
+		if strings.TrimSpace(item.GroupMotionID) != "" &&
+			(strings.TrimSpace(layer.MotionID) != "" || len(layer.MotionParams) > 0) {
+			return fmt.Errorf("overlay: item %q image layer %q must not declare motion_id/motion_params when group_motion_id is set; the group owns the choreography", item.ID, layer.ID)
 		}
 	}
 	if strings.TrimSpace(item.EntityCaption) != "" {

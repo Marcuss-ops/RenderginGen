@@ -29,13 +29,6 @@ type Stats struct {
 	ImportantWordCnt   int `json:"important_word_count"`
 	ImageCount         int `json:"image_count"`
 	LightLeakCount     int `json:"light_leak_count"`
-	// LegacyCompositeImageCount counts image_layers items lowered through the
-	// sealed pre-group_motion_id replay path. A nonzero value in a fresh render
-	// is a producer regression, not a normal fallback.
-	LegacyCompositeImageCount int `json:"legacy_composite_image_count"`
-	// LegacyCompositeReplayCount is the subset admitted by the explicit
-	// legacy_composite_replay marker (the only admitted subset).
-	LegacyCompositeReplayCount int `json:"legacy_composite_replay_count"`
 	// PresetID is the first preset_id the plan carries (all items are
 	// expected to share one per job); empty when the plan is legacy.
 	PresetID string `json:"preset_id"`
@@ -107,12 +100,6 @@ func (s *Stats) addResolved(ri resolvedItem) {
 		s.ImageCount++
 	case overlayStatLightLeak:
 		s.LightLeakCount++
-	}
-	if ri.LegacyCompositeImage {
-		s.LegacyCompositeImageCount++
-		if ri.LegacyCompositeReplay {
-			s.LegacyCompositeReplayCount++
-		}
 	}
 	template := strings.ToUpper(strings.TrimSpace(ri.Item.Template))
 	if ri.PresetID != "" {

@@ -198,10 +198,9 @@ var groupLayoutNames = map[string]int{
 }
 
 // compileEntityGroup validates the group contract, applies slot defaults and
-// delegates member lowering to the shared composite-member primitive. It does
-// NOT route through compileLegacyCompositeImageLayers: an entity group is a
-// current producer construct, not a sealed pre-group_motion_id replay, and it
-// must keep compiling even when the legacy path is deleted.
+// delegates member lowering to the shared composite-member primitive. An entity
+// group is a current producer construct and owns its own layout, not a legacy
+// pre-group_motion_id replay.
 func compileEntityGroup(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
 	n := len(ri.Item.ImageLayers)
 	if n < 2 || n > 5 {

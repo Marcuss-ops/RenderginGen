@@ -9,12 +9,12 @@ import (
 )
 
 // A new composite carries one group_motion_id and motion-free children. The
-// compiler must lower the whole group through the group recipe: if it fell back
-// to compileLegacyCompositeImageLayers, the children would have no animation
-// and this test would catch the silent regression.
+// compiler must lower the whole group through the group recipe: a fallback to
+// per-child lowering would leave the children without animation and this test
+// would catch the silent regression.
 func TestCompositeGroupMotionCompilesWithMotionFreeChildren(t *testing.T) {
 	raw := []byte(`{
-		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
+		"schema_version":"renderinggen.overlay-plan.v1",
 		"plan_id":"group-owner","video_id":"group-owner",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
 		"items":[{
@@ -50,38 +50,68 @@ func TestCompositeGroupMotionCompilesWithMotionFreeChildren(t *testing.T) {
 	}
 }
 
-// The legacy plan shape (no group_motion_id, per-child motion_id) must remain
-// replayable. New producer plans never emit this shape, but old sealed jobs do.
-func TestLegacyCompositeStillCompilesPerChildMotion(t *testing.T) {
+func TestCompositeReplayMarkerIsRejected(t *testing.T) {
 	raw := []byte(`{
 		"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,
-		"plan_id":"legacy-owner","video_id":"legacy-owner",
+		"plan_id":"replay-rejected","video_id":"replay-rejected",
+		"width":640,"height":360,"fps_num":24,"fps_den":1,"items":[]
+	}`)
+	_, err := CompileSemantic(raw)
+	if err == nil || !strings.Contains(err.Error(), `unknown field "legacy_composite_replay"`) {
+		t.Fatalf("legacy replay marker error = %v, want explicit unknown-field rejection", err)
+	}
+}
+
+func TestCompositeWithoutGroupMotionFailsClosed(t *testing.T) {
+	raw := []byte(`{
+		"schema_version":"renderinggen.overlay-plan.v1",
+		"plan_id":"missing-group","video_id":"missing-group",
 		"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
 		"items":[{
 			"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
 			"start_ms":0,"end_ms":2000,
 			"asset_refs":[
-				{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"assets/semantic/a.png","media_type":"image/png"},
-				{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"assets/semantic/b.png","media_type":"image/png"}
+				{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"a.png"},
+				{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"b.png"}
 			],
 			"image_layers":[
-				{"id":"a","asset_id":"a","start_ms":0,"end_ms":1000,"preset_id":"image_scale_in","motion_id":"image_fade_reveal"},
-				{"id":"b","asset_id":"b","start_ms":1000,"end_ms":2000,"preset_id":"image_focus_in","motion_id":"image_focus_reveal"}
+				{"id":"a","asset_id":"a","start_ms":0,"end_ms":1000,"preset_id":"image_focus_in"},
+				{"id":"b","asset_id":"b","start_ms":1000,"end_ms":2000,"preset_id":"image_focus_in"}
 			]
 		}]
 	}`)
-	result, err := CompileSemantic(raw)
-	if err != nil {
-		t.Fatalf("compile legacy per-child composite: %v", err)
+	_, err := CompileSemantic(raw)
+	if err == nil || !strings.Contains(err.Error(), "image_layers without group_motion_id") {
+		t.Fatalf("missing group motion error = %v, want fail-closed guidance", err)
 	}
-	imageLayers := 0
-	for _, layer := range result.Plan.Layers {
-		if layer.Type == "image" {
-			imageLayers++
+}
+
+func TestGroupCompositeRejectsPerChildMotion(t *testing.T) {
+	for _, childMotion := range []string{
+		`,"motion_id":"image_fade_reveal"`,
+		`,"motion_params":{"enter_frames":8}`,
+	} {
+		raw := []byte(fmt.Sprintf(`{
+			"schema_version":"renderinggen.overlay-plan.v1",
+			"plan_id":"group-child-motion","video_id":"group-child-motion",
+			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
+			"items":[{
+				"id":"pair","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
+				"group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":2000,
+				"asset_refs":[
+					{"asset_id":"a","sha256":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","url":"a.png"},
+					{"asset_id":"b","sha256":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","url":"b.png"}
+				],
+				"image_layers":[
+					{"id":"a","asset_id":"a","start_ms":0,"end_ms":1000,"preset_id":"image_focus_in"},
+					{"id":"b","asset_id":"b","start_ms":1000,"end_ms":2000,"preset_id":"image_focus_in"%s}
+				]
+			}]
+		}`, childMotion))
+		_, err := CompileSemantic(raw)
+		if err == nil || !strings.Contains(err.Error(), "must not declare motion_id/motion_params") {
+			t.Fatalf("child motion %s error = %v, want explicit group-ownership rejection", childMotion, err)
 		}
-	}
-	if imageLayers != 2 {
-		t.Fatalf("legacy image layers = %d, want 2", imageLayers)
 	}
 }
 
@@ -94,7 +124,7 @@ func TestReusableGroupAnimationWorksForDifferentImageCounts(t *testing.T) {
 			layers = append(layers, fmt.Sprintf(`{"id":%q,"asset_id":%q,"start_ms":0,"end_ms":5000,"preset_id":"image_focus_in","motion_id":""}`, id, id))
 		}
 		raw := fmt.Sprintf(`{
-			"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"reusable-%d","video_id":"reusable-%d",
+			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"reusable-%d","video_id":"reusable-%d",
 			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":5000,
 			"items":[{"id":"group","kind":"entity_image","template_id":"image_popup","preset_id":"image_focus_in",
 			"composition_id":"multiple_images","group_motion_id":"image_group_slide_right","start_ms":0,"end_ms":5000,
@@ -132,7 +162,7 @@ func TestAllReusableImageAnimationsCompileForOneImage(t *testing.T) {
 	}
 	for _, id := range ids {
 		raw := fmt.Sprintf(`{
-			"schema_version":"renderinggen.overlay-plan.v1","legacy_composite_replay":true,"plan_id":"single-%s","video_id":"single-%s",
+			"schema_version":"renderinggen.overlay-plan.v1","plan_id":"single-%s","video_id":"single-%s",
 			"width":640,"height":360,"fps_num":24,"fps_den":1,"duration_ms":2000,
 			"items":[{"id":"image","kind":"image","template_id":"image_popup","preset_id":"image_focus_in",
 			"composition_id":"single_image","motion_id":%q,"start_ms":0,"end_ms":2000,
