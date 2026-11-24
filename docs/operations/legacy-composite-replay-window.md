@@ -29,10 +29,15 @@ it first.
 
 - **Owner:** RenderingGen overlay.
 - **Ticket:** [TICKET-LEGACY-COMPOSITE-REPLAY-REMOVAL-2026-12-31](../tickets/TICKET-LEGACY-COMPOSITE-REPLAY-REMOVAL-2026-12-31.md).
-- **Replay window ends:** 2026-12-31.
+- **Replay window ends:** 2026-12-31 (UTC), declared by the
+  `legacyCompositeReplayDeadline` constant in `semantic_image_compile.go`.
 - **Removal condition:** before that date, confirm no external sealed plan still
-  needs per-child motion; then delete `compileLegacyCompositeImageLayers` and the
-  replay marker, and update the contract note. Until then the path stays
-  isolated and instrumented.
+  needs per-child motion; then delete `compileLegacyCompositeImageLayers`, the
+  replay marker, the two `Stats` counters, the two processor metrics and the
+  `legacy_composite_replay` schema property, and update the contract note.
+- **Scheduled gate:** `TestLegacyCompositeReplayWindowExpires` fails the unit
+  suite after the deadline while the path still exists. Removing the path also
+  removes the constant the test reads, so the test cannot outlive its subject
+  without a compile error. Until then the path stays isolated and instrumented.
 
 This is a declared compatibility window, not a second main path.

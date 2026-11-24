@@ -104,7 +104,7 @@ test-module-standalone:
 # RENDERINGGEN_SKIP_GPU_E2E stays as the explicit opt-out CI and this target set:
 #
 #   make test-unit           fast gate, runs everywhere, must always be green
-#   make test-certification  the //go:build certification suites (no engine needed)
+#   make test-certification  the //go:build certification suites (engine tests self-skip without CHRONON_BIN)
 #   go test ./...            unit tests; certification is tag-gated, not run
 #   CHRONON_BIN=... go test -tags certification ./renderinggen/internal/overlay/
 #                            the real-engine + golden-render suites
@@ -125,8 +125,8 @@ test-unit:
 # than unit behaviour: a developer's `go test ./...` (and make test-unit) should
 # not pay for the corpus on every save. Tagging must not ORPHAN them, so the tag
 # is pinned by the architecture gate (TestCIRunsRaceEnabledModuleTests requires
-# CI to run them; TestCIRuntimeCertificationHasAnOwner requires the manual GPU
-# job to pass -tags certification) and this target is the local entry point.
+# CI to run them; TestRuntimeCertificationHasAnOwner requires this target to
+# stay runnable and documented) and this target is the local entry point.
 #
 # No engine is required: the compile-level suites run, and the real-engine ones
 # self-skip unless CHRONON_BIN names a built chronon3d_cli.

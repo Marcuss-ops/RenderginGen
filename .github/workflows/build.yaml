@@ -6,11 +6,6 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-    inputs:
-      certification:
-        description: "Run the GPU runtime certification suite (needs a self-hosted GPU runner)"
-        type: boolean
-        default: false
 
 env:
   REGISTRY: ghcr.io
@@ -63,9 +58,10 @@ jobs:
       # presets/goldens, and a developer's `go test ./...` must not pay for the
       # corpus on every save. The tag must not orphan them, though: this step
       # runs them in CI exactly as they used to run (engine-dependent tests
-      # self-skip through RENDERINGGEN_SKIP_GPU_E2E=1), and the manual GPU job
-      # runs them again with a real engine. Both facts are pinned by
-      # TestCIRunsRaceEnabledModuleTests and TestCIRuntimeCertificationHasAnOwner.
+      # self-skip through RENDERINGGEN_SKIP_GPU_E2E=1). The real-engine lane is
+      # the documented local `make test-certification` run, not a dormant CI
+      # job; the CI shape is pinned by TestCIRunsRaceEnabledModuleTests and the
+      # local owner by TestRuntimeCertificationHasAnOwner.
       - run: RENDERINGGEN_SKIP_GPU_E2E=1 go test -tags certification -count=1 ./internal/overlay/
       - run: go test -count=1 ./internal/architecture/...
 
@@ -256,51 +252,6 @@ jobs:
           tags: |
             ${{ env.IMAGE_BASE }}/objectstore:${{ env.VERSION }}-sha-${{ env.SHORT_SHA }}
             ${{ env.IMAGE_BASE }}/objectstore:sha-${{ env.SHORT_SHA }}
-
-  # ═══════════════════════════════════════════════════════════════════════
-  # Runtime certification — MANUAL, on a self-hosted GPU runner.
-  #
-  # The certification suite (internal/overlay: real chronon3d_cli renders, then
-  # decoded and pixel-compared against the software reference) is the strongest
-  # assertion in this repository. It cannot run on GitHub-hosted runners — it
-  # needs a GPU, a built chronon3d_cli and ffmpeg — so the unit jobs disable it
-  # explicitly with RENDERINGGEN_SKIP_GPU_E2E=1, which left the suite with no
-  # owner at all: it ran only where a developer happened to have an engine.
-  #
-  # This job is that owner. It is manual (dispatch it, or set the repo variable
-  # below and wire it to a schedule) and it deliberately does NOT set the
-  # skip variable, so the certification actually renders. Configure the
-  # repository variable CHRONON_BIN to the absolute path of a built
-  # chronon3d_cli on the runner; the job fails loudly if it is unset rather
-  # than reporting a green run in which every test skipped.
-  #
-  #   gh workflow run build -f certification=true
-  runtime-certification:
-    name: Runtime certification (GPU)
-    if: github.event_name == 'workflow_dispatch' && inputs.certification
-    runs-on: [self-hosted, gpu]
-    defaults:
-      run:
-        working-directory: renderinggen
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.25"
-      - name: Certification suite (real engine)
-        env:
-          CHRONON_BIN: ${{ vars.CHRONON_BIN }}
-        run: |
-          test -n "$CHRONON_BIN" || {
-            echo "set the CHRONON_BIN repository variable to a built chronon3d_cli on this runner" >&2
-            exit 1
-          }
-          test -x "$CHRONON_BIN" || {
-            echo "CHRONON_BIN=$CHRONON_BIN is not executable on this runner" >&2
-            exit 1
-          }
-          go test -tags certification -count=1 -timeout 30m -v ./internal/overlay/ \
-            -run 'TestFinal_|TestGoal3|TestRenderingGen2Chronon'
 
   # ═══════════════════════════════════════════════════════════════════════
   # Golden canary — permanent end-to-end gate.

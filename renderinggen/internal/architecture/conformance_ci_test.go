@@ -1,8 +1,8 @@
 // conformance_ci_test.go covers the CI SHAPE: that the workflows actually run the
-// module tests with the race detector, that the runtime certification has an
-// owner that points the engine at the binary it certifies, and that no job
-// silently checks out a sibling repository (which would make the gate pass for
-// the wrong reason).
+// module tests with the race detector, that the real-engine certification has an
+// explicit local owner instead of a dormant CI job, and that no job silently
+// checks out a sibling repository (which would make the gate pass for the wrong
+// reason).
 //
 // These are checks about the repository's process rather than about the product's
 // boundary, which is why they live apart from the rule tests: a failure here
@@ -52,7 +52,8 @@ func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
 			// The certification suites are behind //go:build certification, so the
 			// -race step above cannot see them. That is the intended split, but a
 			// tag with no runner is a silent coverage cut: CI must run them in
-			// their own step, and the manual GPU job must run them with an engine.
+			// their own step, and the local test-certification lane runs them with
+			// a real engine.
 			if !strings.Contains(block, "-tags certification") {
 				t.Errorf("CI job %q must run the //go:build certification suites in their own step: the tagged files are invisible to the -race step, so without a runner the tag silently removes the certification coverage from CI", job)
 			}
@@ -64,49 +65,80 @@ func TestCIRunsRaceEnabledModuleTests(t *testing.T) {
 	}
 }
 
-// TestCIRuntimeCertificationHasAnOwner pins the third leg of the test-tier
-// decision. The unit jobs disable the real-engine certification suite
-// (RENDERINGGEN_SKIP_GPU_E2E=1), which is correct — but it also means that
-// without this job the suite that actually renders frames would have no owner
-// anywhere: it would run only where a developer happened to have an engine, and
-// nothing would say so. The job must do three things, all asserted here:
-//
-//  1. invoke the certification tests;
-//  2. NOT set the skip variable (a job that sets it and "runs" the suite is the
-//     false green this test exists to prevent);
-//  3. be manual (workflow_dispatch) on a GPU runner, because the hosted runner
-//     has no device and an unguarded job would fail on every push.
-func TestCIRuntimeCertificationHasAnOwner(t *testing.T) {
-	path := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
-	raw, err := os.ReadFile(path)
+// TestRuntimeCertificationHasAnOwner pins the decision taken on 2026-11-24: the
+// real-engine certification suite is not a CI job because this repository has no
+// self-hosted GPU runner. Its owner is the documented local operator lane, which
+// must stay runnable from a checkout and must not set the skip variable. A
+// re-added `runtime-certification` job is a decision change: restore its
+// five-property contract here instead of silently dropping the local lane.
+func TestRuntimeCertificationHasAnOwner(t *testing.T) {
+	workflowPath := filepath.Join(RepoRoot(), ".github", "workflows", "build.yaml")
+	raw, err := os.ReadFile(workflowPath)
 	if err != nil {
-		t.Fatalf("read %s: %v", path, err)
+		t.Fatalf("read %s: %v", workflowPath, err)
 	}
 	workflow := string(raw)
+	if strings.Contains(workflow, "\n  runtime-certification:") {
+		t.Fatal("CI declares runtime-certification again: provision the gpu runner and restore the full job contract, or remove the job and keep the local lane as the only owner")
+	}
+	if strings.Contains(workflow, "inputs.certification") {
+		t.Error("CI still references inputs.certification after the GPU job was retired")
+	}
 
-	job := "runtime-certification"
-	if !strings.Contains(workflow, "\n  "+job+":") {
-		t.Fatalf("CI no longer declares the %q job: the unit jobs disable the runtime certification, so nothing would run it", job)
+	makefilePath := filepath.Join(RepoRoot(), "Makefile")
+	makefileRaw, err := os.ReadFile(makefilePath)
+	if err != nil {
+		t.Fatalf("read %s: %v", makefilePath, err)
 	}
-	block := ciJobBlock(t, workflow, job)
-	if !strings.Contains(block, "./internal/overlay/") {
-		t.Errorf("CI job %q must run the certification suite under ./internal/overlay/", job)
-	}
-	if strings.Contains(block, "RENDERINGGEN_SKIP_GPU_E2E") {
-		t.Errorf("CI job %q sets RENDERINGGEN_SKIP_GPU_E2E, so it would report a green run in which every certification test skipped", job)
-	}
-	if !strings.Contains(block, "CHRONON_BIN") {
-		t.Errorf("CI job %q must point CHRONON_BIN at the engine it certifies", job)
+	block := ciMakeTargetBlock(t, string(makefileRaw), "test-certification")
+	if strings.TrimSpace(block) == "" {
+		t.Fatal("the Makefile no longer declares the test-certification target: the real-engine suite would have no local entry point")
 	}
 	if !strings.Contains(block, "-tags certification") {
-		t.Errorf("CI job %q must pass -tags certification: the certification suites live behind that build tag, so without it the job would run only the untagged overlay tests and report a green run in which every certification assertion had been compiled out", job)
+		t.Error("test-certification must pass -tags certification: the certification suites live behind that build tag")
 	}
-	if !strings.Contains(block, "workflow_dispatch") {
-		t.Errorf("CI job %q must be manual: the hosted runners have no GPU", job)
+	if !strings.Contains(block, "./internal/overlay/") {
+		t.Error("test-certification must run the certification suite under ./internal/overlay/")
 	}
-	if !strings.Contains(block, "self-hosted") {
-		t.Errorf("CI job %q must select a GPU runner", job)
+	if strings.Contains(block, "RENDERINGGEN_SKIP_GPU_E2E") {
+		t.Error("test-certification sets RENDERINGGEN_SKIP_GPU_E2E, so it would report a green run in which every real-engine test skipped")
 	}
+
+	readmePath := filepath.Join(RepoRoot(), "README.md")
+	readmeRaw, err := os.ReadFile(readmePath)
+	if err != nil {
+		t.Fatalf("read %s: %v", readmePath, err)
+	}
+	command := "CHRONON_BIN=/path/to/chronon3d_cli make test-certification"
+	if !strings.Contains(string(readmeRaw), command) {
+		t.Errorf("README must document the local certification command %q", command)
+	}
+}
+
+// ciMakeTargetBlock slices one Makefile target by its unindented header. The
+// body includes the tab-indented recipe and stops at the next unindented line
+// (the next target, variable or top-level comment).
+func ciMakeTargetBlock(t *testing.T, makefile, target string) string {
+	t.Helper()
+	var sb strings.Builder
+	in := false
+	for _, line := range strings.Split(makefile, "\n") {
+		if strings.HasPrefix(line, target+":") {
+			in = true
+			sb.WriteString(line)
+			sb.WriteString("\n")
+			continue
+		}
+		if in {
+			if line == "" || strings.HasPrefix(line, "\t") || strings.HasPrefix(line, " ") {
+				sb.WriteString(line)
+				sb.WriteString("\n")
+				continue
+			}
+			break
+		}
+	}
+	return sb.String()
 }
 
 // TestCIPublishRequiresAggregateVerify pins the release-integrity gate: no
