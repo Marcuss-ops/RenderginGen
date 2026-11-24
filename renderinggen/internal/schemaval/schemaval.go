@@ -277,6 +277,25 @@ func ValidateFile(doc []byte, schemaPath string) error {
 }
 
 func validate(doc any, schema, root map[string]any, path string, refDepth int) error {
+	if err := validateSchemaKeywords(doc, schema, root, path, refDepth); err != nil {
+		return err
+	}
+	switch d := doc.(type) {
+	case map[string]any:
+		return validateObjectKeywords(d, schema, root, path, refDepth)
+	case []any:
+		return validateArrayKeywords(d, schema, root, path, refDepth)
+	case string:
+		return validateStringKeywords(d, schema, path)
+	case float64:
+		return validateNumberKeywords(d, schema, path)
+	}
+	return nil
+}
+
+// validateSchemaKeywords applies the keywords that do not depend on the
+// instance's Go type: $ref, const, enum, type, and the boolean combinators.
+func validateSchemaKeywords(doc any, schema, root map[string]any, path string, refDepth int) error {
 	if ref, ok := schema["$ref"].(string); ok {
 		if refDepth >= maxRefDepth {
 			return fmt.Errorf("%s: $ref chain longer than %d (self-referential schema?)", path, maxRefDepth)
@@ -384,94 +403,108 @@ func validate(doc any, schema, root map[string]any, path string, refDepth int) e
 		}
 	}
 
-	switch d := doc.(type) {
-	case map[string]any:
-		if req, ok := schema["required"].([]any); ok {
-			for _, r := range req {
-				name, _ := r.(string)
-				if _, present := d[name]; !present {
-					return fmt.Errorf("%s: missing required property %q", path, name)
-				}
+	return nil
+}
+
+// validateObjectKeywords applies object-only keywords.
+func validateObjectKeywords(d map[string]any, schema, root map[string]any, path string, refDepth int) error {
+	if req, ok := schema["required"].([]any); ok {
+		for _, r := range req {
+			name, _ := r.(string)
+			if _, present := d[name]; !present {
+				return fmt.Errorf("%s: missing required property %q", path, name)
 			}
 		}
-		props, _ := schema["properties"].(map[string]any)
-		for key, val := range d {
-			if sub, ok := props[key].(map[string]any); ok {
-				if err := validate(val, sub, root, path+"."+key, refDepth); err != nil {
-					return err
-				}
-				continue
+	}
+	props, _ := schema["properties"].(map[string]any)
+	for key, val := range d {
+		if sub, ok := props[key].(map[string]any); ok {
+			if err := validate(val, sub, root, path+"."+key, refDepth); err != nil {
+				return err
 			}
-			if ap, ok := schema["additionalProperties"]; ok {
-				switch apv := ap.(type) {
-				case bool:
-					if !apv {
-						return fmt.Errorf("%s: additional property %q is not allowed", path, key)
-					}
-				case map[string]any:
-					if err := validate(val, apv, root, path+"."+key, refDepth); err != nil {
-						return err
-					}
-				}
-			}
+			continue
 		}
-	case []any:
-		if unique, ok := schema["uniqueItems"].(bool); ok && unique {
-			seen := make(map[string]struct{}, len(d))
-			for i, item := range d {
-				encoded, err := json.Marshal(item)
-				if err != nil {
-					return fmt.Errorf("%s[%d]: encode array item for uniqueItems: %w", path, i, err)
+		if ap, ok := schema["additionalProperties"]; ok {
+			switch apv := ap.(type) {
+			case bool:
+				if !apv {
+					return fmt.Errorf("%s: additional property %q is not allowed", path, key)
 				}
-				key := string(encoded)
-				if _, duplicate := seen[key]; duplicate {
-					return fmt.Errorf("%s[%d]: duplicate array item violates uniqueItems", path, i)
-				}
-				seen[key] = struct{}{}
-			}
-		}
-		if items, ok := schema["items"].(map[string]any); ok {
-			for i, item := range d {
-				if err := validate(item, items, root, fmt.Sprintf("%s[%d]", path, i), refDepth); err != nil {
+			case map[string]any:
+				if err := validate(val, apv, root, path+"."+key, refDepth); err != nil {
 					return err
 				}
 			}
 		}
-		if min, ok := num(schema["minItems"]); ok && float64(len(d)) < min {
-			return fmt.Errorf("%s: %d items, want >= %v", path, len(d), min)
-		}
-		if max, ok := num(schema["maxItems"]); ok && float64(len(d)) > max {
-			return fmt.Errorf("%s: %d items, want <= %v", path, len(d), max)
-		}
-	case string:
-		if min, ok := num(schema["minLength"]); ok && float64(len(d)) < min {
-			return fmt.Errorf("%s: string length %d, want >= %v", path, len(d), min)
-		}
-		if max, ok := num(schema["maxLength"]); ok && float64(len(d)) > max {
-			return fmt.Errorf("%s: string length %d, want <= %v", path, len(d), max)
-		}
-		if pattern, ok := schema["pattern"].(string); ok {
-			re, err := compilePattern(pattern)
+	}
+	return nil
+}
+
+// validateArrayKeywords applies array-only keywords.
+func validateArrayKeywords(d []any, schema, root map[string]any, path string, refDepth int) error {
+	if unique, ok := schema["uniqueItems"].(bool); ok && unique {
+		seen := make(map[string]struct{}, len(d))
+		for i, item := range d {
+			encoded, err := json.Marshal(item)
 			if err != nil {
-				return fmt.Errorf("%s: schema pattern %q does not compile: %w", path, pattern, err)
+				return fmt.Errorf("%s[%d]: encode array item for uniqueItems: %w", path, i, err)
 			}
-			if !re.MatchString(d) {
-				return fmt.Errorf("%s: value %q does not match pattern %q", path, d, pattern)
+			key := string(encoded)
+			if _, duplicate := seen[key]; duplicate {
+				return fmt.Errorf("%s[%d]: duplicate array item violates uniqueItems", path, i)
+			}
+			seen[key] = struct{}{}
+		}
+	}
+	if items, ok := schema["items"].(map[string]any); ok {
+		for i, item := range d {
+			if err := validate(item, items, root, fmt.Sprintf("%s[%d]", path, i), refDepth); err != nil {
+				return err
 			}
 		}
-	case float64:
-		if min, ok := num(schema["minimum"]); ok && d < min {
-			return fmt.Errorf("%s: %v < minimum %v", path, d, min)
+	}
+	if min, ok := num(schema["minItems"]); ok && float64(len(d)) < min {
+		return fmt.Errorf("%s: %d items, want >= %v", path, len(d), min)
+	}
+	if max, ok := num(schema["maxItems"]); ok && float64(len(d)) > max {
+		return fmt.Errorf("%s: %d items, want <= %v", path, len(d), max)
+	}
+	return nil
+}
+
+// validateStringKeywords applies string-only keywords.
+func validateStringKeywords(d string, schema map[string]any, path string) error {
+	if min, ok := num(schema["minLength"]); ok && float64(len(d)) < min {
+		return fmt.Errorf("%s: string length %d, want >= %v", path, len(d), min)
+	}
+	if max, ok := num(schema["maxLength"]); ok && float64(len(d)) > max {
+		return fmt.Errorf("%s: string length %d, want <= %v", path, len(d), max)
+	}
+	if pattern, ok := schema["pattern"].(string); ok {
+		re, err := compilePattern(pattern)
+		if err != nil {
+			return fmt.Errorf("%s: schema pattern %q does not compile: %w", path, pattern, err)
 		}
-		if max, ok := num(schema["maximum"]); ok && d > max {
-			return fmt.Errorf("%s: %v > maximum %v", path, d, max)
+		if !re.MatchString(d) {
+			return fmt.Errorf("%s: value %q does not match pattern %q", path, d, pattern)
 		}
-		if min, ok := num(schema["exclusiveMinimum"]); ok && d <= min {
-			return fmt.Errorf("%s: %v <= exclusiveMinimum %v", path, d, min)
-		}
-		if max, ok := num(schema["exclusiveMaximum"]); ok && d >= max {
-			return fmt.Errorf("%s: %v >= exclusiveMaximum %v", path, d, max)
-		}
+	}
+	return nil
+}
+
+// validateNumberKeywords applies numeric-only keywords.
+func validateNumberKeywords(d float64, schema map[string]any, path string) error {
+	if min, ok := num(schema["minimum"]); ok && d < min {
+		return fmt.Errorf("%s: %v < minimum %v", path, d, min)
+	}
+	if max, ok := num(schema["maximum"]); ok && d > max {
+		return fmt.Errorf("%s: %v > maximum %v", path, d, max)
+	}
+	if min, ok := num(schema["exclusiveMinimum"]); ok && d <= min {
+		return fmt.Errorf("%s: %v <= exclusiveMinimum %v", path, d, min)
+	}
+	if max, ok := num(schema["exclusiveMaximum"]); ok && d >= max {
+		return fmt.Errorf("%s: %v >= exclusiveMaximum %v", path, d, max)
 	}
 	return nil
 }

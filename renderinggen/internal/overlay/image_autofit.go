@@ -114,21 +114,3 @@ func autoFitGroupMember(src *semanticPlan, layer *Layer, count, index int) (bool
 	}
 	return autoFitLayerToSlot(src, layer, slot), nil
 }
-
-// autoFitEntityPortrait covers a LANDSCAPE entity card image into the
-// supported portrait box, keeping its height and center: the caption
-// compiled from its bounds follows automatically. Vertical and square boxes
-// are already caption-safe and are returned untouched — a square box the
-// producer declared (box_width == box_height) is a producer decision, not a
-// landscape box to be rescued into the portrait ratio.
-func autoFitEntityPortrait(layer *Layer) bool {
-	if layer == nil || len(layer.Size) < 2 || layer.Size[0] <= 0 || layer.Size[1] <= 0 {
-		return false
-	}
-	if layer.Size[0] <= layer.Size[1] {
-		return false
-	}
-	layer.Size = []float64{layer.Size[1] * entityPortraitRatio, layer.Size[1]}
-	layer.Fit = FitCover
-	return true
-}

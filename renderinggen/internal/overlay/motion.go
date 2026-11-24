@@ -221,20 +221,6 @@ func retimeTextAnimators(animators []TextAnimator, duration int64) []TextAnimato
 	return animators
 }
 
-// resolveMotion is the layer-track-only view of the shared lowering. It keeps
-// the authored motion windows of the definition it is handed and, without a
-// concrete layer duration, emits no exit window.
-func resolveMotion(m MotionDefinition) ([]AnimationTrack, error) {
-	animation, err := lowerMotion(m.ID, m.Enter, m.Exit, nil, "", 0, false)
-	if err != nil {
-		return nil, err
-	}
-	if animation == nil {
-		return nil, nil
-	}
-	return animation.Tracks, nil
-}
-
 // animationForPreset is the shared lowering path for the official catalog. The
 // preset owns both of its windows (the entrance it declares and the exit), and
 // the same pass produces the layer tracks AND the text animators, so a preset's

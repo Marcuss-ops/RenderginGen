@@ -118,10 +118,14 @@ func compileCameraPanGroup(ri resolvedItem, src *semanticPlan, registry *assetRe
 	pan := cameraPanTrack(ri, src, count, spacing, duration, spec)
 	assets := resolveAssetPaths(registry, ri.Item.Assets)
 	output := make([]Layer, 0, count*2)
+	var gridSource *resolvedItem
 	for index, child := range ri.Item.ImageLayers {
 		childResolved, image, err := compileStaticImageChild(ri, src, assets, child, index)
 		if err != nil {
 			return nil, err
+		}
+		if _, hasChildGrid := childResolved.Params["grid"]; hasChildGrid && gridSource == nil {
+			gridSource = &childResolved
 		}
 		if err := validatePremiumImageDuration(*definition, duration); err != nil {
 			return nil, err
@@ -153,7 +157,7 @@ func compileCameraPanGroup(ri resolvedItem, src *semanticPlan, registry *assetRe
 			output = append(output, captionLayer)
 		}
 	}
-	return output, nil
+	return addCompositeGridOnce(ri, src, gridSource, output)
 }
 
 // stripPosition offsets one member to its slot. Image and text layer positions

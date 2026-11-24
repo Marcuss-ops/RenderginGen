@@ -23,6 +23,8 @@ riferimenti verificati e nessun criterio dichiarato verde senza evidenza.
 | RG-PANIC-01 | Robustezza | P3 | CLOSED | `panic` in produzione e busy-wait senza contesto |
 | RG-LEGACY-01 | Legacy | P3 | CLOSED | Alias e fallback legacy sparsi |
 
+**Stato registro (2026-11-24):** 14/14 CLOSED.
+
 ## Ordine di esecuzione
 
 1. Ondata 1 (zero rischio): RG-HYG-01..04.
@@ -41,6 +43,27 @@ con il gate eseguito sullo stesso working tree.
 `make verify` in `RenderingGen` → **rc=0**: gofmt pulito, build standalone dei
 tre moduli, deadcode con i soli export esterni allowlisted, `go vet` verde e
 `make test-unit` verde su `renderinggen`, `queue` e `objectstore`.
+
+## Seconda passata 2026-11-24
+
+Ricontrollati gli otto ticket CLOSED e il ticket allora PARTIAL contro codice, test e gate:
+
+- **Confermati:** RG-HYG-01, RG-HYG-03, RG-HYG-04, RG-BUG-01, RG-DRY-01,
+  RG-STATE-01. Directory/probe, helper test-only, artefatti, propagazione
+  JSONB, SSOT `ImageRecipeEffectID`/`Resolve` e stato per-Processor sono
+  ancora presenti e pinnati dai test.
+- **RG-HYG-02 corretto:** le due funzioni morte restano rimosse; i poison vivi
+  `poisonCorruptJob` e `poisonCorruptRead` esistono ancora, ma non hanno test
+  DB dedicati. Il criterio che parlava di copertura test è stato riscritto.
+- **RG-BUG-02 confermato:** 66 siti `_ =` residui, esattamente la somma della
+  tabella dell'inventario; `materialize.go` passa `job.ID` a
+  `dumpCompiledPlan`.
+- **RG-QUAL-01 era ancora PARTIAL in questa passata:** `ValidateProbe` era un
+  metodo di `OutputProfile`, `BuildWithFit` e `(*Config).validate` erano ancora
+  presenti; è stato chiuso nella terza passata (sotto).
+- **Gate:** `make verify` → **rc=0**; test mirati verdi; race test verdi su
+  processor/prefetch, overlay/alias, media/binaries e queue/job-type;
+  `git diff --check` → rc=0.
 
 ## Terza passata 2026-11-24 (RG-DRY-02 … RG-LEGACY-01)
 

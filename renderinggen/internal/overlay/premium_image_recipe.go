@@ -60,10 +60,14 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 	}
 	assets := resolveAssetPaths(registry, ri.Item.Assets)
 	output := make([]Layer, 0, count*2)
+	var gridSource *resolvedItem
 	for index, child := range ri.Item.ImageLayers {
 		childResolved, image, err := compileStaticImageChild(ri, src, assets, child, index)
 		if err != nil {
 			return nil, err
+		}
+		if _, hasChildGrid := childResolved.Params["grid"]; hasChildGrid && gridSource == nil {
+			gridSource = &childResolved
 		}
 		if err := validatePremiumImageDuration(*definition, image.DurationFrames); err != nil {
 			return nil, err
@@ -97,7 +101,7 @@ func compileImageGroupRecipe(ri resolvedItem, src *semanticPlan, registry *asset
 			output = append(output, captionLayer)
 		}
 	}
-	return output, nil
+	return addCompositeGridOnce(ri, src, gridSource, output)
 }
 
 func isMultiImageRecipe(definition *motion.MotionDefinition) bool {

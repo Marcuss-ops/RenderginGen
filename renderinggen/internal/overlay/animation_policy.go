@@ -60,19 +60,6 @@ func cloneMotionParams(params map[string]any) map[string]any {
 	return cloned
 }
 
-// isTextLikeKind derives policy eligibility from the semantic registry's
-// rendering behavior instead of maintaining another list of text-oriented
-// kinds. Entity cards retain text behavior when compiled without an image.
-func isTextLikeKind(kind ItemKind) bool {
-	behavior := behaviorOf(kind)
-	return behavior == behaviorText || behavior == behaviorEntity
-}
-
-func animationUsesMultiImageRecipe(id string) bool {
-	definition, err := resolveMotionDefinition(id)
-	return err == nil && isMultiImageRecipe(definition)
-}
-
 // animationUsesGroupRecipe accepts only certified image_group_v1 choreographies,
 // which carry a GroupRecipe rather than an ImageRecipe stack.
 func animationUsesGroupRecipe(id string) bool {

@@ -12,14 +12,6 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 )
 
-// animationForMotion lowers a producer-selected motion_id through the shared
-// spine (see lowerMotion). Semantic clips hold their resolved pose until the
-// clip boundary; an exit is opt-in through motion_params.exit_frames.
-func animationForMotion(id string, params map[string]any, textValue string, duration int64, presetExit int, phraseFloor ...bool) (*LayerAnimation, error) {
-	isPhrase := len(phraseFloor) > 0 && phraseFloor[0]
-	return animationForMotionTarget(id, params, textValue, duration, presetExit, "", "", isPhrase)
-}
-
 func animationForMotionTarget(id string, params map[string]any, textValue string, duration int64, presetExit int, itemID, target string, phraseFloor bool) (*LayerAnimation, error) {
 	resolved, err := resolveRegisteredMotion(id)
 	if err != nil {
@@ -304,14 +296,6 @@ func applyPresetDefinition(layer *Layer, d PresetDefinition) {
 		bg.Padding = append([]float64(nil), d.Style.Background.Padding...)
 		layer.Style.Background = &bg
 	}
-}
-
-// animationForDefinition lowers a preset's motion without a concrete layer
-// duration: the entrance is used exactly as authored and no exit window is
-// emitted. Callers that know the layer duration use animationForPreset, which
-// is the same lowering with both windows resolved against that duration.
-func animationForDefinition(d PresetDefinition) (*LayerAnimation, error) {
-	return animationForPreset(d, "", 0)
 }
 
 func rgbaHex(v []float64) string {
