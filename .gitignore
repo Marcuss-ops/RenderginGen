@@ -170,3 +170,7 @@ renderinggen/drive-upload
 *.pgm
 *.mp3
 *.wav
+
+# Vulkan framebuffer dumps are generated evidence, not source. Keep the
+# reviewed report/metadata tracked and the raw buffer on disk only.
+/evidence/**/*.raw
