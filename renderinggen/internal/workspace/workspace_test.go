@@ -360,6 +360,84 @@ func TestMaterializeWritesLogicalPaths(t *testing.T) {
 	}
 }
 
+func TestMaterializeWorkerCountIsConfigurableAndBounded(t *testing.T) {
+	t.Setenv(MaterializeWorkersEnv, "16")
+	if got := materializeWorkerCount(64); got != 16 {
+		t.Fatalf("configured workers = %d, want 16", got)
+	}
+	t.Setenv(MaterializeWorkersEnv, "999")
+	if got := materializeWorkerCount(64); got != maxMaterializeWorkers {
+		t.Fatalf("over-limit workers = %d, want clamp to %d", got, maxMaterializeWorkers)
+	}
+	t.Setenv(MaterializeWorkersEnv, "not-a-number")
+	if got := materializeWorkerCount(64); got != defaultMaterializeWorkers {
+		t.Fatalf("invalid override = %d, want default %d", got, defaultMaterializeWorkers)
+	}
+	t.Setenv(MaterializeWorkersEnv, "")
+	if got := materializeWorkerCount(3); got != 3 {
+		t.Fatalf("workers for 3 assets = %d, want 3", got)
+	}
+	if got := materializeWorkerCount(0); got != 0 {
+		t.Fatalf("workers for 0 assets = %d, want 0", got)
+	}
+}
+
+// TestMaterializeResolvesMoreThanFourAssetsConcurrently pins the reason the
+// pool was raised: a 64-79 asset job must not download in four-file waves.
+// The resolver holds every worker until all eight have started, so a pool
+// capped at four cannot satisfy the start barrier.
+func TestMaterializeResolvesMoreThanFourAssetsConcurrently(t *testing.T) {
+	t.Setenv(MaterializeWorkersEnv, "8")
+	root := t.TempDir()
+	sources := filepath.Join(root, "sources")
+	if err := os.MkdirAll(sources, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	w, err := New(root, "job-parallel-materialize")
+	if err != nil {
+		t.Fatalf("New: %v", err)
+	}
+	t.Cleanup(func() { _ = w.Cleanup() })
+
+	const assetCount = 8
+	assets := make([]queue.AssetRef, assetCount)
+	for i := range assets {
+		assets[i] = queue.AssetRef{Hash: fmt.Sprintf("h-%d", i), LogicalPath: fmt.Sprintf("images/%d.png", i)}
+	}
+	started := make(chan struct{}, assetCount)
+	release := make(chan struct{})
+	resolve := func(ctx context.Context, asset queue.AssetRef) (ResolvedAsset, error) {
+		started <- struct{}{}
+		select {
+		case <-release:
+		case <-ctx.Done():
+			return ResolvedAsset{}, ctx.Err()
+		}
+		path := filepath.Join(sources, asset.Hash)
+		data := []byte("bytes:" + asset.Hash)
+		if err := os.WriteFile(path, data, 0o644); err != nil {
+			return ResolvedAsset{}, err
+		}
+		return ResolvedAsset{LocalPath: path, SizeBytes: int64(len(data))}, nil
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- w.MaterializePaths(context.Background(), resolve, assets) }()
+	for i := 0; i < assetCount; i++ {
+		select {
+		case <-started:
+		case <-time.After(3 * time.Second):
+			close(release)
+			<-done
+			t.Fatalf("only %d of %d asset resolutions started; the pool is still capped near 4", i, assetCount)
+		}
+	}
+	close(release)
+	if err := <-done; err != nil {
+		t.Fatalf("materialize: %v", err)
+	}
+}
+
 // TestMaterializeHardLinksWhenSourceSharesTheFilesystem pins the memory saving:
 // content-addressed bytes are immutable, so a workspace on the same filesystem
 // as the cache must share the inode instead of copying the video into every

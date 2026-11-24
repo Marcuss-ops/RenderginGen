@@ -24,7 +24,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -313,6 +312,44 @@ func (w *Workspace) WritePreparedPackage(pkg []byte) error {
 	return w.fsRoot.WriteFile("prepared.json", pkg, 0o644)
 }
 
+const (
+	// defaultMaterializeWorkers is the asset-resolution pool. Materialization
+	// is network/disk I/O bound, so it is sized independently of NumCPU; the
+	// historical hard cap of 4 made a 64-79 asset job download in four-file
+	// waves before the render could start.
+	defaultMaterializeWorkers = 12
+	// maxMaterializeWorkers bounds the operator override so a typo cannot open
+	// an unbounded number of concurrent object-store streams.
+	maxMaterializeWorkers = 32
+	// MaterializeWorkersEnv overrides the pool size. Values are clamped to
+	// [1, maxMaterializeWorkers]; an invalid value keeps the default.
+	MaterializeWorkersEnv = "RENDERINGGEN_MATERIALIZE_WORKERS"
+)
+
+// materializeWorkerCount returns the bounded worker count for assetCount
+// assets. It never returns more workers than assets, and never fewer than one.
+func materializeWorkerCount(assetCount int) int {
+	if assetCount < 1 {
+		return 0
+	}
+	workers := defaultMaterializeWorkers
+	if raw := strings.TrimSpace(os.Getenv(MaterializeWorkersEnv)); raw != "" {
+		if parsed, err := strconv.Atoi(raw); err == nil && parsed > 0 {
+			workers = parsed
+		}
+	}
+	if workers > maxMaterializeWorkers {
+		workers = maxMaterializeWorkers
+	}
+	if workers > assetCount {
+		workers = assetCount
+	}
+	if workers < 1 {
+		workers = 1
+	}
+	return workers
+}
+
 // MaterializePaths resolves every asset to a local file and hard-links it into
 // the workspace. A streaming copy is used only when the cache and workspace
 // are on different filesystems.
@@ -325,23 +362,13 @@ func (w *Workspace) MaterializePaths(ctx context.Context, resolve PathResolver, 
 	}
 	workCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	// Adaptive pool: never more workers than assets, never more than the
-	// historical ceiling of 4, and never more than the host can run. The
-	// channel is buffered to workerCount so the send loop below never blocks
-	// on a worker that is busy copying while another is free — without the
-	// buffer a single slow asset serializes dispatch behind the send.
-	// firstErr keeps the FIRST failure (via errOnce) so the caller sees the
-	// root cause, not the last racing worker's error.
-	workerCount := len(assets)
-	if workerCount > 4 {
-		workerCount = 4
-	}
-	if ncpu := runtime.NumCPU(); workerCount > ncpu {
-		workerCount = ncpu
-	}
-	if workerCount < 1 {
-		workerCount = 1
-	}
+	// Adaptive I/O pool: never more workers than assets, default 12, and
+	// operator-configurable up to 32. The channel is buffered to workerCount so
+	// the send loop below never blocks on a worker that is busy copying while
+	// another is free — without the buffer a single slow asset serializes
+	// dispatch behind the send. firstErr keeps the FIRST failure (via errOnce)
+	// so the caller sees the root cause, not the last racing worker's error.
+	workerCount := materializeWorkerCount(len(assets))
 	jobs := make(chan queue.AssetRef, workerCount)
 	var wg sync.WaitGroup
 	var firstErr error
