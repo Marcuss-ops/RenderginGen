@@ -28,6 +28,7 @@ it first.
 ## Expiry
 
 - **Owner:** RenderingGen overlay.
+- **Ticket:** [TICKET-LEGACY-COMPOSITE-REPLAY-REMOVAL-2026-12-31](../tickets/TICKET-LEGACY-COMPOSITE-REPLAY-REMOVAL-2026-12-31.md).
 - **Replay window ends:** 2026-12-31.
 - **Removal condition:** before that date, confirm no external sealed plan still
   needs per-child motion; then delete `compileLegacyCompositeImageLayers` and the
