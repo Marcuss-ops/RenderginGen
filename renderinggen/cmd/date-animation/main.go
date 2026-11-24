@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/cli"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/dateanim"
 )
 
@@ -147,11 +148,11 @@ func runMaterialized(datesFlag, textFlag, planID, videoID, groupID, planOut, ren
 }
 
 func renderPlan(plan []byte, planPath, renderPath, chrononBinary, assetsRoot string, stdout, stderr io.Writer) error {
-	binary := resolveChronon(chrononBinary)
+	binary := cli.ResolveChronon(chrononBinary)
 	if binary == "" {
 		return fmt.Errorf("chronon3d_cli not found; pass -chronon or set CHRONON_BIN")
 	}
-	root := resolveAssetsRoot(assetsRoot)
+	root := cli.ResolveAssetsRoot(assetsRoot)
 	if root == "" {
 		return fmt.Errorf("ChrononTemplate root not found; pass -assets-root or set CHRONON_TEMPLATE_ROOT")
 	}
@@ -177,49 +178,6 @@ func renderPlan(plan []byte, planPath, renderPath, chrononBinary, assetsRoot str
 		return fmt.Errorf("render failed: %w", err)
 	}
 	return nil
-}
-
-func resolveChronon(explicit string) string {
-	if explicit != "" {
-		return explicit
-	}
-	if env := os.Getenv("CHRONON_BIN"); env != "" {
-		return env
-	}
-	for _, candidate := range []string{
-		"../../Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
-		"../Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
-		"Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
-	} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			if absolute, err := filepath.Abs(candidate); err == nil {
-				return absolute
-			}
-			return candidate
-		}
-	}
-	if binary, err := exec.LookPath("chronon3d_cli"); err == nil {
-		return binary
-	}
-	return ""
-}
-
-func resolveAssetsRoot(explicit string) string {
-	if explicit != "" {
-		return explicit
-	}
-	if env := os.Getenv("CHRONON_TEMPLATE_ROOT"); env != "" {
-		return env
-	}
-	for _, candidate := range []string{"../../ChrononTemplate", "../ChrononTemplate", "ChrononTemplate"} {
-		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
-			if absolute, err := filepath.Abs(candidate); err == nil {
-				return absolute
-			}
-			return candidate
-		}
-	}
-	return ""
 }
 
 func splitDates(value string) []string {

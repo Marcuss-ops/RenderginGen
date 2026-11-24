@@ -461,7 +461,9 @@ func copyFileRooted(ctx context.Context, root *os.Root, source, dst string) erro
 }
 
 // copyBufPool recycles the streaming materialization buffer. It is larger
-// than io.Copy's built-in 32 KiB because these are video-sized assets.
+// than io.Copy's built-in 32 KiB because these are video-sized assets. It is
+// deliberately separate from hashio's 64 KiB pool: sharing would force one
+// chunk size on both hashing and workspace materialization.
 var copyBufPool = sync.Pool{
 	New: func() any {
 		buf := make([]byte, 256*1024)

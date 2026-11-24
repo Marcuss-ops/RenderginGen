@@ -16,12 +16,12 @@ riferimenti verificati e nessun criterio dichiarato verde senza evidenza.
 | RG-BUG-02 | Errori ignorati | P2 | CLOSED | Inventario degli errori ignorati e casi che nascondevano fallimenti |
 | RG-STATE-01 | Stato globale | P2 | CLOSED | Quattro singleton mutabili di processo |
 | RG-DRY-01 | SSOT | P2 | CLOSED | `imageRecipeEffectID` e `resolveFeature` duplicati |
-| RG-DRY-02 | DRY | P3 | OPEN | `buildinfo`, `hashFile`, `copyBufPool`, `finite`, helper CLI |
-| RG-ARCH-01 | Architettura | P2 | OPEN | Package `overlay` con 90 file e hotspot >1.000 righe |
-| RG-ARCH-02 | Architettura | P3 | OPEN | Package `processor` con 46 file |
-| RG-QUAL-01 | Complessità | P2 | PARTIAL | Funzioni con CC 40–77 |
-| RG-PANIC-01 | Robustezza | P3 | OPEN | `panic` in produzione e busy-wait senza contesto |
-| RG-LEGACY-01 | Legacy | P3 | OPEN | Alias e fallback legacy sparsi |
+| RG-DRY-02 | DRY | P3 | CLOSED | `buildinfo`, `hashFile`, `copyBufPool`, `finite`, helper CLI |
+| RG-ARCH-01 | Architettura | P2 | CLOSED | Package `overlay` con 90 file e hotspot >1.000 righe |
+| RG-ARCH-02 | Architettura | P3 | CLOSED | Package `processor` con 46 file |
+| RG-QUAL-01 | Complessità | P2 | CLOSED | Funzioni con CC 40–77 |
+| RG-PANIC-01 | Robustezza | P3 | CLOSED | `panic` in produzione e busy-wait senza contesto |
+| RG-LEGACY-01 | Legacy | P3 | CLOSED | Alias e fallback legacy sparsi |
 
 ## Ordine di esecuzione
 
@@ -41,3 +41,19 @@ con il gate eseguito sullo stesso working tree.
 `make verify` in `RenderingGen` → **rc=0**: gofmt pulito, build standalone dei
 tre moduli, deadcode con i soli export esterni allowlisted, `go vet` verde e
 `make test-unit` verde su `renderinggen`, `queue` e `objectstore`.
+
+## Terza passata 2026-11-24 (RG-DRY-02 … RG-LEGACY-01)
+
+Chiusi RG-DRY-02, RG-ARCH-01, RG-ARCH-02, RG-QUAL-01, RG-PANIC-01 e
+RG-LEGACY-01. Evidenze: `docs/evidence/code-hygiene-20261124/ARCH-01-MAP.md`,
+`ARCH-02-MAP.md`, `PANIC-AUDIT.md`, `docs/operations/legacy-alias-census.md`.
+
+- `make verify` → **rc=0** (gofmt, build standalone, deadcode, vet, test-unit
+  su renderinggen/queue/objectstore).
+- `go test -race ./internal/workspace ./internal/motion` → verde.
+- `gocyclo -over 20` non riporta più `ValidateProbe`, `BuildWithFit`,
+  `Config.validate`; restano solo `applyDefaults`, `readGOPPacketTable` e due
+  test fuori scope.
+- Guard aggiunti: parità buildinfo, singolo hash file, resolver CLI condivisi,
+  `numeric.Finite`, limiti di file overlay, indipendenza prescale, panic
+  allowlist, census alias.

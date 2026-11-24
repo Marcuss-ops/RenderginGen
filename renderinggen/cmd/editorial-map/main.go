@@ -18,6 +18,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/cli"
 )
 
 const sceneSchema = "chrononplugin.editorial-map-scene.v1"
@@ -165,11 +167,11 @@ func renderPlan(planPath, renderPath, chrononBinary, assetsRoot, backend string,
 	if backend != "software" && backend != "vulkan" {
 		return fmt.Errorf("backend %q, want software or vulkan", backend)
 	}
-	binary := resolveChronon(chrononBinary)
+	binary := cli.ResolveChronon(chrononBinary)
 	if binary == "" {
 		return fmt.Errorf("chronon3d_cli not found; pass -chronon or set CHRONON_BIN")
 	}
-	root := resolveAssetsRoot(assetsRoot)
+	root := cli.ResolveAssetsRoot(assetsRoot)
 	if root == "" {
 		return fmt.Errorf("ChrononTemplate root not found; pass -assets-root or set CHRONON_TEMPLATE_ROOT")
 	}
@@ -219,51 +221,6 @@ func resolveEmitter(explicit string) string {
 	}
 	if binary, err := exec.LookPath("chronontemplate_emit_editorial_map"); err == nil {
 		return binary
-	}
-	return ""
-}
-
-func resolveChronon(explicit string) string {
-	if explicit != "" {
-		return explicit
-	}
-	if env := os.Getenv("CHRONON_BIN"); env != "" {
-		return env
-	}
-	for _, candidate := range []string{
-		"../../Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
-		"../Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
-		"Chronon3d/build/chronon/linux-video-release/apps/chronon3d_cli/chronon3d_cli",
-		"../../Chronon3d/build/chronon/linux-video-test/apps/chronon3d_cli/chronon3d_cli",
-		"Chronon3d/build/chronon/linux-video-test/apps/chronon3d_cli/chronon3d_cli",
-	} {
-		if info, err := os.Stat(candidate); err == nil && !info.IsDir() {
-			if absolute, err := filepath.Abs(candidate); err == nil {
-				return absolute
-			}
-			return candidate
-		}
-	}
-	if binary, err := exec.LookPath("chronon3d_cli"); err == nil {
-		return binary
-	}
-	return ""
-}
-
-func resolveAssetsRoot(explicit string) string {
-	if explicit != "" {
-		return explicit
-	}
-	if env := os.Getenv("CHRONON_TEMPLATE_ROOT"); env != "" {
-		return env
-	}
-	for _, candidate := range []string{"../../ChrononTemplate", "../ChrononTemplate", "ChrononTemplate"} {
-		if info, err := os.Stat(candidate); err == nil && info.IsDir() {
-			if absolute, err := filepath.Abs(candidate); err == nil {
-				return absolute
-			}
-			return candidate
-		}
 	}
 	return ""
 }

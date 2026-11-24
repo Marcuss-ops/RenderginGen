@@ -380,6 +380,27 @@ func (p OutputProfile) acceptsCodecConfig(certified string) bool {
 }
 
 func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
+	if err := p.validateVideoIdentity(probe); err != nil {
+		return err
+	}
+	if err := p.validateVideoTiming(probe); err != nil {
+		return err
+	}
+	if err := p.validateColour(probe); err != nil {
+		return err
+	}
+	if err := p.validateStreamShape(probe); err != nil {
+		return err
+	}
+	if probe.DurationUS <= 0 || probe.FrameCount <= 0 {
+		return fmt.Errorf("profile %s: duration/frame count must be positive", p.ID)
+	}
+	return nil
+}
+
+// validateVideoIdentity checks the codec/container identity and the finite
+// profile allowlists. Its order is the observable first-error order.
+func (p OutputProfile) validateVideoIdentity(probe ProbeResult) error {
 	if probe.Container != p.Container && probe.Container != "mov,mp4,m4a,3gp,3g2,mj2" {
 		return fmt.Errorf("profile %s: container %q, want mp4", p.ID, probe.Container)
 	}
@@ -398,6 +419,13 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	if p.CodecConfigSHA256 != "" && !p.acceptsCodecConfig(probe.CodecConfigSHA256) {
 		return fmt.Errorf("profile %s: SPS/PPS fingerprint %q, want %q", p.ID, probe.CodecConfigSHA256, p.CodecConfigSHA256)
 	}
+	return nil
+}
+
+// validateVideoTiming covers the GOP/keyframe/timebase proof. It deliberately
+// runs before the colour and stream-shape checks so the first reported failure
+// stays the one an operator saw before the split.
+func (p OutputProfile) validateVideoTiming(probe ProbeResult) error {
 	if p.RequireNoAudio && probe.AudioStreams != 0 {
 		return fmt.Errorf("profile %s: audio streams=%d, want 0", p.ID, probe.AudioStreams)
 	}
@@ -415,7 +443,7 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 		return fmt.Errorf("profile %s: keyframe interval %d, want %d", p.ID, probe.KeyframeInterval, p.KeyframeInterval)
 	}
 	if pinned, ok := pinRational(p.SARNum, p.SARDen, probe.SARNum, probe.SARDen); pinned && !ok {
-		return fmt.Errorf("profile %s: SAR %d/%d, want %d/%d", p.ID, probe.SARNum, probe.SARDen, p.SARNum, p.SARDen)
+		return fmt.Errorf("profile %s: SAR %d/%d, want %d/%d", p.ID, probe.SARNum, p.SARDen, p.SARNum, p.SARDen)
 	}
 	if pinned, ok := pinRational(p.VideoTimeBaseNum, p.VideoTimeBaseDen, probe.VideoTimeBaseNum, probe.VideoTimeBaseDen); pinned && !ok {
 		return fmt.Errorf("profile %s: video timebase %d/%d, want %d/%d", p.ID, probe.VideoTimeBaseNum, probe.VideoTimeBaseDen, p.VideoTimeBaseNum, p.VideoTimeBaseDen)
@@ -423,9 +451,20 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	if pinned, ok := pinRational(p.AudioTimeBaseNum, p.AudioTimeBaseDen, probe.AudioTimeBaseNum, probe.AudioTimeBaseDen); pinned && !ok {
 		return fmt.Errorf("profile %s: audio timebase %d/%d, want %d/%d", p.ID, probe.AudioTimeBaseNum, probe.AudioTimeBaseDen, p.AudioTimeBaseNum, p.AudioTimeBaseDen)
 	}
-	if err := p.validateColour(probe); err != nil {
+	return nil
+}
+
+// validateStreamShape checks the stream counts and the audio identity. It runs
+// after colour because the historical validator did, and callers depend on the
+// first error rather than on the complete set.
+func (p OutputProfile) validateStreamShape(probe ProbeResult) error {
+	if err := p.validateStreamPresence(probe); err != nil {
 		return err
 	}
+	return p.validateAudioIdentity(probe)
+}
+
+func (p OutputProfile) validateStreamPresence(probe ProbeResult) error {
 	if p.RequireStartPTSZero && probe.StartPTS != 0 {
 		return fmt.Errorf("profile %s: start_pts=%d, want 0", p.ID, probe.StartPTS)
 	}
@@ -435,6 +474,10 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	if p.AudioStreams > 0 && p.AudioStreams != probe.AudioStreams {
 		return fmt.Errorf("profile %s: audio streams=%d, want %d", p.ID, probe.AudioStreams, p.AudioStreams)
 	}
+	return nil
+}
+
+func (p OutputProfile) validateAudioIdentity(probe ProbeResult) error {
 	if p.AudioCodec != "" && probe.AudioCodec != "" && probe.AudioCodec != p.AudioCodec {
 		return fmt.Errorf("profile %s: audio codec %q, want %q", p.ID, probe.AudioCodec, p.AudioCodec)
 	}
@@ -452,9 +495,6 @@ func (p OutputProfile) ValidateProbe(probe ProbeResult) error {
 	}
 	if p.AudioBitrate != "" && probe.AudioBitrate != "" && probe.AudioBitrate != p.AudioBitrate {
 		return fmt.Errorf("profile %s: audio bitrate %q, want %q", p.ID, probe.AudioBitrate, p.AudioBitrate)
-	}
-	if probe.DurationUS <= 0 || probe.FrameCount <= 0 {
-		return fmt.Errorf("profile %s: duration/frame count must be positive", p.ID)
 	}
 	return nil
 }

@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/numeric"
 )
 
 // compileEntityCard lowers a portrait and its optional entity caption. The
@@ -338,7 +339,7 @@ func isChartBarItem(item resolvedItem) bool {
 	return ok && marked
 }
 
-func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+func finite(value float64) bool { return numeric.Finite(value) }
 
 func validateRGBA(color []float64) error {
 	if len(color) != 4 {

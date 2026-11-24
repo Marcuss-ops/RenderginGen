@@ -46,6 +46,14 @@ grep -rn 'legacy_composite_replay\|compileLegacyCompositeImageLayers\|LegacyComp
 Il census del 2026-11-18 è la baseline; va ripetuto il 2026-12-01 sugli
 artefatti sealed esterni, che non sono in questo checkout.
 
+**Aggiornamento 2026-11-24 (RenderingGen):** il census di questo checkout trova
+**0 piani di produzione** con `image_layers` non vuoto. Le cinque occorrenze di
+`"image_layers"` sono schema (`contracts/overlay-plan.v1.schema.json`), tipi del
+contratto e due comandi demo, non piani sealed. Baseline esterna invariata:
+nessuna proroga è stata concessa. Vedi
+`docs/operations/legacy-alias-census.md` per owner e date delle tabelle di alias
+non-composite.
+
 ## Cosa rimuovere
 
 ### Codice di produzione

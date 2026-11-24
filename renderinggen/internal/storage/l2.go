@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"io"
 	"io/fs"
 	"log"
 	"os"
@@ -18,6 +17,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/hashio"
 )
 
 // WITHOUT the lock, so concurrent installs of different assets proceed in
@@ -165,24 +166,13 @@ func (d *diskCache) Path(key string) (string, bool) {
 	// The streaming path hands out a path (which callers hard-link into a
 	// workspace), so it must prove the bytes before returning it too. The proof
 	// is paid once per file identity and then carried by verified.
-	if !d.contentVerified(key, p, info, func() (string, error) { return hashFileContent(p) }) {
+	if !d.contentVerified(key, p, info, func() (string, error) {
+		sum, _, err := hashio.File(p)
+		return sum, err
+	}) {
 		return "", false
 	}
 	return p, true
-}
-
-// hashFileContent returns the hex SHA-256 of a cache file.
-func hashFileContent(path string) (string, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-	digest := sha256.New()
-	if _, err := io.Copy(digest, f); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(digest.Sum(nil)), nil
 }
 
 // contentVerified proves that the bytes at p hash to key, remembering the file

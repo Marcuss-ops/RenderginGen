@@ -17,6 +17,8 @@ import (
 	"sort"
 	"strings"
 	"sync"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/numeric"
 )
 
 const WorldID = "world"
@@ -613,4 +615,4 @@ func validISO3(value string) bool {
 	return true
 }
 
-func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+func finite(value float64) bool { return numeric.Finite(value) }

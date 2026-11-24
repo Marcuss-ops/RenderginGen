@@ -1,11 +1,12 @@
 package overlay
 
 import (
-	"math"
 	"reflect"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/numeric"
 )
 
-func finiteFloat(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+func finiteFloat(value float64) bool { return numeric.Finite(value) }
 
 // sanitizePreparedPackage replaces non-finite floats with zero.
 //

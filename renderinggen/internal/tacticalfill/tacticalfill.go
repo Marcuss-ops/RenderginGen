@@ -20,6 +20,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geo"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/mapgeom"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/numeric"
 )
 
 const (
@@ -116,6 +117,43 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 	if selector == "" {
 		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: place selector is required")
 	}
+	width, height, padding, box, err := normalizeTerritoryOptions(opts)
+	if err != nil {
+		return Sample{}, geofeatures.Feature{}, Fit{}, err
+	}
+
+	feature, err := registry.Resolve(selector)
+	if err != nil {
+		return Sample{}, geofeatures.Feature{}, Fit{}, err
+	}
+	continuous, fit, err := resolveFeatureFit(registry, feature, width, height, padding, box)
+	if err != nil {
+		return Sample{}, geofeatures.Feature{}, Fit{}, err
+	}
+	regions, err := projectFeatureRegions(fit, continuous, feature.Name)
+	if err != nil {
+		return Sample{}, geofeatures.Feature{}, Fit{}, err
+	}
+	return assembleTerritorySample(registry, feature, opts, width, height, fit, regions), feature, fit, nil
+}
+
+func normalizeTerritoryOptions(opts Options) (int, int, float64, Box, error) {
+	width, height, err := normalizeCanvas(opts)
+	if err != nil {
+		return 0, 0, 0, Box{}, err
+	}
+	padding, err := normalizePadding(opts.Padding)
+	if err != nil {
+		return 0, 0, 0, Box{}, err
+	}
+	box, err := normalizeBox(opts.Box)
+	if err != nil {
+		return 0, 0, 0, Box{}, err
+	}
+	return width, height, padding, box, nil
+}
+
+func normalizeCanvas(opts Options) (int, int, error) {
 	width, height := opts.Width, opts.Height
 	if width == 0 {
 		width = DefaultWidth
@@ -124,40 +162,45 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 		height = DefaultHeight
 	}
 	if width < 64 || height < 64 || width > 8192 || height > 8192 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: canvas must be 64..8192 pixels")
+		return 0, 0, fmt.Errorf("tacticalfill: canvas must be 64..8192 pixels")
 	}
-	padding := opts.Padding
+	return width, height, nil
+}
+
+func normalizePadding(padding float64) (float64, error) {
 	if padding == 0 {
 		padding = DefaultPadding
 	}
 	if !finite(padding) || padding < 0 || padding > 0.4 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: padding must be within [0,0.4]")
+		return 0, fmt.Errorf("tacticalfill: padding must be within [0,0.4]")
 	}
-	box := opts.Box
+	return padding, nil
+}
+
+func normalizeBox(box Box) (Box, error) {
 	if box == (Box{}) {
 		box = DefaultTerritoryBox
 	}
 	if !finite(box.MinX) || !finite(box.MinY) || !finite(box.MaxX) || !finite(box.MaxY) ||
 		box.MinX < 0 || box.MinY < 0 || box.MaxX > 1 || box.MaxY > 1 ||
 		box.MaxX-box.MinX < 0.1 || box.MaxY-box.MinY < 0.1 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: territory box must be a valid canvas fraction")
+		return Box{}, fmt.Errorf("tacticalfill: territory box must be a valid canvas fraction")
 	}
+	return box, nil
+}
 
-	feature, err := registry.Resolve(selector)
-	if err != nil {
-		return Sample{}, geofeatures.Feature{}, Fit{}, err
-	}
+func resolveFeatureFit(registry *geofeatures.Registry, feature geofeatures.Feature, width, height int, padding float64, box Box) ([][][2]float64, Fit, error) {
 	rings, err := registry.Rings(feature.ID)
 	if err != nil {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s: %w", feature.Name, err)
+		return nil, Fit{}, fmt.Errorf("tacticalfill: %s: %w", feature.Name, err)
 	}
 	if len(rings) == 0 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s has no polygon rings", feature.Name)
+		return nil, Fit{}, fmt.Errorf("tacticalfill: %s has no polygon rings", feature.Name)
 	}
 
 	continuous, minLon, maxLon, minLat, maxLat := unwrapRings(rings, feature.Centroid[0])
 	if maxLon-minLon <= 0 || maxLat-minLat <= 0 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s has degenerate bounds", feature.Name)
+		return nil, Fit{}, fmt.Errorf("tacticalfill: %s has degenerate bounds", feature.Name)
 	}
 
 	usableWidth := float64(width) * (box.MaxX - box.MinX) * (1 - 2*padding)
@@ -165,11 +208,11 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 	spanX := (maxLon - minLon) / 360 * geo.MercatorTileSize
 	spanY := math.Abs(mercatorY(maxLat, geo.MercatorTileSize) - mercatorY(minLat, geo.MercatorTileSize))
 	if !finite(spanX) || !finite(spanY) || spanX <= 0 || spanY <= 0 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s cannot be fitted in Web Mercator", feature.Name)
+		return nil, Fit{}, fmt.Errorf("tacticalfill: %s cannot be fitted in Web Mercator", feature.Name)
 	}
 	zoom := math.Min(math.Log2(usableWidth/spanX), math.Log2(usableHeight/spanY))
 	if !finite(zoom) {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s fit zoom is invalid", feature.Name)
+		return nil, Fit{}, fmt.Errorf("tacticalfill: %s fit zoom is invalid", feature.Name)
 	}
 	zoom = math.Max(0, math.Min(18, zoom))
 	scale := geo.MercatorTileSize * math.Pow(2, zoom)
@@ -183,7 +226,10 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 	topLeftX := centerX - boxCenterX
 	topLeftY := centerY - boxCenterY
 	fit := Fit{Zoom: zoom, TopLeftX: topLeftX, TopLeftY: topLeftY, CanvasWidth: width, CanvasHeight: height}
+	return continuous, fit, nil
+}
 
+func projectFeatureRegions(fit Fit, continuous [][][2]float64, featureName string) ([]Region, error) {
 	regions := make([]Region, 0, len(continuous))
 	for _, ring := range continuous {
 		projected := make([][2]float64, 0, len(ring))
@@ -204,12 +250,16 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 		regions = append(regions, Region{Points: projected})
 	}
 	if len(regions) == 0 {
-		return Sample{}, geofeatures.Feature{}, Fit{}, fmt.Errorf("tacticalfill: %s has no drawable ring after projection", feature.Name)
+		return nil, fmt.Errorf("tacticalfill: %s has no drawable ring after projection", featureName)
 	}
 	sortRegionsByArea(regions)
 	if len(regions) > MaxRegions {
 		regions = regions[:MaxRegions]
 	}
+	return regions, nil
+}
+
+func assembleTerritorySample(registry *geofeatures.Registry, feature geofeatures.Feature, opts Options, width, height int, fit Fit, regions []Region) Sample {
 	title := strings.TrimSpace(opts.Title)
 	if title == "" {
 		title = strings.ToUpper(feature.Name)
@@ -223,7 +273,7 @@ func BuildWithFit(registry *geofeatures.Registry, selector string, opts Options)
 	return Sample{
 		Schema: Schema, Canvas: [2]int{width, height},
 		Title: title, Subtitle: subtitle, Regions: regions,
-	}, feature, fit, nil
+	}
 }
 
 // Write marshals the sample to path, creating its directory.
@@ -379,4 +429,4 @@ func mercatorY(lat, scale float64) float64 {
 	return (1 - math.Log(math.Tan(rad)+1/math.Cos(rad))/math.Pi) * 0.5 * scale
 }
 
-func finite(value float64) bool { return !math.IsNaN(value) && !math.IsInf(value, 0) }
+func finite(value float64) bool { return numeric.Finite(value) }

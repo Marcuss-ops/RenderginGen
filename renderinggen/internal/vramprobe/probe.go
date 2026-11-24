@@ -242,7 +242,11 @@ func buildProbe(sourcePath, batchID string) ([]byte, []string, error) {
 		for key, value := range job {
 			clone[key] = value
 		}
-		clone["id"] = mustJSON(logical)
+		idJSON, err := json.Marshal(logical)
+		if err != nil {
+			return nil, nil, err
+		}
+		clone["id"] = idJSON
 		clone["render_plan"] = patched
 		probeJobs = append(probeJobs, clone)
 		jobIDs = append(jobIDs, batchID+":"+logical)
@@ -299,14 +303,6 @@ func rawString(raw json.RawMessage) string {
 		return ""
 	}
 	return value
-}
-
-func mustJSON(value any) json.RawMessage {
-	raw, err := json.Marshal(value)
-	if err != nil {
-		panic(err)
-	}
-	return raw
 }
 
 // deviceSample reads the device-wide used memory and utilization.

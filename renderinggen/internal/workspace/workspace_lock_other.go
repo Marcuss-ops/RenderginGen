@@ -3,6 +3,7 @@
 package workspace
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -16,6 +17,8 @@ import (
 // and names the reason the lock was not published.
 func lockWorkspaceSlot(file *os.File, nonblocking bool) (bool, error) {
 	marker := file.Name() + ".held"
+	deadline := time.Now().Add(workspaceLockWaitLimit)
+	backoff := workspaceLockInitialBackoff
 	for {
 		lock, err := os.OpenFile(marker, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o600)
 		if err == nil {
@@ -40,7 +43,14 @@ func lockWorkspaceSlot(file *os.File, nonblocking bool) (bool, error) {
 		if nonblocking {
 			return false, nil
 		}
-		time.Sleep(10 * time.Millisecond)
+		// The fallback has no portable context-aware flock. A bounded deadline
+		// keeps a wedged marker from blocking a caller forever; the marker's
+		// owner is still reclaimed only after process absence is confirmed.
+		if !time.Now().Before(deadline) {
+			return false, fmt.Errorf("workspace: lock wait exceeded %s", workspaceLockWaitLimit)
+		}
+		time.Sleep(backoff)
+		backoff = nextWorkspaceLockBackoff(backoff)
 	}
 }
 
