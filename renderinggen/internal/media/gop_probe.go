@@ -6,6 +6,7 @@ package media
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -33,6 +34,8 @@ import (
 // JSON for long-form content on every finalize). The decoder keeps memory
 // constant while ffprobe streams, and a broken cadence aborts the probe (and
 // the ffprobe process) as soon as it is provable.
+var errGOPCadenceInvalid = errors.New("gop cadence invalid")
+
 func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifiable bool, keyframeInterval int) {
 	probeCtx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -47,112 +50,105 @@ func probeClosedGOP(ctx context.Context, path string) (closedGOP bool, uncertifi
 		log.Printf("media: ffprobe %s: closed-GOP probe start: %v (closed_gop=false, uncertifiable)", path, err)
 		return false, true, 0
 	}
-	// StdoutPipe's contract forbids calling Wait before every read has
-	// completed: Wait closes the read end when the child exits. A concurrent
-	// Wait let a short clip exit before the decoder's first read and turned a
-	// certifiable GOP into "file already closed". Drain first, then Wait (or
-	// cancel + Wait on an early exit).
-
-	positions := make([]int, 0, 16)
-	step := 0 // keyframe spacing once two keyframes are known (0 until proven)
-	packetIndex := 0
-
-	// Stream-decode the packet table with json.Decoder tokens (never
-	// cmd.Output, which buffers the whole clip's packet JSON in RAM). The
-	// invocation pins each element's shape to {"flags":"..."}, so the token
-	// walk is deterministic: object open, key, value, object close.
-	dec := json.NewDecoder(stdout)
-	// Expected top level: { "packets": [ ...
-	if err := expectJSONDelim(dec, '{'); err != nil {
-		return failProbe(cancel, cmd, path, err)
+	// StdoutPipe's contract forbids Wait before every read completes: drain
+	// first, then Wait (or cancel + Wait on an early exit).
+	positions, err := readGOPPacketTable(stdout)
+	if errors.Is(err, errGOPCadenceInvalid) {
+		cancel()
+		_ = cmd.Wait()
+		return false, false, 0
 	}
-	key, err := dec.Token()
 	if err != nil {
 		return failProbe(cancel, cmd, path, err)
 	}
+	if err := cmd.Wait(); err != nil {
+		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false, uncertifiable)", path, err)
+		return false, true, 0
+	}
+	if !closedGOPPositionsCadence(positions) {
+		return false, false, 0
+	}
+	interval := 0
+	if len(positions) >= 2 {
+		interval = positions[1] - positions[0]
+	}
+	return true, false, interval
+}
+
+// readGOPPacketTable stream-decodes ffprobe's packet array without ever
+// buffering the whole clip. It returns errGOPCadenceInvalid as soon as three
+// keyframes prove the cadence broken, so the caller can reap ffprobe early.
+func readGOPPacketTable(r io.Reader) ([]int, error) {
+	dec := json.NewDecoder(r)
+	if err := expectJSONDelim(dec, '{'); err != nil {
+		return nil, err
+	}
+	key, err := dec.Token()
+	if err != nil {
+		return nil, err
+	}
 	if k, ok := key.(string); !ok || k != "packets" {
-		return failProbe(cancel, cmd, path, fmt.Errorf("unexpected top-level key %v", key))
+		return nil, fmt.Errorf("unexpected top-level key %v", key)
 	}
 	if err := expectJSONDelim(dec, '['); err != nil {
-		return failProbe(cancel, cmd, path, err)
+		return nil, err
 	}
-
+	positions := make([]int, 0, 16)
+	step := 0
+	packetIndex := 0
 	for {
 		tok, err := dec.Token()
 		if err != nil {
 			if err == io.EOF {
 				err = fmt.Errorf("unterminated packets array")
 			}
-			return failProbe(cancel, cmd, path, err)
+			return nil, err
 		}
 		d, isDelim := tok.(json.Delim)
 		if isDelim && d == ']' {
-			break // end of the packet table
+			break
 		}
 		if !isDelim || d != '{' {
-			return failProbe(cancel, cmd, path, fmt.Errorf("unexpected packet-table token %v", tok))
+			return nil, fmt.Errorf("unexpected packet-table token %v", tok)
 		}
-		// One packet object: { "flags" : "..." }
 		keyTok, err := dec.Token()
 		if err != nil {
-			return failProbe(cancel, cmd, path, err)
+			return nil, err
 		}
 		valueTok, err := dec.Token()
 		if err != nil {
-			return failProbe(cancel, cmd, path, err)
+			return nil, err
 		}
 		closeTok, err := dec.Token()
 		if err != nil {
-			return failProbe(cancel, cmd, path, err)
+			return nil, err
 		}
 		if k, ok := keyTok.(string); !ok || k != "flags" {
-			return failProbe(cancel, cmd, path, fmt.Errorf("unexpected packet key %v", keyTok))
+			return nil, fmt.Errorf("unexpected packet key %v", keyTok)
 		}
 		flags, ok := valueTok.(string)
 		if !ok {
-			return failProbe(cancel, cmd, path, fmt.Errorf("packet flags value is not a string: %v", valueTok))
+			return nil, fmt.Errorf("packet flags value is not a string: %v", valueTok)
 		}
 		if cd, ok := closeTok.(json.Delim); !ok || cd != '}' {
-			return failProbe(cancel, cmd, path, fmt.Errorf("unexpected packet close %v", closeTok))
+			return nil, fmt.Errorf("unexpected packet close %v", closeTok)
 		}
 		if strings.Contains(flags, "K") {
 			positions = append(positions, packetIndex)
-			// Early refusal: three keyframes already prove the cadence broken,
-			// so the probe (and the ffprobe process) can stop early.
 			if len(positions) >= 3 {
 				if positions[len(positions)-1]-positions[len(positions)-2] != step {
-					cancel() // reap the child; we already have the verdict
-					_ = cmd.Wait()
-					return false, false, 0 // read successfully: the cadence is invalid
+					return nil, errGOPCadenceInvalid
 				}
 			} else if len(positions) == 2 {
 				step = positions[1] - positions[0]
 				if step <= 0 {
-					cancel()
-					_ = cmd.Wait()
-					return false, false, 0
+					return nil, errGOPCadenceInvalid
 				}
 			}
 		}
 		packetIndex++
 	}
-	if err := cmd.Wait(); err != nil {
-		// A non-cancel wait error means ffprobe itself failed (bad file,
-		// unsupported flag): fail closed and say so.
-		log.Printf("media: ffprobe %s: closed-GOP probe failed: %v (closed_gop=false, uncertifiable)", path, err)
-		return false, true, 0
-	}
-	closed := closedGOPPositionsCadence(positions)
-	if !closed {
-		return false, false, 0
-	}
-	// A proven-uniform cadence has one interval: the spacing between the first
-	// two keyframes. Report it as the measured GOP length in frames.
-	interval := 0
-	if len(positions) >= 2 {
-		interval = positions[1] - positions[0]
-	}
-	return true, false, interval
+	return positions, nil
 }
 
 // expectJSONDelim asserts the next decoder token is the given delimiter.

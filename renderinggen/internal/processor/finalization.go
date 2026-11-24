@@ -109,84 +109,128 @@ func childFrameRange(children []*queue.Job) (int64, int64, bool) {
 // finalize runs the finalization protocol against an already-read pre-claim
 // child family, so the caller never pays for the same read twice.
 func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, end int64, children []*queue.Job) (bool, queue.Artifact, error) {
-	if err := queue.ValidateChildren(children, start, end); err != nil {
-		return false, queue.Artifact{}, err
-	}
-	claimedJob, claimed, err := f.queue.ClaimFinalization(ctx, parentID)
+	claimedJob, claimed, children, err := f.claimParentFinalization(ctx, parentID, start, end, children)
 	if err != nil || !claimed {
 		return false, queue.Artifact{}, err
 	}
-	children, err = f.queue.Children(ctx, parentID)
+	workCtx, stopLease := f.startParentLeaseRenewal(ctx, parentID, claimedJob)
+	defer stopLease()
+	if err := f.prepareParentOutput(); err != nil {
+		return false, queue.Artifact{}, err
+	}
+	inputs, err := f.parentInputPaths(workCtx, children)
 	if err != nil {
 		return false, queue.Artifact{}, err
 	}
-	if err := queue.ValidateChildren(children, start, end); err != nil {
-		return false, queue.Artifact{}, err
-	}
-	workCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	if claimedJob != nil && claimedJob.Lease > 0 {
-		interval := claimedJob.Lease / 2
-		if interval <= 0 {
-			interval = time.Second
-		}
-		renewDone := make(chan struct{})
-		go func() {
-			defer close(renewDone)
-			ticker := time.NewTicker(interval)
-			defer ticker.Stop()
-			for {
-				select {
-				case <-workCtx.Done():
-					return
-				case <-ticker.C:
-					if err := f.queue.Renew(workCtx, parentID, claimedJob.LeaseGeneration); err != nil {
-						cancel()
-						return
-					}
-				}
-			}
-		}()
-		defer func() { cancel(); <-renewDone }()
-	}
-	if f.assembler == nil {
-		return false, queue.Artifact{}, fmt.Errorf("parent finalizer: assembler is required")
-	}
-	if f.outputDir == "" {
-		return false, queue.Artifact{}, fmt.Errorf("parent finalizer: output directory is required")
-	}
-	if err := os.MkdirAll(f.outputDir, 0o755); err != nil {
-		return false, queue.Artifact{}, err
-	}
-	inputs := make([]string, 0, len(children))
-	for _, child := range children {
-		path, _, err := f.store.LocalPath(workCtx, child.Artifact.StorageKey)
-		if err != nil {
-			return false, queue.Artifact{}, fmt.Errorf("chunk %d local path: %w", child.ChunkIndex, err)
-		}
-		inputs = append(inputs, path)
-	}
 	output := filepath.Join(f.outputDir, parentID+".mp4")
-	// The assembled parent is a temporary staging file: it is uploaded to L3
-	// (and optionally Drive) below and must never accumulate on the worker.
-	// The workspace root is frequently /dev/shm — i.e. RAM — so leaving the
-	// assembled parent behind is a memory leak, not just a disk one. A failed
-	// removal is logged: it is a leak that must be visible, never silent.
+	// The assembled parent is a temporary staging file: it is uploaded below
+	// and must never accumulate on the worker. A failed removal is logged.
 	defer func() {
 		if err := os.Remove(output); err != nil && !os.IsNotExist(err) {
 			log.Printf("parent %s: remove staging output %s: %v", parentID, output, err)
 		}
 	}()
-	// Overlay-artifact contract: a SILENT parent (no child segment carries an
-	// audio stream and the anchor plan declares no audio) is assembled as a
-	// fragmented MP4 — bytes final when appended, streamable/uploadable while
-	// the mux is open. A parent that carries source audio keeps the classic
-	// MP4. AUDIO-AWARE ASSEMBLY: the family anchor is the single audio owner —
-	// the source stream is copied exactly once over the concatenated
-	// video-only children, so audio is never synthesized, never duplicated and
-	// never cut at a chunk boundary. The canonical final master audio stays
-	// where it always was: exactly once at the final master (Rust
-	// `mux_audio_copy`).
+	assembleReq, err := f.parentAssembleRequest(workCtx, parentID, output, children, claimedJob, inputs)
+	if err != nil {
+		return false, queue.Artifact{}, err
+	}
+	if err := f.assembler.Assemble(workCtx, assembleReq); err != nil {
+		return false, queue.Artifact{}, err
+	}
+	artifact, err := f.persistAndPublishParent(workCtx, parentID, output)
+	if err != nil {
+		return false, queue.Artifact{}, err
+	}
+	if err := workCtx.Err(); err != nil {
+		return false, queue.Artifact{}, err
+	}
+	if err := f.queue.Complete(workCtx, parentID, claimedJob.LeaseGeneration, artifact); err != nil {
+		return false, queue.Artifact{}, err
+	}
+	return true, artifact, nil
+}
+
+// claimParentFinalization validates the pre-claim family, acquires the atomic
+// finalization lease and re-validates the family the claim exposed.
+func (f *ParentFinalizer) claimParentFinalization(ctx context.Context, parentID string, start, end int64, children []*queue.Job) (*queue.Job, bool, []*queue.Job, error) {
+	if err := queue.ValidateChildren(children, start, end); err != nil {
+		return nil, false, nil, err
+	}
+	claimedJob, claimed, err := f.queue.ClaimFinalization(ctx, parentID)
+	if err != nil || !claimed {
+		return nil, false, nil, err
+	}
+	children, err = f.queue.Children(ctx, parentID)
+	if err != nil {
+		return nil, false, nil, err
+	}
+	if err := queue.ValidateChildren(children, start, end); err != nil {
+		return nil, false, nil, err
+	}
+	return claimedJob, true, children, nil
+}
+
+// startParentLeaseRenewal renews the parent lease until the caller stops it.
+// The cleanup always cancels the work context and waits for the renewer.
+func (f *ParentFinalizer) startParentLeaseRenewal(ctx context.Context, parentID string, claimedJob *queue.Job) (context.Context, func()) {
+	workCtx, cancel := context.WithCancel(ctx)
+	if claimedJob == nil || claimedJob.Lease <= 0 {
+		return workCtx, cancel
+	}
+	interval := claimedJob.Lease / 2
+	if interval <= 0 {
+		interval = time.Second
+	}
+	renewDone := make(chan struct{})
+	go func() {
+		defer close(renewDone)
+		ticker := time.NewTicker(interval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-workCtx.Done():
+				return
+			case <-ticker.C:
+				if err := f.queue.Renew(workCtx, parentID, claimedJob.LeaseGeneration); err != nil {
+					cancel()
+					return
+				}
+			}
+		}
+	}()
+	return workCtx, func() {
+		cancel()
+		<-renewDone
+	}
+}
+
+// prepareParentOutput validates the finalizer dependencies and creates the
+// staging directory.
+func (f *ParentFinalizer) prepareParentOutput() error {
+	if f.assembler == nil {
+		return fmt.Errorf("parent finalizer: assembler is required")
+	}
+	if f.outputDir == "" {
+		return fmt.Errorf("parent finalizer: output directory is required")
+	}
+	return os.MkdirAll(f.outputDir, 0o755)
+}
+
+// parentInputPaths materialises every verified child artifact in queue order.
+func (f *ParentFinalizer) parentInputPaths(ctx context.Context, children []*queue.Job) ([]string, error) {
+	inputs := make([]string, 0, len(children))
+	for _, child := range children {
+		path, _, err := f.store.LocalPath(ctx, child.Artifact.StorageKey)
+		if err != nil {
+			return nil, fmt.Errorf("chunk %d local path: %w", child.ChunkIndex, err)
+		}
+		inputs = append(inputs, path)
+	}
+	return inputs, nil
+}
+
+// parentAssembleRequest builds the fragmented/audio-aware assembly request.
+func (f *ParentFinalizer) parentAssembleRequest(ctx context.Context, parentID, output string, children []*queue.Job, claimedJob *queue.Job, inputs []string) (chronon.AssembleRequest, error) {
 	fragmented := true
 	for _, child := range children {
 		if child.Artifact.AudioStreams > 0 {
@@ -196,16 +240,16 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 	}
 	audio, err := anchorAudioSource(claimedJob)
 	if err != nil {
-		return false, queue.Artifact{}, err
+		return chronon.AssembleRequest{}, err
 	}
 	assembleReq := chronon.AssembleRequest{Inputs: inputs, Output: output, FragmentedMP4: fragmented}
 	if audio.want {
 		if f.store == nil {
-			return false, queue.Artifact{}, fmt.Errorf("parent finalizer: anchor declares source audio but no store is wired to materialise it")
+			return chronon.AssembleRequest{}, fmt.Errorf("parent finalizer: anchor declares source audio but no store is wired to materialise it")
 		}
-		audioPath, _, err := f.store.LocalPath(workCtx, audio.sourceHash)
+		audioPath, _, err := f.store.LocalPath(ctx, audio.sourceHash)
 		if err != nil {
-			return false, queue.Artifact{}, fmt.Errorf("parent finalizer: anchor audio source: %w", err)
+			return chronon.AssembleRequest{}, fmt.Errorf("parent finalizer: anchor audio source: %w", err)
 		}
 		assembleReq.AudioSourcePath = audioPath
 		assembleReq.AudioTargetSampleRate = audio.targetSampleRate
@@ -214,33 +258,24 @@ func (f *ParentFinalizer) finalize(ctx context.Context, parentID string, start, 
 		// must never stream a file whose header is still open.
 		assembleReq.FragmentedMP4 = false
 	}
-	if err := f.assembler.Assemble(workCtx, assembleReq); err != nil {
-		return false, queue.Artifact{}, err
-	}
-	artifact, err := persistParentArtifact(workCtx, f.store, parentID, output)
+	return assembleReq, nil
+}
+
+// persistAndPublishParent stores the assembled artifact and publishes it
+// through the same verified path as a segment artifact.
+func (f *ParentFinalizer) persistAndPublishParent(ctx context.Context, parentID, output string) (queue.Artifact, error) {
+	artifact, err := persistParentArtifact(ctx, f.store, parentID, output)
 	if err != nil {
-		return false, queue.Artifact{}, err
+		return queue.Artifact{}, err
 	}
 	if f.publisher != nil {
-		// The parent is published through the SAME verified path as a segment
-		// artifact (publishAndVerify): resolving the content-addressed L2 file
-		// verifies store_sha == db_sha and the provider must report the same
-		// size. The historical direct drive.Publisher.Publish call here was the
-		// only publication in the worker without that invariant and without a
-		// resolvable policy (audit P0-3).
-		published, err := publishAndVerify(workCtx, f.store, f.publisher, parentID+".mp4", artifact)
+		published, err := publishAndVerify(ctx, f.store, f.publisher, parentID+".mp4", artifact)
 		if err != nil {
-			return false, queue.Artifact{}, err
+			return queue.Artifact{}, err
 		}
 		artifact.DriveFileID, artifact.DriveLink = published.FileID, published.WebViewLink
 	}
-	if err := workCtx.Err(); err != nil {
-		return false, queue.Artifact{}, err
-	}
-	if err := f.queue.Complete(workCtx, parentID, claimedJob.LeaseGeneration, artifact); err != nil {
-		return false, queue.Artifact{}, err
-	}
-	return true, artifact, nil
+	return artifact, nil
 }
 
 // anchorAudio is the family anchor's single source-audio mux request, derived

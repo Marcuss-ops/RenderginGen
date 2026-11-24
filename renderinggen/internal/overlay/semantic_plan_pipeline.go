@@ -131,97 +131,25 @@ func normalizeCompatibility(validated validatedPlan) (normalizedPlan, error) {
 // item once. Asset registration order is the historical order.
 func resolvePlan(normalized normalizedPlan) (resolvedPlan, error) {
 	src := &normalized.Plan
-	plan := newPlan(src.PlanID, src.Width, src.Height, src.FPSNum, src.FPSDen, 0)
-	plan.Output.ProfileID = src.OutputProfileID
-	plan.Output.ColorSpace = canonicalProfileColorSpace(src.OutputProfileID)
-	if src.DurationMS > 0 {
-		_, endFrame := msFrames(0, src.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
-		plan.Canvas.DurationFrames = endFrame
-	}
-
+	plan := newResolvedPlanShell(src)
 	registry := newAssetRegistry()
-	if src.Audio != nil {
-		plan.Output.Audio = &Audio{
-			Mode: src.Audio.Mode, Codec: src.Audio.Codec,
-			SampleRate: src.Audio.SampleRate, Channels: src.Audio.Channels,
-		}
-	}
-	bgLayer, bgPresent, err := compileBackgroundLayer(src, registry)
-	if err != nil {
+	if err := appendPlanBackgroundLayer(plan, src, registry); err != nil {
 		return resolvedPlan{}, err
-	}
-	if bgPresent {
-		plan.Layers = append(plan.Layers, bgLayer)
 	}
 
 	resolved, err := resolveSemanticItems(src)
 	if err != nil {
 		return resolvedPlan{}, err
 	}
-	resolvedByID := make(map[string]resolvedItem, len(resolved))
-	for _, item := range resolved {
-		resolvedByID[item.Item.ID] = item
-	}
-	var pendingSFX []pendingSFXClip
-	// Pre-register every item asset so collisions fail before any layer is
-	// emitted (the registry is the single owner of the id → path mapping).
-	for _, item := range src.Items {
-		for _, ref := range item.Assets {
-			if _, err := registry.Register(ref); err != nil {
-				return resolvedPlan{}, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
-			}
-		}
-		if sfx := item.SoundEffect; sfx != nil {
-			resolvedItem, ok := resolvedByID[item.ID]
-			if !ok || !isImageKind(resolvedItem.Kind) {
-				return resolvedPlan{}, fmt.Errorf("overlay: item %q sound_effect is only valid on an image overlay", item.ID)
-			}
-			clip, visibleEndFrame, err := resolveSoundEffectCue(item, resolvedItem, src, registry)
-			if err != nil {
-				return resolvedPlan{}, err
-			}
-			pendingSFX = append(pendingSFX, pendingSFXClip{clip: clip, visibleEndFrame: visibleEndFrame})
-		}
+	pendingSFX, err := registerResolvedItemAssets(src, registry, resolved)
+	if err != nil {
+		return resolvedPlan{}, err
 	}
 	unknown := unknownTemplates(resolved)
 
-	var sourceLayerIndex = -1
-	if src.Source != nil && src.Source.AssetID != "" {
-		path := src.Source.Path
-		ref := SemanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256}
-		if path == "" {
-			registered, err := registry.Register(ref)
-			if err != nil {
-				return resolvedPlan{}, fmt.Errorf("overlay: source asset: %w", err)
-			}
-			path = registered
-		} else {
-			registered, err := registry.RegisterAtPath(ref, path)
-			if err != nil {
-				return resolvedPlan{}, fmt.Errorf("overlay: source asset: %w", err)
-			}
-			path = registered
-		}
-		srcLayer := Layer{ID: "source", Type: "video", Source: path,
-			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: FitCover, StartFrame: 0}
-		if src.ForegroundScale > 0 && src.ForegroundScale < 100 {
-			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
-			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
-		}
-		if err := applyFrameTreatment(&srcLayer, src.SourceFrame); err != nil {
-			return resolvedPlan{}, err
-		}
-		sourceLayerIndex = len(plan.Layers)
-		plan.Layers = append(plan.Layers, srcLayer)
-		if srcLayer.FrameStroke != nil {
-			strokeLayer, err := compileMediaStrokeLayer(srcLayer, src.Width, src.Height)
-			if err != nil {
-				return resolvedPlan{}, fmt.Errorf("overlay: source_frame: %w", err)
-			}
-			plan.Layers = append(plan.Layers, strokeLayer)
-		}
-	} else if src.SourceFrame != nil {
-		return resolvedPlan{}, fmt.Errorf("overlay: source_frame requires a source clip")
+	sourceLayerIndex, err := appendSourceClipLayer(plan, src, registry)
+	if err != nil {
+		return resolvedPlan{}, err
 	}
 
 	if sub := src.Subtitles; sub != nil {
@@ -254,6 +182,111 @@ func resolvePlan(normalized normalizedPlan) (resolvedPlan, error) {
 		Cameras: cameras, PendingSFX: pendingSFX, Duration: plan.Canvas.DurationFrames,
 		SourceLayerIndex: sourceLayerIndex, Unknown: unknown,
 	}, nil
+}
+
+// newResolvedPlanShell creates the concrete plan with its canvas, output
+// profile, audio policy and duration already resolved.
+func newResolvedPlanShell(src *semanticPlan) *Plan {
+	plan := newPlan(src.PlanID, src.Width, src.Height, src.FPSNum, src.FPSDen, 0)
+	plan.Output.ProfileID = src.OutputProfileID
+	plan.Output.ColorSpace = canonicalProfileColorSpace(src.OutputProfileID)
+	if src.DurationMS > 0 {
+		_, endFrame := msFrames(0, src.DurationMS, int64(src.FPSNum), int64(src.FPSDen))
+		plan.Canvas.DurationFrames = endFrame
+	}
+	if src.Audio != nil {
+		plan.Output.Audio = &Audio{
+			Mode: src.Audio.Mode, Codec: src.Audio.Codec,
+			SampleRate: src.Audio.SampleRate, Channels: src.Audio.Channels,
+		}
+	}
+	return plan
+}
+
+// appendPlanBackgroundLayer compiles and appends the optional background plate.
+func appendPlanBackgroundLayer(plan *Plan, src *semanticPlan, registry *assetRegistry) error {
+	bgLayer, bgPresent, err := compileBackgroundLayer(src, registry)
+	if err != nil {
+		return err
+	}
+	if bgPresent {
+		plan.Layers = append(plan.Layers, bgLayer)
+	}
+	return nil
+}
+
+// registerResolvedItemAssets pre-registers item assets and resolves sound
+// effects before any layer is emitted, so collisions fail early.
+func registerResolvedItemAssets(src *semanticPlan, registry *assetRegistry, resolved []resolvedItem) ([]pendingSFXClip, error) {
+	resolvedByID := make(map[string]resolvedItem, len(resolved))
+	for _, item := range resolved {
+		resolvedByID[item.Item.ID] = item
+	}
+	var pendingSFX []pendingSFXClip
+	for _, item := range src.Items {
+		for _, ref := range item.Assets {
+			if _, err := registry.Register(ref); err != nil {
+				return nil, fmt.Errorf("overlay: item %q asset: %w", item.ID, err)
+			}
+		}
+		if sfx := item.SoundEffect; sfx != nil {
+			resolvedItem, ok := resolvedByID[item.ID]
+			if !ok || !isImageKind(resolvedItem.Kind) {
+				return nil, fmt.Errorf("overlay: item %q sound_effect is only valid on an image overlay", item.ID)
+			}
+			clip, visibleEndFrame, err := resolveSoundEffectCue(item, resolvedItem, src, registry)
+			if err != nil {
+				return nil, err
+			}
+			pendingSFX = append(pendingSFX, pendingSFXClip{clip: clip, visibleEndFrame: visibleEndFrame})
+		}
+	}
+	return pendingSFX, nil
+}
+
+// appendSourceClipLayer registers the source asset, appends the video layer and
+// its optional frame stroke, and returns the source layer index for duration
+// finalization.
+func appendSourceClipLayer(plan *Plan, src *semanticPlan, registry *assetRegistry) (int, error) {
+	sourceLayerIndex := -1
+	if src.Source != nil && src.Source.AssetID != "" {
+		path := src.Source.Path
+		ref := SemanticAssetRef{ID: src.Source.AssetID, SHA256: src.Source.SHA256}
+		if path == "" {
+			registered, err := registry.Register(ref)
+			if err != nil {
+				return -1, fmt.Errorf("overlay: source asset: %w", err)
+			}
+			path = registered
+		} else {
+			registered, err := registry.RegisterAtPath(ref, path)
+			if err != nil {
+				return -1, fmt.Errorf("overlay: source asset: %w", err)
+			}
+			path = registered
+		}
+		srcLayer := Layer{ID: "source", Type: "video", Source: path,
+			Size: []float64{float64(src.Width), float64(src.Height)}, Fit: FitCover, StartFrame: 0}
+		if src.ForegroundScale > 0 && src.ForegroundScale < 100 {
+			srcLayer.Position = []float64{-float64(src.Width) * 0.5, -float64(src.Height) * 0.5}
+			srcLayer.Scale = []float64{float64(src.ForegroundScale) / 100, float64(src.ForegroundScale) / 100}
+		}
+		if err := applyFrameTreatment(&srcLayer, src.SourceFrame); err != nil {
+			return -1, err
+		}
+		sourceLayerIndex = len(plan.Layers)
+		plan.Layers = append(plan.Layers, srcLayer)
+		if srcLayer.FrameStroke != nil {
+			strokeLayer, err := compileMediaStrokeLayer(srcLayer, src.Width, src.Height)
+			if err != nil {
+				return -1, fmt.Errorf("overlay: source_frame: %w", err)
+			}
+			plan.Layers = append(plan.Layers, strokeLayer)
+		}
+	} else if src.SourceFrame != nil {
+		return -1, fmt.Errorf("overlay: source_frame requires a source clip")
+	}
+	return sourceLayerIndex, nil
 }
 
 // lowerPlan emits item layers and the plan-wide stages. It reads only the

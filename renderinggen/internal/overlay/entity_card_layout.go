@@ -128,6 +128,22 @@ func ResolveEntityCardLayoutAt(canvasWidth, canvasHeight int, imageRect EntityCa
 // runtime typography size as its upper bound; the available safe area still
 // determines any necessary wrapping or reduction.
 func ResolveEntityCardLayoutAtSize(canvasWidth, canvasHeight int, imageRect EntityCardImageBounds, caption, mode string, requestedFontSize float64) (EntityCardLayout, error) {
+	layout, err := newEntityCardLayout(canvasWidth, canvasHeight, imageRect, caption)
+	if err != nil {
+		return EntityCardLayout{}, err
+	}
+	if caption == "" {
+		return layout, nil
+	}
+	if mode == "left" || mode == "right" {
+		return resolveEntityCardSideCaption(layout, caption, mode, requestedFontSize)
+	}
+	return resolveEntityCardBelowCaption(canvasHeight, layout, caption, requestedFontSize)
+}
+
+// newEntityCardLayout validates the canvas/image geometry and returns the
+// caption anchor plus the safe area all modes share.
+func newEntityCardLayout(canvasWidth, canvasHeight int, imageRect EntityCardImageBounds, caption string) (EntityCardLayout, error) {
 	if canvasWidth <= 0 || canvasHeight <= 0 {
 		return EntityCardLayout{}, fmt.Errorf("overlay: entity card layout needs a positive canvas, got %dx%d", canvasWidth, canvasHeight)
 	}
@@ -143,8 +159,7 @@ func ResolveEntityCardLayoutAtSize(canvasWidth, canvasHeight int, imageRect Enti
 	if safe.Right <= safe.Left || safe.Bottom <= safe.Top {
 		return EntityCardLayout{}, fmt.Errorf("overlay: entity card layout canvas %dx%d leaves no safe area", canvasWidth, canvasHeight)
 	}
-
-	layout := EntityCardLayout{
+	return EntityCardLayout{
 		ImageBounds:      imageRect,
 		SafeBounds:       safe,
 		CaptionPreserved: caption != "",
@@ -152,49 +167,56 @@ func ResolveEntityCardLayoutAtSize(canvasWidth, canvasHeight int, imageRect Enti
 			Reference: "bottom_center",
 			Margin:    entityCaptionMarginPX,
 		},
-	}
-	if caption == "" {
-		return layout, nil
-	}
-	if mode == "left" || mode == "right" {
-		gap := entityCaptionMarginPX
-		available := 0.0
-		centerX := 0.0
-		if mode == "right" {
-			left := imageRect.X + imageRect.Width + gap
-			available = safe.Right - left
-			centerX = left + available/2
-		} else {
-			right := imageRect.X - gap
-			available = right - safe.Left
-			centerX = safe.Left + available/2
-		}
-		if available < 48 {
-			return EntityCardLayout{}, fmt.Errorf("overlay: caption side %q has only %.1fpx beside image", mode, available)
-		}
-		wrapped, lineCount := wrapPhraseAt25(caption)
-		lines := strings.Split(wrapped, "\n")
-		fontSize := requestedFontSize
-		if fontSize <= 0 {
-			fontSize = entityCaptionMaxFontPX
-		}
-		width := captionLinesWidth(lines, fontSize)
-		for width > available && fontSize > entityCaptionMinFontPX {
-			fontSize -= 1
-			width = captionLinesWidth(lines, fontSize)
-		}
-		width = math.Min(width, available)
-		height := math.Max(entityCaptionMaxHeightPX, float64(lineCount)*fontSize*1.35+24)
-		centerY := math.Max(safe.Top+height/2, math.Min(safe.Bottom-height/2, imageRect.CenterY()))
-		layout.CaptionAnchor = EntityCardCaptionAnchor{Reference: mode + "_center", Margin: gap}
-		layout.CaptionBounds = EntityCardCaptionBounds{X: centerX - width/2, Y: centerY - height/2,
-			Width: width, Height: height, CenterX: centerX, CenterY: centerY, FontSize: fontSize, Top: centerY - height/2}
-		return layout, nil
-	}
+	}, nil
+}
 
+// resolveEntityCardSideCaption places the caption in a side column beside the
+// image and keeps it inside the safe area.
+func resolveEntityCardSideCaption(layout EntityCardLayout, caption, mode string, requestedFontSize float64) (EntityCardLayout, error) {
+	imageRect := layout.ImageBounds
+	safe := layout.SafeBounds
+	gap := entityCaptionMarginPX
+	available := 0.0
+	centerX := 0.0
+	if mode == "right" {
+		left := imageRect.X + imageRect.Width + gap
+		available = safe.Right - left
+		centerX = left + available/2
+	} else {
+		right := imageRect.X - gap
+		available = right - safe.Left
+		centerX = safe.Left + available/2
+	}
+	if available < 48 {
+		return EntityCardLayout{}, fmt.Errorf("overlay: caption side %q has only %.1fpx beside image", mode, available)
+	}
+	wrapped, lineCount := wrapPhraseAt25(caption)
+	lines := strings.Split(wrapped, "\n")
+	fontSize := requestedFontSize
+	if fontSize <= 0 {
+		fontSize = entityCaptionMaxFontPX
+	}
+	width := captionLinesWidth(lines, fontSize)
+	for width > available && fontSize > entityCaptionMinFontPX {
+		fontSize -= 1
+		width = captionLinesWidth(lines, fontSize)
+	}
+	width = math.Min(width, available)
+	height := math.Max(entityCaptionMaxHeightPX, float64(lineCount)*fontSize*1.35+24)
+	centerY := math.Max(safe.Top+height/2, math.Min(safe.Bottom-height/2, imageRect.CenterY()))
+	layout.CaptionAnchor = EntityCardCaptionAnchor{Reference: mode + "_center", Margin: gap}
+	layout.CaptionBounds = EntityCardCaptionBounds{X: centerX - width/2, Y: centerY - height/2,
+		Width: width, Height: height, CenterX: centerX, CenterY: centerY, FontSize: fontSize, Top: centerY - height/2}
+	return layout, nil
+}
+
+// resolveEntityCardBelowCaption anchors the caption under the image and moves
+// the image up when the pair would not fit inside the safe area.
+func resolveEntityCardBelowCaption(canvasHeight int, layout EntityCardLayout, caption string, requestedFontSize float64) (EntityCardLayout, error) {
+	imageRect := layout.ImageBounds
+	safe := layout.SafeBounds
 	// Use the same word-aware 25-rune wrapping as the text compiler to size
-	// the widest visible line (not the unwrapped full name). This preserves a
-	// strong title size for normal names and keeps long names complete.
+	// the widest visible line (not the unwrapped full name).
 	wrapped, lineCount := wrapPhraseAt25(caption)
 	lines := strings.Split(wrapped, "\n")
 	maxWidth := safe.Right - safe.Left
@@ -226,14 +248,9 @@ func ResolveEntityCardLayoutAtSize(canvasWidth, canvasHeight int, imageRect Enti
 	captionTop := imageRect.Bottom() + entityCaptionMarginPX
 	captionHeight := math.Max(entityCaptionMaxHeightPX, float64(lineCount)*fontSize*1.35+24)
 	// Vertical fallback: when image + margin + caption runs past the bottom
-	// limit, the IMAGE moves up — the card is the pair, so the caption never
-	// slides off-frame and the anchor relation never breaks. The shift is
-	// clamped so the image stays within the canvas margin; a card that cannot
-	// fit either way keeps the caption's bottom on the limit.
+	// limit, the IMAGE moves up. The shift is clamped so the image stays within
+	// the canvas margin.
 	if captionTop+captionHeight > bottomLimit {
-		// The image rises as far as needed (never beyond the canvas margin) so
-		// image + margin + caption fits; when the complete pair cannot fit,
-		// retain the caption's bottom limit rather than moving it off-canvas.
 		bestTop := bottomLimit - imageRect.Height - entityCaptionMarginPX - captionHeight
 		imageTop := math.Max(entityCaptionSafeMarginPX, math.Min(imageRect.Top(), bestTop))
 		if imageTop <= imageRect.Top() {

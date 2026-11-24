@@ -70,151 +70,170 @@ func parseStyleBlock(raw map[string]any) (*styleBlock, error) {
 		return nil, nil
 	}
 	out := &styleBlock{}
-	if v, ok := raw["font"]; ok {
-		s, ok := v.(string)
-		if !ok {
-			return nil, fmt.Errorf("overlay: style.font must be a string")
-		}
-		out.Font = s
+	if err := parseStyleStringField(raw, "font", &out.Font); err != nil {
+		return nil, err
 	}
-	if v, ok := raw["position"]; ok {
-		s, ok := v.(string)
-		if !ok {
-			return nil, fmt.Errorf("overlay: style.position must be a string")
-		}
-		out.Position = s
+	if err := parseStyleStringField(raw, "position", &out.Position); err != nil {
+		return nil, err
 	}
-	if v, ok := raw["size"]; ok {
-		f, err := toFloat(v)
+	if err := parseStyleFloatField(raw, "size", &out.Size); err != nil {
+		return nil, err
+	}
+	if err := parseStyleStringField(raw, "color", &out.Color); err != nil {
+		return nil, err
+	}
+	if err := parseStyleFloatField(raw, "font_size_px", &out.FontSizePX); err != nil {
+		return nil, err
+	}
+	if err := parseStyleIntField(raw, "width_px", &out.WidthPX); err != nil {
+		return nil, err
+	}
+	if err := parseStyleIntField(raw, "height_px", &out.HeightPX); err != nil {
+		return nil, err
+	}
+	if err := parseStyleFloatField(raw, "scale_percent", &out.ScalePercent); err != nil {
+		return nil, err
+	}
+	if v, ok := raw["stroke"]; ok && v != nil {
+		stroke, err := parseStyleStrokeBlock(v)
 		if err != nil {
-			return nil, fmt.Errorf("overlay: style.size: %w", err)
+			return nil, err
 		}
-		out.Size = f
+		out.Stroke = stroke
 	}
-	if v, ok := raw["color"]; ok {
-		s, ok := v.(string)
-		if !ok {
-			return nil, fmt.Errorf("overlay: style.color must be a string")
-		}
-		out.Color = s
-	}
-	if v, ok := raw["font_size_px"]; ok {
-		f, err := toFloat(v)
+	if v, ok := raw["shadow"]; ok && v != nil {
+		shadow, err := parseStyleShadowBlock(v)
 		if err != nil {
-			return nil, fmt.Errorf("overlay: style.font_size_px: %w", err)
+			return nil, err
 		}
-		out.FontSizePX = f
-	}
-	if v, ok := raw["width_px"]; ok {
-		n, err := toInt(v)
-		if err != nil {
-			return nil, fmt.Errorf("overlay: style.width_px: %w", err)
-		}
-		out.WidthPX = n
-	}
-	if v, ok := raw["height_px"]; ok {
-		n, err := toInt(v)
-		if err != nil {
-			return nil, fmt.Errorf("overlay: style.height_px: %w", err)
-		}
-		out.HeightPX = n
-	}
-	if v, ok := raw["scale_percent"]; ok {
-		f, err := toFloat(v)
-		if err != nil {
-			return nil, fmt.Errorf("overlay: style.scale_percent: %w", err)
-		}
-		out.ScalePercent = f
-	}
-	if v, ok := raw["stroke"]; ok {
-		if v != nil {
-			m, ok := v.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("overlay: style.stroke must be an object")
-			}
-			sb := &strokeBlock{}
-			if c, ok := m["color"]; ok {
-				s, ok := c.(string)
-				if !ok {
-					return nil, fmt.Errorf("overlay: style.stroke.color must be a string")
-				}
-				sb.Color = s
-			}
-			if w, ok := m["width"]; ok {
-				f, err := toFloat(w)
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.stroke.width: %w", err)
-				}
-				sb.Width = f
-			}
-			out.Stroke = sb
-		}
-	}
-	if v, ok := raw["shadow"]; ok {
-		if v != nil {
-			m, ok := v.(map[string]any)
-			if !ok {
-				return nil, fmt.Errorf("overlay: style.shadow must be an object")
-			}
-			sb := &shadowBlock{}
-			if c, ok := m["color"]; ok {
-				s, ok := c.(string)
-				if !ok {
-					return nil, fmt.Errorf("overlay: style.shadow.color must be a string")
-				}
-				sb.Color = s
-			}
-			if o, ok := m["opacity"]; ok {
-				f, err := toFloat(o)
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.shadow.opacity: %w", err)
-				}
-				sb.Opacity = f
-			}
-			if b, ok := m["blur_px"]; ok {
-				f, err := toFloat(b)
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.shadow.blur_px: %w", err)
-				}
-				sb.BlurPX = f
-			}
-			if ox, ok := m["offset_x"]; ok {
-				f, err := toFloat(ox)
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.shadow.offset_x: %w", err)
-				}
-				sb.OffsetX = f
-			}
-			if oy, ok := m["offset_y"]; ok {
-				f, err := toFloat(oy)
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.shadow.offset_y: %w", err)
-				}
-				sb.OffsetY = f
-			}
-			if off, ok := m["offset"]; ok {
-				arr, ok := off.([]any)
-				if !ok {
-					return nil, fmt.Errorf("overlay: style.shadow.offset must be [x,y]")
-				}
-				if len(arr) != 2 {
-					return nil, fmt.Errorf("overlay: shadow.offset must contain exactly [x,y]")
-				}
-				x, err := toFloat(arr[0])
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.shadow.offset[0]: %w", err)
-				}
-				y, err := toFloat(arr[1])
-				if err != nil {
-					return nil, fmt.Errorf("overlay: style.shadow.offset[1]: %w", err)
-				}
-				sb.OffsetX, sb.OffsetY = x, y
-			}
-			out.Shadow = sb
-		}
+		out.Shadow = shadow
 	}
 	if _, ok := raw["transition_in"]; ok {
 		return nil, fmt.Errorf("overlay: style.transition_in is not supported by the Chronon lowering; render transitions via PipelineGen keyframes instead")
 	}
 	return out, nil
+}
+
+func parseStyleStringField(raw map[string]any, key string, dst *string) error {
+	v, ok := raw[key]
+	if !ok {
+		return nil
+	}
+	s, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("overlay: style.%s must be a string", key)
+	}
+	*dst = s
+	return nil
+}
+
+func parseStyleFloatField(raw map[string]any, key string, dst *float64) error {
+	v, ok := raw[key]
+	if !ok {
+		return nil
+	}
+	f, err := toFloat(v)
+	if err != nil {
+		return fmt.Errorf("overlay: style.%s: %w", key, err)
+	}
+	*dst = f
+	return nil
+}
+
+func parseStyleIntField(raw map[string]any, key string, dst *int) error {
+	v, ok := raw[key]
+	if !ok {
+		return nil
+	}
+	n, err := toInt(v)
+	if err != nil {
+		return fmt.Errorf("overlay: style.%s: %w", key, err)
+	}
+	*dst = n
+	return nil
+}
+
+func parseStyleStrokeBlock(v any) (*strokeBlock, error) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("overlay: style.stroke must be an object")
+	}
+	sb := &strokeBlock{}
+	if c, ok := m["color"]; ok {
+		s, ok := c.(string)
+		if !ok {
+			return nil, fmt.Errorf("overlay: style.stroke.color must be a string")
+		}
+		sb.Color = s
+	}
+	if w, ok := m["width"]; ok {
+		f, err := toFloat(w)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.stroke.width: %w", err)
+		}
+		sb.Width = f
+	}
+	return sb, nil
+}
+
+func parseStyleShadowBlock(v any) (*shadowBlock, error) {
+	m, ok := v.(map[string]any)
+	if !ok {
+		return nil, fmt.Errorf("overlay: style.shadow must be an object")
+	}
+	sb := &shadowBlock{}
+	if c, ok := m["color"]; ok {
+		s, ok := c.(string)
+		if !ok {
+			return nil, fmt.Errorf("overlay: style.shadow.color must be a string")
+		}
+		sb.Color = s
+	}
+	if o, ok := m["opacity"]; ok {
+		f, err := toFloat(o)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.shadow.opacity: %w", err)
+		}
+		sb.Opacity = f
+	}
+	if b, ok := m["blur_px"]; ok {
+		f, err := toFloat(b)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.shadow.blur_px: %w", err)
+		}
+		sb.BlurPX = f
+	}
+	if ox, ok := m["offset_x"]; ok {
+		f, err := toFloat(ox)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.shadow.offset_x: %w", err)
+		}
+		sb.OffsetX = f
+	}
+	if oy, ok := m["offset_y"]; ok {
+		f, err := toFloat(oy)
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.shadow.offset_y: %w", err)
+		}
+		sb.OffsetY = f
+	}
+	if off, ok := m["offset"]; ok {
+		arr, ok := off.([]any)
+		if !ok {
+			return nil, fmt.Errorf("overlay: style.shadow.offset must be [x,y]")
+		}
+		if len(arr) != 2 {
+			return nil, fmt.Errorf("overlay: shadow.offset must contain exactly [x,y]")
+		}
+		x, err := toFloat(arr[0])
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.shadow.offset[0]: %w", err)
+		}
+		y, err := toFloat(arr[1])
+		if err != nil {
+			return nil, fmt.Errorf("overlay: style.shadow.offset[1]: %w", err)
+		}
+		sb.OffsetX, sb.OffsetY = x, y
+	}
+	return sb, nil
 }

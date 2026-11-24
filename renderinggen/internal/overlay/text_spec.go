@@ -367,6 +367,28 @@ func resolvedTextFitPolicy(ri resolvedItem, role textRole) string {
 // kind, template or preset family, because every one of those decisions is
 // the resolver's job. Adding a text role must never grow this function.
 func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec) (Layer, error) {
+	layer, err := buildResolvedTextLayer(layerID, start, end, spec)
+	if err != nil {
+		return Layer{}, err
+	}
+	applyResolvedTextGeometry(&layer, spec)
+	animation, err := resolveResolvedTextAnimation(&layer, spec, layerID)
+	if err != nil {
+		return Layer{}, err
+	}
+	// A camera-backed motion cannot be honoured on the flat overlay canvas.
+	// Keep the default screen-space text path for 2D choreography, but lift a
+	// text layer into scene space when its own tracks need the 3D path.
+	if layer.ScreenSpace && layerUses3D(animation) {
+		layer.ScreenSpace = false
+	}
+	applyMotionRouting(&layer, animation)
+	return layer, nil
+}
+
+// buildResolvedTextLayer creates the text layer, seeds its style and applies
+// the role and classic-preset base treatments.
+func buildResolvedTextLayer(layerID string, start, end int64, spec resolvedTextSpec) (Layer, error) {
 	if strings.TrimSpace(spec.Text) == "" {
 		return Layer{}, fmt.Errorf("overlay: text spec %q requires text (PipelineGen owns the displayed text)", layerID)
 	}
@@ -388,21 +410,25 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 	if layer.Style == nil {
 		layer.Style = &LayerStyle{}
 	}
-	// The role owns the base treatment. The spec's explicit choices (runtime
-	// override fill/font/glow/stroke/shadow) always win over the role default.
+	// The role owns the base treatment. The spec's explicit choices always win
+	// over the role default.
 	applyTextRoleBaseStyle(spec.StylePolicy, layer.Style, resolvedTextFontSize(spec), spec.OverrideFill, spec.StyleParams)
 	if spec.PresetDef.ID == ClassicPhrasePresetID {
 		// This preset opts into its catalog fill and GPU-supported shape-card
 		// lowering; the generic phrase role's fallback fill must not overwrite it.
 		layer.Style.Fill = rgbaHex(spec.PresetDef.Style.Fill)
 		// The preset itself is plate-free, but a runtime card_background is an
-		// explicit payload choice and must survive the preset's base style just
-		// like it does for phrase_default. Clearing it unconditionally made the
-		// feature silently disappear only when classic_phrase was selected.
+		// explicit payload choice and must survive the preset's base style.
 		if !runtimeStyleHasBackground(spec.StyleParams) {
 			layer.Style.Background = nil
 		}
 	}
+	return layer, nil
+}
+
+// applyResolvedTextGeometry applies explicit font limits, role overrides,
+// typography, box, position and the legal fit interval.
+func applyResolvedTextGeometry(layer *Layer, spec resolvedTextSpec) {
 	if spec.MinFontSize > 0 {
 		layer.Style.MinFontSize = spec.MinFontSize
 	}
@@ -410,7 +436,7 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		layer.Style.MaxFontSize = spec.MaxFontSize
 	}
 	applyResolvedTextRoleOverrides(layer.Style, spec.RoleOverrides)
-	applyResolvedTextFont(&layer, spec)
+	applyResolvedTextFont(layer, spec)
 	if !spec.OmitBox {
 		layer.BoxWidth = spec.BoxWidth
 		layer.BoxHeight = spec.BoxHeight
@@ -420,19 +446,22 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		layer.Size = []float64{float64(spec.BoxWidth), float64(spec.BoxHeight)}
 	}
 	layer.Position = append([]float64(nil), spec.Position...)
-	applyResolvedTextFitPolicy(&layer, spec)
-	// No text layer leaves the compiler with an illegal fit interval: the
-	// limits/fit-mode pairing is a render-plan contract, not a caller detail.
+	applyResolvedTextFitPolicy(layer, spec)
+	// No text layer leaves the compiler with an illegal fit interval.
 	enforceTextFitContract(layer.Style)
+}
+
+// resolveResolvedTextAnimation lowers the explicit motion or the official
+// preset and appends the requested entry/exit envelope.
+func resolveResolvedTextAnimation(layer *Layer, spec resolvedTextSpec, layerID string) (*LayerAnimation, error) {
 	var animation *LayerAnimation
 	if spec.MotionID != "" {
 		// The preset's exit window is the fallback for a motion that declares
 		// none; the wrapped text is the motion context so the stagger aligns
-		// with the final lines. Motion-target admission stays where the plan
-		// contract owns it (resolver/caller): this lowering lowers.
+		// with the final lines.
 		resolved, err := animationForMotionTarget(spec.MotionID, spec.MotionParams, spec.Text, layer.DurationFrames, spec.PresetDef.Motion.Exit, layerID, spec.MotionTarget, spec.EntryExit)
 		if err != nil {
-			return Layer{}, err
+			return nil, err
 		}
 		animation = resolved
 	} else if spec.PresetID != "" {
@@ -441,7 +470,7 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		// text animators instead of being silently compiled away.
 		presetAnimation, err := animationForPreset(spec.preset(), spec.Text, layer.DurationFrames, spec.EntryExit)
 		if err != nil {
-			return Layer{}, err
+			return nil, err
 		}
 		animation = presetAnimation
 	}
@@ -452,20 +481,7 @@ func compileResolvedText(layerID string, start, end int64, spec resolvedTextSpec
 		}
 		animation = withPhraseEntryExit(animation, layer.DurationFrames, exitFrames)
 	}
-	// A camera-backed motion cannot be honoured on the flat overlay canvas.
-	// Keep the default screen-space text path for 2D choreography, but lift a
-	// text layer into scene space when its own tracks need the 3D path; the
-	// catalog's requires_3d and the emitted enable_3d then describe the same
-	// layer instead of contradicting each other.
-	if layer.ScreenSpace && layerUses3D(animation) {
-		layer.ScreenSpace = false
-		// Overlay text is authored in canvas-absolute coordinates. Chronon's
-		// 3D text path keeps that base position absolute; subtracting half the
-		// canvas moved a centred caption to x=0 (the left edge) while its 3D
-		// entrance tracks settled, so leave the resolved position untouched.
-	}
-	applyMotionRouting(&layer, animation)
-	return layer, nil
+	return animation, nil
 }
 
 func applyResolvedTextRoleOverrides(style, overrides *LayerStyle) {

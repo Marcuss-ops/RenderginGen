@@ -118,36 +118,10 @@ func applyImageItemEffects(ri resolvedItem, layers []Layer) ([]Layer, error) {
 // and composition validation stay in semantic_image_compile.go.
 func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child semanticItem, caption string, image *Layer, childID string, role textRole) (Layer, error) {
 	captionIdentity := parent.Item.ID + ":" + childID
-	captionMotion := ""
-	if child.CaptionMotionID != "" {
-		captionMotion = EntityCaptionMotionID(child.CaptionMotionID)
-	} else {
-		captionMotion = entityCaptionMotionIDForLayout("", child.CaptionLayout, src.PlanID, src.VideoID, captionIdentity)
-	}
-	// A 3D caption motion is kept as declared: the text lowering derives
-	// enable_3d from the animators it emits, so Chronon receives the camera-
-	// backed caption exactly as the producer asked for it.
-	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
-		return Layer{}, fmt.Errorf("overlay: item %q image caption has no positive image geometry", parent.Item.ID)
-	}
-	// The resolver owns the geometry: image bottom_center + margin anchor,
-	// safe-area clamping and long-name font fitting all happen there. The
-	// lowering below only writes the resolver's answer into the layer.
-	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, image.Position, image.Size[0], image.Size[1])
-	layout, err := ResolveEntityCardLayoutAtSize(src.Width, src.Height, imageBounds, caption, child.CaptionLayout, 0)
+	captionMotion := selectImageCaptionMotion(src, child, captionIdentity)
+	layout, err := resolveImageCaptionLayout(parent, src, child, caption, image)
 	if err != nil {
-		return Layer{}, fmt.Errorf("overlay: item %q entity caption layout: %w", parent.Item.ID, err)
-	}
-	// Vertical fallback: the resolver may shift the image up so the pair
-	// image + margin + caption fits inside the safe area. Image layers are
-	// positioned relative to the canvas center, so an upward canvas shift of
-	// `shift` px converts to exactly minus `shift`; the caption's geometry
-	// below is canvas-absolute.
-	if shift := imageBounds.Y - layout.ImageBounds.Y; shift != 0 {
-		if len(image.Position) < 2 {
-			image.Position = []float64{0, 0}
-		}
-		image.Position[1] -= shift
+		return Layer{}, err
 	}
 	captionBounds := layout.CaptionBounds
 	width := int(captionBounds.Width)
@@ -165,17 +139,80 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	}
 	positionX := captionBounds.CenterX
 	positionY := captionBounds.CenterY
-	styleParams := map[string]any{
-		"position_x":   positionX,
-		"position_y":   positionY,
-		"font_size_px": captionBounds.FontSize,
+	styleParams, overrideFill, err := imageCaptionStyleParams(parent, child, captionBounds)
+	if err != nil {
+		return Layer{}, err
 	}
-	// Run-level runtime text style is the explicit payload choice. Thread the
-	// payload's look (font, glow, stroke, shadow) onto the caption layer so
-	// entity captions render the same style as phrases; the caption's
-	// geometry-resolved font_size_px stays untouched. Fall back to the
-	// language-level fallback supplies the family when the caller did not
-	// choose one. Entity composition presets never own a typeface.
+	motionParams := child.CaptionMotionParams
+	if motionParams == nil {
+		motionParams = map[string]any{"enter_frames": 8}
+	}
+	captionSpec := resolvedTextSpec{
+		Text: caption, BoxWidth: width, BoxHeight: int(captionBounds.Height),
+		Size:         []float64{captionBounds.Width, captionBounds.Height},
+		Position:     []float64{positionX, positionY},
+		CanvasWidth:  src.Width,
+		CanvasHeight: src.Height,
+		Style:        &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
+		MotionID:     captionMotion, MotionParams: motionParams,
+		StyleParams: styleParams, MotionTarget: TargetCaption, StylePolicy: role,
+		FontSize: captionBounds.FontSize, OverrideFill: overrideFill,
+	}
+	captionLayer, err := compileResolvedText(captionLayerID, image.StartFrame, image.StartFrame+image.DurationFrames, captionSpec)
+	if err != nil {
+		return Layer{}, fmt.Errorf("overlay: entity image caption %q: %w", captionLayerID, err)
+	}
+	// A caption whose image was fitted from its probed source aspect keeps the
+	// historical pinned font interval: the label is resolved against the FINAL
+	// card geometry in this compile, and the interval must travel with
+	// shrink_only so Chronon accepts the limits.
+	if image.SourceFitted {
+		pinCaptionFitSize(captionLayer.Style)
+	}
+	captionLayer.CaptionForImageID = image.ID
+	captionLayer.CaptionLayout = child.CaptionLayout
+	return captionLayer, nil
+}
+
+// selectImageCaptionMotion chooses the declared caption motion, or the
+// deterministic layout-aware fallback when the producer did not name one.
+func selectImageCaptionMotion(src *semanticPlan, child semanticItem, identity string) string {
+	if child.CaptionMotionID != "" {
+		return EntityCaptionMotionID(child.CaptionMotionID)
+	}
+	return entityCaptionMotionIDForLayout("", child.CaptionLayout, src.PlanID, src.VideoID, identity)
+}
+
+// resolveImageCaptionLayout owns the linked-caption geometry and the vertical
+// image shift the resolver may request so image + margin + caption fit.
+func resolveImageCaptionLayout(parent resolvedItem, src *semanticPlan, child semanticItem, caption string, image *Layer) (EntityCardLayout, error) {
+	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
+		return EntityCardLayout{}, fmt.Errorf("overlay: item %q image caption has no positive image geometry", parent.Item.ID)
+	}
+	imageBounds := EntityCardImageBoundsFromCenter(src.Width, src.Height, image.Position, image.Size[0], image.Size[1])
+	layout, err := ResolveEntityCardLayoutAtSize(src.Width, src.Height, imageBounds, caption, child.CaptionLayout, 0)
+	if err != nil {
+		return EntityCardLayout{}, fmt.Errorf("overlay: item %q entity caption layout: %w", parent.Item.ID, err)
+	}
+	// Image layers are positioned relative to the canvas center, so an
+	// upward canvas shift converts to exactly minus `shift`.
+	if shift := imageBounds.Y - layout.ImageBounds.Y; shift != 0 {
+		if len(image.Position) < 2 {
+			image.Position = []float64{0, 0}
+		}
+		image.Position[1] -= shift
+	}
+	return layout, nil
+}
+
+// imageCaptionStyleParams merges the runtime style with the child defaults and
+// returns the validated fill override used by the shared text compiler.
+func imageCaptionStyleParams(parent resolvedItem, child semanticItem, bounds EntityCardCaptionBounds) (map[string]any, string, error) {
+	styleParams := map[string]any{
+		"position_x":   bounds.CenterX,
+		"position_y":   bounds.CenterY,
+		"font_size_px": bounds.FontSize,
+	}
 	for _, key := range runtimeTextStyleKeys {
 		if key == "font_size_px" {
 			continue
@@ -184,8 +221,7 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 			styleParams[key] = value
 		}
 		// Parent runtime style is the canonical payload choice for every
-		// caption in the image recipe. Child animation/preset data supplies
-		// defaults only; it cannot silently change typography between renders.
+		// caption in the image recipe.
 		if value, ok := parent.Params[key]; ok {
 			styleParams[key] = value
 		}
@@ -229,41 +265,12 @@ func compileImageCaptionLayer(parent resolvedItem, src *semanticPlan, child sema
 	if overrideFill == "" {
 		overrideFill = strings.TrimSpace(child.CaptionColor)
 	}
-
 	if overrideFill != "" {
 		if _, err := parseHexColor(overrideFill); err != nil {
-			return Layer{}, fmt.Errorf("overlay: item %q caption color: %w", parent.Item.ID, err)
+			return nil, "", fmt.Errorf("overlay: item %q caption color: %w", parent.Item.ID, err)
 		}
 	}
-	motionParams := child.CaptionMotionParams
-	if motionParams == nil {
-		motionParams = map[string]any{"enter_frames": 8}
-	}
-	captionSpec := resolvedTextSpec{
-		Text: caption, BoxWidth: width, BoxHeight: int(captionBounds.Height),
-		Size:         []float64{captionBounds.Width, captionBounds.Height},
-		Position:     []float64{positionX, positionY},
-		CanvasWidth:  src.Width,
-		CanvasHeight: src.Height,
-		Style:        &LayerStyle{Font: OfficialFontPathForLanguage(src.Language)},
-		MotionID:     captionMotion, MotionParams: motionParams,
-		StyleParams: styleParams, MotionTarget: TargetCaption, StylePolicy: role,
-		FontSize: captionBounds.FontSize, OverrideFill: overrideFill,
-	}
-	captionLayer, err := compileResolvedText(captionLayerID, image.StartFrame, image.StartFrame+image.DurationFrames, captionSpec)
-	if err != nil {
-		return Layer{}, fmt.Errorf("overlay: entity image caption %q: %w", captionLayerID, err)
-	}
-	// A caption whose image was fitted from its probed source aspect keeps the
-	// historical pinned font interval: the label is resolved against the FINAL
-	// card geometry in this compile, and the interval must travel with
-	// shrink_only so Chronon accepts the limits.
-	if image.SourceFitted {
-		pinCaptionFitSize(captionLayer.Style)
-	}
-	captionLayer.CaptionForImageID = image.ID
-	captionLayer.CaptionLayout = child.CaptionLayout
-	return captionLayer, nil
+	return styleParams, overrideFill, nil
 }
 
 // pinCaptionFitSize locks a fitted caption to the size the layout resolved.

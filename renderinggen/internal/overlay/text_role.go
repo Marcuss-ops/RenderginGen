@@ -68,103 +68,98 @@ const (
 func applyTextRoleBaseStyle(role textRole, style *LayerStyle, fontSize float64, fill string, runtimeStyle map[string]any) {
 	switch role {
 	case textRolePhrase, textRoleImportantPhrase, textRoleLowerThird:
-		// Phrase recipes can arrive without their authored fill in the runtime
-		// motion catalog. Give editorial text a contrast-safe foreground so it
-		// remains readable over the dark phrase background. Everything else —
-		// the preset's legibility stroke/shadow, the shrink-only fit range and
-		// any runtime override — is already on the seeded style: re-deriving
-		// them here would clobber explicit decisions (zero-disables, font
-		// size, fit bounds) the runtime style contract pins.
-		if fill == "" {
-			fill = "#F8F5EA"
-		}
-		style.Fill = fill
-		// Phrase text may sit directly over a photograph. Text cards are not
-		// supported by the strict Vulkan path, so give every phrase a keyline
-		// whose luminance opposes its fill. This preserves caller-selected
-		// strokes while keeping default black and white text distinguishable
-		// over both dark and bright image regions.
-		if style.Stroke == nil {
-			if _, chosen := runtimeStyle["stroke_size"]; !chosen {
-				style.Stroke = &LayerStroke{Color: contrastingKeyline(fill), Width: 2.5}
-			}
-		}
-		// The phrase role stays plate-free unless the payload explicitly asked
-		// for card_background; the plan-level pass then lowers it to a shape.
-		if !runtimeStyleHasBackground(runtimeStyle) {
-			style.Background = nil
-		}
+		applyPhraseRoleBaseStyle(style, fill, runtimeStyle)
 	case textRoleEntityCaption, textRoleImageCaption:
-		// Cinematic caption treatment: a large warm-white title, a
-		// restrained dark keyline and soft drop shadow keep captions readable
-		// over moving footage. Entity and editorial image captions share this
-		// policy while retaining distinct semantic roles for future resolvers.
-		if fill == "" {
-			fill = captionForegroundFill
-		}
-		style.Fill = fill
-		style.FontSize = fontSize
-		// EntityCardLayout resolves the final font size before lowering. Keep a
-		// fixed point size here instead of emitting min/max fitting bounds with
-		// fit_mode=none (Chronon correctly rejects that contradictory payload).
-		style.MinFontSize = 0
-		style.MaxFontSize = 0
-		// The payload's explicit look always wins: only seed the role
-		// treatment for effects the plan did not choose. Without this guard
-		// the role base runs after applyTextRuntimeOverrides and would
-		// silently replace the payload's stroke, shadow and glow.
-		if _, chosen := runtimeStyle["stroke_size"]; !chosen {
-			style.Stroke = &LayerStroke{Color: captionKeylineColor, Width: captionKeylineWidth}
-		}
-		if !hasRuntimeShadowKey(runtimeStyle) {
-			style.Shadow = &LayerShadow{Color: captionShadowColor, Opacity: captionShadowOpacity, Blur: captionShadowBlur, Offset: []float64{captionShadowOffsetX, captionShadowOffsetY}}
-		}
-		// The default stays glow-free: on the strict Vulkan path each
-		// animated text frame renders at output size, and a full-frame
-		// halo's separable blur saturated the RTX A4000 (Xid 109). An
-		// explicit payload glow_size overrides this default — the
-		// producer chose the halo knowingly, and applyTextRuntimeOverrides
-		// already lowered it above.
-		if _, chosen := runtimeStyle["glow_size"]; !chosen {
-			style.Glow = nil
-		}
-		// A caption plate is opt-in: the payload's card_background is the
-		// visible rectangle behind the context text, and its colour is the
-		// caller's choice. The role stays plate-free when the plan did not
-		// request one, so a preset's card cannot silently appear under every
-		// entity name. Chronon lowers the requested plate to a measured text
-		// card behind the run.
-		if !runtimeStyleHasBackground(runtimeStyle) {
-			style.Background = nil
-		}
+		applyCaptionRoleBaseStyle(style, fontSize, fill, runtimeStyle)
 	case textRoleMetric, textRoleDate:
-		// Data roles keep the catalog/runtime seeded style intact; the resolver
-		// may supply a no-shrink fit policy and larger box, but semantic data
-		// does not receive phrase or caption nameplate effects.
-		if fill != "" {
-			style.Fill = fill
-		}
+		applyDataRoleBaseStyle(style, fill)
 	case textRoleMapLabel, textRoleMapAttribution:
-		// Legibility over a basemap comes from a shrink-only fit plus a soft
-		// drop shadow. The fill is supplied by the caller — a pin's contract
-		// colour, or the attribution's white — and is deliberately NOT
-		// defaulted here: a map plate's foreground is part of the published map
-		// contract, so inventing one would change rendered maps.
-		style.Fill = fill
-		style.FontSize = fontSize
-		style.MinFontSize = fontSize
-		style.MaxFontSize = fontSize
-		style.FitMode = mapTextPlateFitMode
-		if !hasRuntimeShadowKey(runtimeStyle) {
-			style.Shadow = &LayerShadow{
-				Color:   mapTextPlateShadowColor,
-				Opacity: mapTextPlateShadowOpacity,
-				Blur:    mapTextPlateShadowBlur,
-				Offset:  []float64{0, 2},
-			}
-		}
+		applyMapRoleBaseStyle(style, fontSize, fill, runtimeStyle)
 	default:
 		// Unrecognized roles keep the preset style untouched.
+	}
+}
+
+// applyPhraseRoleBaseStyle gives editorial text a contrast-safe foreground and
+// keyline while preserving every runtime choice.
+func applyPhraseRoleBaseStyle(style *LayerStyle, fill string, runtimeStyle map[string]any) {
+	// Phrase recipes can arrive without their authored fill in the runtime
+	// motion catalog. Everything else is already on the seeded style.
+	if fill == "" {
+		fill = "#F8F5EA"
+	}
+	style.Fill = fill
+	// Phrase text may sit directly over a photograph. Text cards are not
+	// supported by the strict Vulkan path, so give every phrase a keyline whose
+	// luminance opposes its fill.
+	if style.Stroke == nil {
+		if _, chosen := runtimeStyle["stroke_size"]; !chosen {
+			style.Stroke = &LayerStroke{Color: contrastingKeyline(fill), Width: 2.5}
+		}
+	}
+	// The phrase role stays plate-free unless the payload explicitly asked for
+	// card_background; the plan-level pass then lowers it to a shape.
+	if !runtimeStyleHasBackground(runtimeStyle) {
+		style.Background = nil
+	}
+}
+
+// applyCaptionRoleBaseStyle is the cinematic caption treatment shared by entity
+// and editorial image captions.
+func applyCaptionRoleBaseStyle(style *LayerStyle, fontSize float64, fill string, runtimeStyle map[string]any) {
+	if fill == "" {
+		fill = captionForegroundFill
+	}
+	style.Fill = fill
+	style.FontSize = fontSize
+	// EntityCardLayout resolves the final font size before lowering. Keep a
+	// fixed point size here instead of emitting min/max fitting bounds with
+	// fit_mode=none.
+	style.MinFontSize = 0
+	style.MaxFontSize = 0
+	// The payload's explicit look always wins: only seed the role treatment for
+	// effects the plan did not choose.
+	if _, chosen := runtimeStyle["stroke_size"]; !chosen {
+		style.Stroke = &LayerStroke{Color: captionKeylineColor, Width: captionKeylineWidth}
+	}
+	if !hasRuntimeShadowKey(runtimeStyle) {
+		style.Shadow = &LayerShadow{Color: captionShadowColor, Opacity: captionShadowOpacity, Blur: captionShadowBlur, Offset: []float64{captionShadowOffsetX, captionShadowOffsetY}}
+	}
+	// The default stays glow-free: on the strict Vulkan path each animated text
+	// frame renders at output size, and a full-frame halo's separable blur
+	// saturated the RTX A4000 (Xid 109).
+	if _, chosen := runtimeStyle["glow_size"]; !chosen {
+		style.Glow = nil
+	}
+	// A caption plate is opt-in.
+	if !runtimeStyleHasBackground(runtimeStyle) {
+		style.Background = nil
+	}
+}
+
+// applyDataRoleBaseStyle keeps the catalog/runtime seeded style intact and only
+// supplies the caller's explicit fill.
+func applyDataRoleBaseStyle(style *LayerStyle, fill string) {
+	if fill != "" {
+		style.Fill = fill
+	}
+}
+
+// applyMapRoleBaseStyle adds the shrink-only fit and soft shadow that keep map
+// text legible over a basemap. The fill is always supplied by the map contract.
+func applyMapRoleBaseStyle(style *LayerStyle, fontSize float64, fill string, runtimeStyle map[string]any) {
+	style.Fill = fill
+	style.FontSize = fontSize
+	style.MinFontSize = fontSize
+	style.MaxFontSize = fontSize
+	style.FitMode = mapTextPlateFitMode
+	if !hasRuntimeShadowKey(runtimeStyle) {
+		style.Shadow = &LayerShadow{
+			Color:   mapTextPlateShadowColor,
+			Opacity: mapTextPlateShadowOpacity,
+			Blur:    mapTextPlateShadowBlur,
+			Offset:  []float64{0, 2},
+		}
 	}
 }
 

@@ -27,139 +27,154 @@ import (
 // "DB artifact" step — returning the artifact metadata for queue completion.
 // The pipeline invariant local_sha == objectstore_sha == db_sha is enforced
 // here: the record is keyed by the same hash the object store accepted.
-func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string, outcome receiptOutcome, tail *stagedUpload, plan *overlay.Plan, phaseMetrics map[string]float64, totalStart time.Time, probe *media.ProbeResult, stats overlay.Stats, inputBytes int64, copyEligible bool, effectiveBackend string, nativeCertified bool, segmentEntries []SegmentArtifact) (queue.Artifact, error) {
+type storeArtifactInput struct {
+	jobID            string
+	outputPath       string
+	outcome          receiptOutcome
+	tail             *stagedUpload
+	plan             *overlay.Plan
+	phaseMetrics     map[string]float64
+	totalStart       time.Time
+	probe            *media.ProbeResult
+	stats            overlay.Stats
+	inputBytes       int64
+	copyEligible     bool
+	effectiveBackend string
+	nativeCertified  bool
+	segmentEntries   []SegmentArtifact
+}
+
+func (p *Processor) storeArtifact(ctx context.Context, in storeArtifactInput) (queue.Artifact, error) {
 	phaseStart := time.Now()
 	defer func() {
-		phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
-		phaseMetrics[metricnames.TotalMS] = float64(time.Since(totalStart).Microseconds()) / 1000
-		phaseMetrics[metricnames.TotalUS] = phaseMetrics[metricnames.TotalMS] * 1000
+		in.phaseMetrics[metricnames.PublishMS] = float64(time.Since(phaseStart).Microseconds()) / 1000
+		in.phaseMetrics[metricnames.TotalMS] = float64(time.Since(in.totalStart).Microseconds()) / 1000
+		in.phaseMetrics[metricnames.TotalUS] = in.phaseMetrics[metricnames.TotalMS] * 1000
 		p.recordPhase(metricnames.PublishStem, phaseStart)
 	}()
-	fileInfo, err := os.Stat(outputPath)
+	fileInfo, err := os.Stat(in.outputPath)
 	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: stat output %s: %w", outputPath, err)
+		return queue.Artifact{}, fmt.Errorf("processor: stat output %s: %w", in.outputPath, err)
 	}
-	// The artifact's content address comes from the verification GATE, which
-	// resolved it for this job's policy (see receipt_identity.go). The store
-	// phase used to make this decision itself, from a size match against the
-	// receipt, which meant a wrong-but-right-length hash became the artifact's
-	// permanent address without any policy being consulted. Two cases arrive
-	// here:
-	//
-	//	identity.SHA256 set    — use the gate's address (proven, or accepted on a
-	//	                        size match under fast, which the gate recorded)
-	//	identity.SHA256 empty  — no usable claim, so read the bytes here
-	//
-	// Either way the invariant local_sha == objectstore_sha == db_sha holds, and
-	// the ledger says which case it was.
-	var hash string
-	staged := false
+	hash, staged, tail, err := p.resolveStoreIdentity(in, fileInfo)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	recordReceiptMetrics(in)
+	if err := p.publishArtifactBytes(ctx, in, hash, staged, tail, fileInfo); err != nil {
+		return queue.Artifact{}, err
+	}
+	artifact := p.newStoredArtifact(in, hash, fileInfo)
+	if err := attachBatchSegments(&artifact, in); err != nil {
+		return queue.Artifact{}, err
+	}
+	// Total time must be set before the ledger row is written.
+	in.phaseMetrics[metricnames.TotalUS] = float64(time.Since(in.totalStart).Microseconds())
+	chrononTelemetry, err := p.ingestChrononTelemetry(in, &artifact)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	p.preserveRawTimingSidecar(ctx, &artifact, in.outputPath, in.jobID)
+	if artifact, err = p.recordArtifact(ctx, in.jobID, artifact, in.probe, in.stats, in.inputBytes, chrononTelemetry); err != nil {
+		return queue.Artifact{}, err
+	}
+	return artifact, nil
+}
+
+// resolveArtifactIdentity establishes the one address the object store, the
+// ledger and the returned artifact all use. A staged upload supplies it from
+// the stream; otherwise the verification gate's receipt identity is used, or
+// the bytes are hashed directly when the gate had no usable claim.
+func (p *Processor) resolveStoreIdentity(in storeArtifactInput, fileInfo os.FileInfo) (hash string, staged bool, tail *stagedUpload, err error) {
+	tail = in.tail
 	if tail != nil {
-		// The tail-upload lane streamed the bytes WHILE the mux appended them
-		// and the store computed their SHA-256 from the same stream. The
-		// verification gates above have already passed, so THIS is the commit
-		// point for the bytes: finishing the stream lets the upload drain and
-		// finalize. Before this line a failing gate discarded the pending
-		// bytes (Abort) and nothing was ever installed — the same
-		// verify-before-install posture as the classic path, just overlapping
-		// the transport with the render.
 		tail.Finish()
-		stagedSHA, streamedSize, err := tail.Wait()
-		if err != nil {
+		stagedSHA, streamedSize, waitErr := tail.Wait()
+		if waitErr != nil {
 			// Transport failure: the pending bytes were discarded and nothing
 			// is installed, so the classic hash-then-PUT path can still publish
 			// the same file. An optimization failing must not fail a render.
-			workerlog.ByJobID(jobID).Warnf("staged upload failed; falling back to hash-then-PUT: %v", err)
+			workerlog.ByJobID(in.jobID).Warnf("staged upload failed; falling back to hash-then-PUT: %v", waitErr)
 			tail = nil
 		} else if streamedSize != fileInfo.Size() {
-			return queue.Artifact{}, fmt.Errorf("processor: staged upload streamed %d bytes but %s is %d bytes: the file changed under the upload", streamedSize, outputPath, fileInfo.Size())
-		} else if outcome.Identity.SHA256 != "" && outcome.Identity.SHA256 != stagedSHA {
-			// A receipt naming different bytes than the stream is exactly the
-			// corruption this pipeline must fail closed on.
-			return queue.Artifact{}, fmt.Errorf("processor: staged upload digest %s does not match the %s identity %s: the stream and the receipt describe different bytes", stagedSHA, outcome.Identity.Source, outcome.Identity.SHA256)
+			return "", false, nil, fmt.Errorf("processor: staged upload streamed %d bytes but %s is %d bytes: the file changed under the upload", streamedSize, in.outputPath, fileInfo.Size())
+		} else if in.outcome.Identity.SHA256 != "" && in.outcome.Identity.SHA256 != stagedSHA {
+			return "", false, nil, fmt.Errorf("processor: staged upload digest %s does not match the %s identity %s: the stream and the receipt describe different bytes", stagedSHA, in.outcome.Identity.Source, in.outcome.Identity.SHA256)
 		} else {
 			hash, staged = stagedSHA, true
-			// The digest was computed FROM THE STREAM by both endpoints and
-			// asserted at finalize: no pre-upload hash pass, so sha256_us is
-			// zero by construction — the hashing rode inside the upload.
-			workerlog.ByJobID(jobID).Infof("artifact identity from the staged upload stream (bytes=%d, upload=%.0fms)", streamedSize, tail.Duration().Seconds()*1000)
+			workerlog.ByJobID(in.jobID).Infof("artifact identity from the staged upload stream (bytes=%d, upload=%.0fms)", streamedSize, tail.Duration().Seconds()*1000)
 		}
 	}
-	if !staged {
-		shaStart := time.Now()
-		if outcome.Identity.SHA256 != "" {
-			hash = outcome.Identity.SHA256
-			workerlog.ByJobID(jobID).Infof("artifact identity %s (proven=%t, bytes=%d)", outcome.Identity.Source, outcome.Identity.Proven, fileInfo.Size())
-		} else {
-			// No receipt (or an unreadable/unusable one): identity must be proven
-			// by re-reading the output. This costs a full SHA-256 pass on the
-			// critical path, so it is recorded — otherwise the spike is visible
-			// only as an unexplained sha256_ms and the degradation stays
-			// unattributable. The gate has already recorded WHY it could not
-			// resolve the address.
-			workerlog.ByJobID(jobID).Warnf("hashing output directly (%s)", outcome.Identity.Source)
-			digest, _, verifyErr := hashio.File(outputPath)
-			if verifyErr != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: hash output %s: %w", outputPath, verifyErr)
-			}
-			hash = digest
-		}
-		shaUS := float64(time.Since(shaStart).Microseconds())
-		phaseMetrics[metricnames.SHA256US] = shaUS
-		phaseMetrics[metricnames.SHA256MS] = shaUS / 1000
-		// The same pass is observed on the worker's phase histogram: a
-		// sha256 spike is then attributable from /metrics without waiting
-		// for an artifact-ledger query.
-		p.recordPhase(metricnames.SHA256Stem, shaStart)
+	if staged {
+		return hash, true, tail, nil
 	}
-	// Surface Chronon's own receipt-verification phases (probe / optional
-	// decode / count_frames / sha256 / total, policy-controlled by the
-	// resolved verification policy) on the artifact so per-clip reports can
-	// attribute the post-render receipt cost separately from the render wall.
-	// The resolved policy + aggregate status ride the same metrics namespace
-	// so reports can label every run fast/normal/certify instead of inferring
-	// the policy from whether receipt_decode_ms exists. Best-effort: a receipt
-	// that carried no timing/verification block simply adds nothing.
-	if outcome.Err == nil {
-		for key, value := range outcome.Receipt.ReceiptTimingMetrics() {
-			phaseMetrics[key] = value
+	shaStart := time.Now()
+	if in.outcome.Identity.SHA256 != "" {
+		hash = in.outcome.Identity.SHA256
+		workerlog.ByJobID(in.jobID).Infof("artifact identity %s (proven=%t, bytes=%d)", in.outcome.Identity.Source, in.outcome.Identity.Proven, fileInfo.Size())
+	} else {
+		// No receipt (or an unreadable/unusable one): identity must be proven
+		// by re-reading the output. This costs a full SHA-256 pass on the
+		// critical path, so it is recorded and observed on the phase histogram.
+		workerlog.ByJobID(in.jobID).Warnf("hashing output directly (%s)", in.outcome.Identity.Source)
+		digest, _, verifyErr := hashio.File(in.outputPath)
+		if verifyErr != nil {
+			return "", false, nil, fmt.Errorf("processor: hash output %s: %w", in.outputPath, verifyErr)
 		}
-		for key, value := range outcome.Receipt.VerificationMetrics() {
-			phaseMetrics[key] = value
-		}
+		hash = digest
 	}
+	shaUS := float64(time.Since(shaStart).Microseconds())
+	in.phaseMetrics[metricnames.SHA256US] = shaUS
+	in.phaseMetrics[metricnames.SHA256MS] = shaUS / 1000
+	p.recordPhase(metricnames.SHA256Stem, shaStart)
+	return hash, false, tail, nil
+}
+
+func recordReceiptMetrics(in storeArtifactInput) {
+	if in.outcome.Err != nil {
+		return
+	}
+	for key, value := range in.outcome.Receipt.ReceiptTimingMetrics() {
+		in.phaseMetrics[key] = value
+	}
+	for key, value := range in.outcome.Receipt.VerificationMetrics() {
+		in.phaseMetrics[key] = value
+	}
+}
+
+func (p *Processor) publishArtifactBytes(ctx context.Context, in storeArtifactInput, hash string, staged bool, tail *stagedUpload, fileInfo os.FileInfo) error {
 	putStart := time.Now()
 	if staged {
-		// The bytes are already in the store under `hash` (installed by the
-		// staged finalize). The recorded cost is the upload's own wall time —
-		// which ran CONCURRENTLY with the render; the residual drain this phase
-		// paid is already inside publish_ms. That gap is the overlap the lane
-		// exists for (tail-upload gate: encode×upload overlap).
+		// The bytes are already in the store under hash; record the upload's
+		// own wall time, which ran concurrently with the render.
 		putUS := float64(tail.Duration().Microseconds())
-		phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
-		phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
-	} else {
-		output, err := os.Open(outputPath)
-		if err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: open output for upload %s: %w", outputPath, err)
-		}
-		if err := p.store.PutReader(ctx, hash, output, fileInfo.Size()); err != nil {
-			output.Close()
-			return queue.Artifact{}, fmt.Errorf("processor: publish artifact: %w", err)
-		}
-		if err := output.Close(); err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: close output after upload %s: %w", outputPath, err)
-		}
-		putUS := float64(time.Since(putStart).Microseconds())
-		phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
-		phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
+		in.phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
+		in.phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
+		return nil
 	}
-	metadata := planMetadataOf(plan)
+	output, err := os.Open(in.outputPath)
+	if err != nil {
+		return fmt.Errorf("processor: open output for upload %s: %w", in.outputPath, err)
+	}
+	if err := p.store.PutReader(ctx, hash, output, fileInfo.Size()); err != nil {
+		output.Close()
+		return fmt.Errorf("processor: publish artifact: %w", err)
+	}
+	if err := output.Close(); err != nil {
+		return fmt.Errorf("processor: close output after upload %s: %w", in.outputPath, err)
+	}
+	putUS := float64(time.Since(putStart).Microseconds())
+	in.phaseMetrics[metricnames.ObjectStoreUploadUS] = putUS
+	in.phaseMetrics[metricnames.ObjectStoreUploadMS] = putUS / 1000
+	return nil
+}
+
+func (p *Processor) newStoredArtifact(in storeArtifactInput, hash string, fileInfo os.FileInfo) queue.Artifact {
+	metadata := planMetadataOf(in.plan)
 	// The configured backend is only a fallback for callers that never
-	// resolved a policy (imports, prepare artifacts). A render must publish
-	// the backend the policy actually executed, or a software chain-pan job
-	// is mislabeled as vulkan in the queue ledger.
-	publishedBackend := effectiveBackend
+	// resolved a policy (imports, prepare artifacts). A render publishes the
+	// backend the policy actually executed.
+	publishedBackend := in.effectiveBackend
 	if publishedBackend == "" {
 		publishedBackend = p.backend
 	}
@@ -176,96 +191,66 @@ func (p *Processor) storeArtifact(ctx context.Context, jobID, outputPath string,
 		FPSDen:         metadata.FPSDen,
 		FrameCount:     metadata.FrameCount,
 		DurationUS:     metadata.DurationUS,
-		Backend:        publishedRenderBackend(publishedBackend, nativeCertified),
+		Backend:        publishedRenderBackend(publishedBackend, in.nativeCertified),
 		ChrononVersion: p.chrononVersion,
-		Metrics:        phaseMetrics,
+		Metrics:        in.phaseMetrics,
 		ProfileID:      metadata.ProfileID,
 	}
-	if probe != nil {
+	if in.probe != nil {
+		probe := in.probe
 		artifact.Container = probe.Container
 		artifact.PixelFormat = probe.PixelFormat
 		artifact.AudioStreams = probe.AudioStreams
 		artifact.Codec = probe.VideoCodec
 		artifact.CodecProfile = probe.CodecProfile
-		// Complete structural certification: the full ffprobe fact set the
-		// downstream output contract validates, including the dimensions the
-		// consumer cannot observe itself (timebase, SAR, colour, GOP, the full
-		// audio block).
 		artifact.OutputFacts = outputFactsFromProbe(probe)
 		artifact.FrameCount = probe.FrameCount
 		artifact.FirstFrameKeyframe = probe.FirstFrameKeyframe
-		// closed_gop is certified from the full keyframe cadence (see
-		// media.ProbeResult.ClosedGOP) — it must never be a copy of
-		// first_frame_keyframe: that conflates "starts cleanly" with "every
-		// GOP boundary is closed and regular".
+		// closed_gop is certified from the full keyframe cadence, never copied
+		// from first_frame_keyframe.
 		artifact.ClosedGOP = probe.ClosedGOP
 		if probe.ClosedGOPUncertifiable {
-			// The probe never observed the sync-sample table (ffprobe missing
-			// or unable to decode it): closed_gop=false here means "not
-			// proven", not "open GOP". Surface it on the artifact metrics so a
-			// broken probe cannot masquerade as a renderer defect forever.
-			phaseMetrics[metricnames.ClosedGOPUncertifiable] = 1
+			in.phaseMetrics[metricnames.ClosedGOPUncertifiable] = 1
 		}
 		artifact.Width, artifact.Height = probe.Width, probe.Height
 		artifact.FPSNum, artifact.FPSDen = probe.FPSNum, probe.FPSDen
 		artifact.DurationUS = probe.DurationUS
-		artifact.CopyEligible = copyEligible
+		artifact.CopyEligible = in.copyEligible
 	}
-	if len(segmentEntries) > 0 {
-		// P4 batch superjob — "receipt per batch + voci per segmento": the
-		// per-item identities/facts ride the extensible OutputFacts object, so
-		// every segment MP4 stays independently fetchable, verifiable and
-		// retryable. Fail-closed: without certified output facts there is
-		// nowhere honest to publish the per-segment contract.
-		if artifact.OutputFacts == nil {
-			return queue.Artifact{}, fmt.Errorf("processor: segmented batch %s has no certified output facts to carry its %d per-segment entries", jobID, len(segmentEntries))
-		}
-		artifact.OutputFacts.BatchSegments = batchSegmentFacts(segmentEntries)
+	return artifact
+}
+
+func attachBatchSegments(artifact *queue.Artifact, in storeArtifactInput) error {
+	if len(in.segmentEntries) == 0 {
+		return nil
 	}
-	// Total time must be set before the ledger row is written (the deferred
-	// publish/total metrics above are for the artifact returned to the queue).
-	phaseMetrics[metricnames.TotalUS] = float64(time.Since(totalStart).Microseconds())
-	// Ingest Chronon's canonical BOUNDED telemetry (observability ownership,
-	// Phase 10): only the v2/v3 timing sidecar is accepted. Its bounded sections
-	// are recorded verbatim (Chronon owns the schema) and only the documented
-	// numeric subset is projected. A missing sidecar is non-fatal: the rendered
-	// bytes are still valid, only the bounded telemetry blob is absent.
+	if artifact.OutputFacts == nil {
+		return fmt.Errorf("processor: segmented batch %s has no certified output facts to carry its %d per-segment entries", in.jobID, len(in.segmentEntries))
+	}
+	artifact.OutputFacts.BatchSegments = batchSegmentFacts(in.segmentEntries)
+	return nil
+}
+
+func (p *Processor) ingestChrononTelemetry(in storeArtifactInput, artifact *queue.Artifact) (json.RawMessage, error) {
 	var chrononTelemetry json.RawMessage
-	if raw, schema, err := chronon.ReadTelemetrySummaryWithSchema(outputPath); err != nil {
-		// Fail-open, but not invisible: the absence is a per-artifact metric so
-		// a renderer that silently stops emitting its sidecar is visible in the
-		// ledger and on GET /jobs/{id} instead of only in a log line.
-		phaseMetrics[metricnames.ChrononTelemetryMissing] = 1
-		workerlog.ByJobID(jobID).Warnf("chronon telemetry sidecar unavailable: %v", err)
-	} else {
-		chrononTelemetry = raw
-		artifact.ChrononTelemetry = raw
-		phaseMetrics[metricnames.ChrononTelemetrySourceTiming] = 1
-		phaseMetrics[metricnames.ChrononTelemetrySchemaRead] = float64(chronon.TelemetrySchemaCode(schema))
-		if schema == chronon.TimingSidecarSchemaV2 {
-			workerlog.ByJobID(jobID).Warnf("reading previous Chronon telemetry schema %s; support window ends with the next release", schema)
-		}
-		mergeTelemetrySummaryMetrics(phaseMetrics, raw)
-		// Cross-check the composition requirement the worker derived from the
-		// plan against the execution path the engine reports. This runs where
-		// the summary is ALREADY in hand, so the verification costs no extra
-		// read; a divergence fails the artifact only for the direction that can
-		// produce a wrong picture (see composition_check.go).
-		if err := verifyCompositionPrediction(plan, raw, phaseMetrics, p.receiptVerifyLevel(), jobID); err != nil {
-			return queue.Artifact{}, err
-		}
+	raw, schema, err := chronon.ReadTelemetrySummaryWithSchema(in.outputPath)
+	if err != nil {
+		in.phaseMetrics[metricnames.ChrononTelemetryMissing] = 1
+		workerlog.ByJobID(in.jobID).Warnf("chronon telemetry sidecar unavailable: %v", err)
+		return nil, nil
 	}
-	// Preserve the RAW deep-profile sidecar verbatim (including the unbounded
-	// per-frame frame_times_ms array) as an OPAQUE content-addressed artifact:
-	// bytes → hash → object store → small reference. The worker never parses
-	// or mutates its contents (it is Chronon-owned); the bounded summary above
-	// is the ledger telemetry. Fail-open: a missing or unreadable sidecar only
-	// logs.
-	p.preserveRawTimingSidecar(ctx, &artifact, outputPath, jobID)
-	if artifact, err = p.recordArtifact(ctx, jobID, artifact, probe, stats, inputBytes, chrononTelemetry); err != nil {
-		return queue.Artifact{}, err
+	chrononTelemetry = raw
+	artifact.ChrononTelemetry = raw
+	in.phaseMetrics[metricnames.ChrononTelemetrySourceTiming] = 1
+	in.phaseMetrics[metricnames.ChrononTelemetrySchemaRead] = float64(chronon.TelemetrySchemaCode(schema))
+	if schema == chronon.TimingSidecarSchemaV2 {
+		workerlog.ByJobID(in.jobID).Warnf("reading previous Chronon telemetry schema %s; support window ends with the next release", schema)
 	}
-	return artifact, nil
+	mergeTelemetrySummaryMetrics(in.phaseMetrics, raw)
+	if err := verifyCompositionPrediction(in.plan, raw, in.phaseMetrics, p.receiptVerifyLevel(), in.jobID); err != nil {
+		return nil, err
+	}
+	return chrononTelemetry, nil
 }
 
 // preserveRawTimingSidecar stores the raw `<output>.timing.json` document

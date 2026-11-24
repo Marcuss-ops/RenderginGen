@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/storage"
 )
 
@@ -164,9 +163,14 @@ func TestTailUploadFallbackToPutReaderOnStagedFailure(t *testing.T) {
 	// storeArtifact consumes the tail: with the staged lane broken it must
 	// resolve the identity itself and PutReader the bytes.
 	sum := sha256.Sum256(data)
-	artifact, err := p.storeArtifact(context.Background(), "job-fallback", path,
-		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
-		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, "vulkan", false, nil)
+	artifact, err := p.storeArtifact(context.Background(), storeArtifactInput{
+		jobID: "job-fallback", outputPath: path,
+		outcome:          receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
+		tail:             upload,
+		phaseMetrics:     map[string]float64{},
+		totalStart:       time.Now(),
+		effectiveBackend: "vulkan",
+	})
 	if err != nil {
 		t.Fatalf("storeArtifact with failed staging: %v", err)
 	}
@@ -193,9 +197,14 @@ func TestTailUploadDigestMismatchFailsClosed(t *testing.T) {
 	upload.Finish()
 
 	wrong := sha256.Sum256([]byte("different bytes"))
-	_, err := p.storeArtifact(context.Background(), "job-mismatch", path,
-		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(wrong[:]), Source: "receipt", Proven: true}},
-		upload, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, "vulkan", false, nil)
+	_, err := p.storeArtifact(context.Background(), storeArtifactInput{
+		jobID: "job-mismatch", outputPath: path,
+		outcome:          receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(wrong[:]), Source: "receipt", Proven: true}},
+		tail:             upload,
+		phaseMetrics:     map[string]float64{},
+		totalStart:       time.Now(),
+		effectiveBackend: "vulkan",
+	})
 	if err == nil {
 		t.Fatal("storeArtifact accepted a staged digest that contradicts the receipt identity")
 	}
@@ -239,9 +248,13 @@ func TestStoreArtifactPublishesTheEffectiveBackend(t *testing.T) {
 		t.Fatal(err)
 	}
 	sum := sha256.Sum256(data)
-	artifact, err := p.storeArtifact(context.Background(), "job-software", path,
-		receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
-		nil, nil, map[string]float64{}, time.Now(), nil, overlay.Stats{}, 0, false, "software", false, nil)
+	artifact, err := p.storeArtifact(context.Background(), storeArtifactInput{
+		jobID: "job-software", outputPath: path,
+		outcome:          receiptOutcome{Identity: artifactIdentity{SHA256: hex.EncodeToString(sum[:]), Source: "test", Proven: true}},
+		phaseMetrics:     map[string]float64{},
+		totalStart:       time.Now(),
+		effectiveBackend: "software",
+	})
 	if err != nil {
 		t.Fatalf("storeArtifact: %v", err)
 	}

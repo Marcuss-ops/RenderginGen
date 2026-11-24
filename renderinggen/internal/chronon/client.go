@@ -377,126 +377,78 @@ func (c *Client) Version() string {
 // Render invokes the CLI render subcommand with the plan file, assets root and
 // output path. It streams output lines with timestamps, tracks progress, and
 // runs a stall watchdog to abort hung render processes.
-func (c *Client) Render(ctx context.Context, req RenderRequest) error {
-	if err := validateRenderRequest(req); err != nil {
-		return err
-	}
-	if len(req.OutputSegments) > 0 {
-		// Capability boundary: the CLI argument set has no spelling for
-		// per-item output windows (they would have to become N --start/--end
-		// pairs and N -o values with no contract tying them together). The
-		// daemon IPC transport carries them in output_spec; refusing here
-		// beats silently rendering ONE output and calling it a batch.
-		return fmt.Errorf("chronon: output segments are only supported on the daemon IPC transport, not the CLI subprocess adapter")
-	}
-	// The configured value is the single authority (config validates it at
-	// load); the package default covers callers that construct a Client
-	// directly, such as tests and the one-shot command tools.
-	stallTimeout := c.StallTimeout
-	if stallTimeout <= 0 {
-		stallTimeout = DefaultStallTimeout
-	}
+type cliRenderProcess struct {
+	cmd    *exec.Cmd
+	stdout io.ReadCloser
+	stderr io.ReadCloser
+	ctx    context.Context
+	cancel context.CancelFunc
+	args   []string
+}
 
+func newCLIRenderProcess(ctx context.Context, c *Client, req RenderRequest) (*cliRenderProcess, error) {
 	renderCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
 	args := renderArgs(req)
 	cmd := exec.CommandContext(renderCtx, c.Binary(), args...)
 	cmd.Dir = filepath.Dir(req.PlanPath)
 	if req.ReceiptVerify != "" {
 		// Canonical verification boundary: RenderingGen requests the policy,
-		// Chronon verifies. Passing the resolved policy explicitly (rather
-		// than inheriting whatever CHRONON_RECEIPT_VERIFY the ambient
-		// environment holds) makes a worker/CLI policy split impossible. The
-		// IPC daemon path is unaffected: the daemon reads the same policy
-		// from the worker env at startup, and the production hot path is CLI
-		// mode.
+		// Chronon verifies. The explicit value makes a worker/CLI policy split
+		// impossible.
 		cmd.Env = append(os.Environ(), EnvReceiptVerify+"="+req.ReceiptVerify)
 	}
-
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		return fmt.Errorf("chronon stdout pipe: %w", err)
+		cancel()
+		return nil, fmt.Errorf("chronon stdout pipe: %w", err)
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		return fmt.Errorf("chronon stderr pipe: %w", err)
+		cancel()
+		return nil, fmt.Errorf("chronon stderr pipe: %w", err)
 	}
+	return &cliRenderProcess{cmd: cmd, stdout: stdoutPipe, stderr: stderrPipe, ctx: renderCtx, cancel: cancel, args: args}, nil
+}
 
-	// activity is the stall watchdog's clock: every output line touches it,
-	// regardless of whether the line is a progress milestone.
+func (c *Client) Render(ctx context.Context, req RenderRequest) error {
+	if err := validateRenderRequest(req); err != nil {
+		return err
+	}
+	if len(req.OutputSegments) > 0 {
+		// The CLI argument set has no spelling for per-item output windows;
+		// the daemon IPC transport carries them in output_spec.
+		return fmt.Errorf("chronon: output segments are only supported on the daemon IPC transport, not the CLI subprocess adapter")
+	}
+	stallTimeout := c.StallTimeout
+	if stallTimeout <= 0 {
+		stallTimeout = DefaultStallTimeout
+	}
+	proc, err := newCLIRenderProcess(ctx, c, req)
+	if err != nil {
+		return err
+	}
+	defer proc.cancel()
 	activity := newStallActivity(time.Now())
-
 	var streamFailed atomic.Bool
 	var failureDiagnostics renderFailureDiagnostics
-	// Output sampling: every line still feeds progress parsing and the stall
-	// heartbeat, but only diagnostics and a bounded sample of frame milestones
-	// pay a formatted write on the standard logger's mutex (shared by every GPU
-	// lane). See renderOutputSampler.
 	outputLog := newRenderOutputSampler(renderOutputLogInterval)
-	streamLines := func(r io.Reader, prefix string) {
-		if err := scanRenderOutput(r, func(line string) {
-			activity.touch(time.Now())
-			if prefix == "stderr" {
-				failureDiagnostics.remember(line)
-			}
-			if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
-				if outputLog.allowProgress(prefix) {
-					log.Printf("[chronon %s] %s", prefix, line)
-				} else {
-					outputLog.remember(prefix, line)
-				}
-				if req.Progress != nil {
-					req.Progress(progress)
-				}
-				return
-			}
-			// Anything that is not a frame milestone is a diagnostic (engine
-			// log, warning, error) and is always forwarded.
-			log.Printf("[chronon %s] %s", prefix, line)
-		}); err != nil {
-			// An output-stream error (a single line beyond the cap, or a pipe
-			// failure) must abort loudly. Silently stopping the scanner would
-			// freeze progress and the stall heartbeat and end in a misleading
-			// watchdog kill of a healthy render.
-			streamFailed.Store(true)
-			log.Printf("[chronon WARN] output stream %s failed: %v; aborting render", prefix, err)
-			cancel()
-		}
-		// The stream ended: report the last milestone the throttle suppressed,
-		// otherwise the log would show a render stopping seconds before its real
-		// final frame.
-		if line, ok := outputLog.flush(prefix); ok {
-			log.Printf("[chronon %s] %s (final)", prefix, line)
-		}
-	}
-
 	renderStart := time.Now()
-	log.Printf("[chronon] launching render: %s %s", c.Binary(), strings.Join(args, " "))
-
-	if err := cmd.Start(); err != nil {
+	log.Printf("[chronon] launching render: %s %s", c.Binary(), strings.Join(proc.args, " "))
+	if err := proc.cmd.Start(); err != nil {
 		return fmt.Errorf("chronon start: %w", err)
 	}
-
-	// Render must not return while a scanner is still running: the Progress
-	// callback is invoked from these goroutines, so returning early lets the
-	// caller read its final observation (gpu_run's lastProgress / ledger
-	// metrics) while a goroutine is still writing it — a data race that also
-	// silently drops the last milestone near exit. The scanners must also
-	// finish BEFORE cmd.Wait(): Wait closes the pipe read ends once the child
-	// exits, discarding any lines the child had already written but the
-	// scanner had not yet consumed. A scanner reaches EOF on its own when the
-	// child exit closes the write ends, so draining first is both lossless and
-	// deadlock-free (the stall watchdog still kills a silent child).
 	var streamWG sync.WaitGroup
 	streamWG.Add(2)
-	go func() { defer streamWG.Done(); streamLines(stdoutPipe, "stdout") }()
-	go func() { defer streamWG.Done(); streamLines(stderrPipe, "stderr") }()
-
-	// Stall watchdog: aborts the render when output stops for longer than the
-	// configured timeout. The sampler itself lives in stall_watch.go so its
-	// behaviour is unit-tested rather than only reachable through a hanging
-	// child process.
+	go func() {
+		defer streamWG.Done()
+		streamRenderOutput(proc.stdout, "stdout", req, activity, outputLog, &failureDiagnostics, &streamFailed, proc.cancel)
+	}()
+	go func() {
+		defer streamWG.Done()
+		streamRenderOutput(proc.stderr, "stderr", req, activity, outputLog, &failureDiagnostics, &streamFailed, proc.cancel)
+	}()
+	// Stall watchdog: abort when output stops for longer than the configured
+	// timeout. The sampler lives in stall_watch.go so it is unit-tested.
 	watchdogDone := make(chan struct{})
 	defer close(watchdogDone)
 	watchTicker := time.NewTicker(stallWatchInterval)
@@ -506,28 +458,62 @@ func (c *Client) Render(ctx context.Context, req RenderRequest) error {
 		activity: activity,
 		onStall: func(idle time.Duration) {
 			log.Printf("[chronon WARN] stall detected: no output for %v; aborting render", idle.Round(time.Second))
-			cancel()
+			proc.cancel()
 		},
 	}
 	go func() { watch.run(watchdogDone, watchTicker.C) }()
-
 	streamWG.Wait()
-	err = cmd.Wait()
-	duration := time.Since(renderStart)
-	if err != nil {
-		if renderCtx.Err() == context.Canceled && ctx.Err() == nil {
-			if streamFailed.Load() {
-				return fmt.Errorf("chronon render aborted: output stream failure (aborted after %v): %w", duration, err)
+	err = proc.cmd.Wait()
+	return renderResult(ctx, proc.ctx, err, streamFailed.Load(), failureDiagnostics.snapshot(), stallTimeout, time.Since(renderStart))
+}
+
+func streamRenderOutput(r io.Reader, prefix string, req RenderRequest, activity *stallActivity, outputLog *renderOutputSampler, failureDiagnostics *renderFailureDiagnostics, streamFailed *atomic.Bool, cancel context.CancelFunc) {
+	if err := scanRenderOutput(r, func(line string) {
+		activity.touch(time.Now())
+		if prefix == "stderr" {
+			failureDiagnostics.remember(line)
+		}
+		if progress, ok := parseProgressLine(line, req.TotalFrames); ok {
+			if outputLog.allowProgress(prefix) {
+				log.Printf("[chronon %s] %s", prefix, line)
+			} else {
+				outputLog.remember(prefix, line)
 			}
-			return fmt.Errorf("chronon render stalled: no output for %v (aborted after %v)", stallTimeout, duration)
+			if req.Progress != nil {
+				req.Progress(progress)
+			}
+			return
 		}
-		if diagnostics := failureDiagnostics.snapshot(); diagnostics != "" {
-			return fmt.Errorf("chronon execution failed after %v: %w (stderr: %s)", duration, err, diagnostics)
-		}
-		return fmt.Errorf("chronon execution failed after %v: %w", duration, err)
+		// Anything that is not a frame milestone is a diagnostic and is always
+		// forwarded.
+		log.Printf("[chronon %s] %s", prefix, line)
+	}); err != nil {
+		// An output-stream error must abort loudly: silently stopping the
+		// scanner would freeze progress and the stall heartbeat.
+		streamFailed.Store(true)
+		log.Printf("[chronon WARN] output stream %s failed: %v; aborting render", prefix, err)
+		cancel()
 	}
-	log.Printf("[chronon] render finished successfully in %v", duration.Round(time.Millisecond))
-	return nil
+	if line, ok := outputLog.flush(prefix); ok {
+		log.Printf("[chronon %s] %s (final)", prefix, line)
+	}
+}
+
+func renderResult(ctx context.Context, renderCtx context.Context, err error, streamFailed bool, diagnostics string, stallTimeout, duration time.Duration) error {
+	if err == nil {
+		log.Printf("[chronon] render finished successfully in %v", duration.Round(time.Millisecond))
+		return nil
+	}
+	if renderCtx.Err() == context.Canceled && ctx.Err() == nil {
+		if streamFailed {
+			return fmt.Errorf("chronon render aborted: output stream failure (aborted after %v): %w", duration, err)
+		}
+		return fmt.Errorf("chronon render stalled: no output for %v (aborted after %v)", stallTimeout, duration)
+	}
+	if diagnostics != "" {
+		return fmt.Errorf("chronon execution failed after %v: %w (stderr: %s)", duration, err, diagnostics)
+	}
+	return fmt.Errorf("chronon execution failed after %v: %w", duration, err)
 }
 
 // Output streaming (scanRenderOutput), progress-line parsing and the CLI

@@ -163,15 +163,13 @@ func frameFromImageParams(params map[string]any, existing *semanticSourceFrame) 
 	if len(params) == 0 {
 		return existing
 	}
-	has := func(key string) bool {
-		_, ok := params[key]
-		return ok
-	}
 	needsFrame := existing != nil
-	for _, key := range []string{"border_width", "border_color", "border_radius", "stroke_width", "stroke_color", "shadow_enabled", "shadow_color", "shadow_opacity", "shadow_blur", "shadow_offset_x", "shadow_offset_y", "radius"} {
-		if has(key) {
-			needsFrame = true
-			break
+	if !needsFrame {
+		for _, key := range []string{"border_width", "border_color", "border_radius", "stroke_width", "stroke_color", "shadow_enabled", "shadow_color", "shadow_opacity", "shadow_blur", "shadow_offset_x", "shadow_offset_y", "radius"} {
+			if _, ok := params[key]; ok {
+				needsFrame = true
+				break
+			}
 		}
 	}
 	if !needsFrame {
@@ -181,79 +179,112 @@ func frameFromImageParams(params map[string]any, existing *semanticSourceFrame) 
 	if existing != nil {
 		*out = *existing
 	}
-	if width, ok := numericValue(params["border_width"]); ok || has("border_color") || has("border_radius") {
-		if out.Border == nil {
-			out.Border = &semanticFrameBorder{}
-		}
-		if w, ok := numericValue(params["border_width"]); ok {
-			out.Border.WidthPX = w
-		}
-		_ = width
-		if color, ok := params["border_color"].(string); ok && color != "" {
-			out.Border.Color = color
-		}
-		if radius, ok := numericValue(params["border_radius"]); ok {
-			out.Border.RadiusPX = radius
-		}
-		if out.Border.Color == "" {
-			out.Border.Color = "#111827"
-		}
+	applyImageFrameBorder(out, params)
+	applyImageFrameStroke(out, params)
+	if replacement, stop := applyImageFrameShadow(out, params); stop {
+		return replacement
 	}
-	if _, ok := numericValue(params["stroke_width"]); ok || has("stroke_color") {
-		if out.Stroke == nil {
-			out.Stroke = &semanticFrameStroke{}
-		}
-		if w, ok := numericValue(params["stroke_width"]); ok {
-			out.Stroke.WidthPX = w
-		}
-		if color, ok := params["stroke_color"].(string); ok && color != "" {
-			out.Stroke.Color = color
-		}
-		if out.Stroke.Color == "" {
-			out.Stroke.Color = "#FFFFFF"
-		}
-	}
-	// An explicit `frame.shadows` stack is authoritative: the flat single-shadow
-	// keys cannot describe more than one shadow, and mixing the two forms would
-	// produce a declaration the renderer rejects outright.
-	if len(out.Shadows) > 0 && (has("shadow_enabled") || has("shadow_color") ||
-		has("shadow_opacity") || has("shadow_blur") || has("shadow_offset_x") ||
-		has("shadow_offset_y")) {
-		return out
-	}
-	if has("shadow_enabled") || has("shadow_color") || has("shadow_opacity") || has("shadow_blur") || has("shadow_offset_x") || has("shadow_offset_y") {
-		if out.Shadow == nil {
-			out.Shadow = &semanticFrameShadow{Color: "#000000"}
-		}
-		if enabled, ok := params["shadow_enabled"].(bool); ok && !enabled {
-			return &semanticSourceFrame{ClipRadiusPX: out.ClipRadiusPX, Border: out.Border, Stroke: out.Stroke}
-		}
-		if color, ok := params["shadow_color"].(string); ok && color != "" {
-			out.Shadow.Color = color
-		}
-		if opacity, ok := numericValue(params["shadow_opacity"]); ok {
-			out.Shadow.Opacity = opacity
-		}
-		if blur, ok := numericValue(params["shadow_blur"]); ok {
-			out.Shadow.BlurPX = blur
-		}
-		if offsetX, ok := numericValue(params["shadow_offset_x"]); ok {
-			out.Shadow.OffsetXP = offsetX
-		}
-		if offsetY, ok := numericValue(params["shadow_offset_y"]); ok {
-			out.Shadow.OffsetYP = offsetY
-		}
-		if out.Shadow.Color == "" {
-			out.Shadow.Color = "#000000"
-		}
-	}
-	if radius, ok := numericValue(params["radius"]); ok && out.ClipRadiusPX == 0 {
-		out.ClipRadiusPX = radius
-	}
+	applyImageFrameRadius(out, params)
 	if out.Border == nil && out.Shadow == nil && out.Stroke == nil && out.ClipRadiusPX == 0 {
 		return existing
 	}
 	return out
+}
+
+func hasImageFrameParam(params map[string]any, key string) bool {
+	_, ok := params[key]
+	return ok
+}
+
+func applyImageFrameBorder(out *semanticSourceFrame, params map[string]any) {
+	_, hasWidth := numericValue(params["border_width"])
+	if !hasWidth && !hasImageFrameParam(params, "border_color") && !hasImageFrameParam(params, "border_radius") {
+		return
+	}
+	if out.Border == nil {
+		out.Border = &semanticFrameBorder{}
+	}
+	if w, ok := numericValue(params["border_width"]); ok {
+		out.Border.WidthPX = w
+	}
+	if color, ok := params["border_color"].(string); ok && color != "" {
+		out.Border.Color = color
+	}
+	if radius, ok := numericValue(params["border_radius"]); ok {
+		out.Border.RadiusPX = radius
+	}
+	if out.Border.Color == "" {
+		out.Border.Color = "#111827"
+	}
+}
+
+func applyImageFrameStroke(out *semanticSourceFrame, params map[string]any) {
+	_, hasWidth := numericValue(params["stroke_width"])
+	if !hasWidth && !hasImageFrameParam(params, "stroke_color") {
+		return
+	}
+	if out.Stroke == nil {
+		out.Stroke = &semanticFrameStroke{}
+	}
+	if w, ok := numericValue(params["stroke_width"]); ok {
+		out.Stroke.WidthPX = w
+	}
+	if color, ok := params["stroke_color"].(string); ok && color != "" {
+		out.Stroke.Color = color
+	}
+	if out.Stroke.Color == "" {
+		out.Stroke.Color = "#FFFFFF"
+	}
+}
+
+func applyImageFrameShadow(out *semanticSourceFrame, params map[string]any) (*semanticSourceFrame, bool) {
+	hasShadow := false
+	for _, key := range []string{"shadow_enabled", "shadow_color", "shadow_opacity", "shadow_blur", "shadow_offset_x", "shadow_offset_y"} {
+		if hasImageFrameParam(params, key) {
+			hasShadow = true
+			break
+		}
+	}
+	if !hasShadow {
+		return nil, false
+	}
+	// An explicit `frame.shadows` stack is authoritative: the flat single-shadow
+	// keys cannot describe more than one shadow, and mixing the two forms would
+	// produce a declaration the renderer rejects outright.
+	if len(out.Shadows) > 0 {
+		return out, true
+	}
+	if out.Shadow == nil {
+		out.Shadow = &semanticFrameShadow{Color: "#000000"}
+	}
+	if enabled, ok := params["shadow_enabled"].(bool); ok && !enabled {
+		return &semanticSourceFrame{ClipRadiusPX: out.ClipRadiusPX, Border: out.Border, Stroke: out.Stroke}, true
+	}
+	if color, ok := params["shadow_color"].(string); ok && color != "" {
+		out.Shadow.Color = color
+	}
+	if opacity, ok := numericValue(params["shadow_opacity"]); ok {
+		out.Shadow.Opacity = opacity
+	}
+	if blur, ok := numericValue(params["shadow_blur"]); ok {
+		out.Shadow.BlurPX = blur
+	}
+	if offsetX, ok := numericValue(params["shadow_offset_x"]); ok {
+		out.Shadow.OffsetXP = offsetX
+	}
+	if offsetY, ok := numericValue(params["shadow_offset_y"]); ok {
+		out.Shadow.OffsetYP = offsetY
+	}
+	if out.Shadow.Color == "" {
+		out.Shadow.Color = "#000000"
+	}
+	return nil, false
+}
+
+func applyImageFrameRadius(out *semanticSourceFrame, params map[string]any) {
+	if radius, ok := numericValue(params["radius"]); ok && out.ClipRadiusPX == 0 {
+		out.ClipRadiusPX = radius
+	}
 }
 
 // compileMediaStrokeLayer expands transient frame-stroke metadata into a
@@ -369,10 +400,24 @@ const maxBackgroundZoom = 10.0
 // one. Fit is validated against the closed render contract and never silently
 // downgraded.
 func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, bool, error) {
-	bg := src.Background
-	if bg == nil {
+	if src.Background == nil {
 		return Layer{}, false, nil
 	}
+	layerKind, err := validateBackgroundLayer(src, registry)
+	if err != nil {
+		return Layer{}, false, err
+	}
+	layer, err := buildBackgroundLayer(src, layerKind, registry)
+	if err != nil {
+		return Layer{}, false, err
+	}
+	return layer, true, nil
+}
+
+// validateBackgroundLayer applies the closed plate contract and registers every
+// referenced asset before the layer is built.
+func validateBackgroundLayer(src *semanticPlan, registry *assetRegistry) (string, error) {
+	bg := src.Background
 	kind := strings.ToLower(strings.TrimSpace(bg.Kind))
 	// blur_cover is a clip-render-specific fit hint; store it as "video"
 	// type in the layer with the fit preserved.
@@ -381,43 +426,45 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 		layerKind = "video"
 	}
 	if layerKind != "color" && layerKind != "image" && layerKind != "video" {
-		return Layer{}, false, fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
+		return "", fmt.Errorf("overlay: unsupported background kind %q", bg.Kind)
 	}
 	if layerKind == "color" {
 		if len(bg.Color) != 4 {
-			return Layer{}, false, fmt.Errorf("overlay: background color requires RGBA[4]")
+			return "", fmt.Errorf("overlay: background color requires RGBA[4]")
 		}
 	} else if len(bg.AssetRefs) == 0 {
-		return Layer{}, false, fmt.Errorf("overlay: %s background requires asset_refs", kind)
+		return "", fmt.Errorf("overlay: %s background requires asset_refs", kind)
 	}
 	if !finite(bg.BlurPX) || bg.BlurPX < 0 || bg.BlurPX > maxBackgroundBlur {
-		return Layer{}, false, fmt.Errorf("overlay: background blur_px must be within [0,%g]", maxBackgroundBlur)
+		return "", fmt.Errorf("overlay: background blur_px must be within [0,%g]", maxBackgroundBlur)
 	}
 	if layerKind == "color" && bg.BlurPX > 0 {
-		return Layer{}, false, fmt.Errorf("overlay: background blur_px is only valid for image/video plates")
+		return "", fmt.Errorf("overlay: background blur_px is only valid for image/video plates")
 	}
 	if !finite(bg.Zoom) || bg.Zoom < 0 || bg.Zoom > maxBackgroundZoom {
-		return Layer{}, false, fmt.Errorf("overlay: background zoom must be within [0,%g]", maxBackgroundZoom)
+		return "", fmt.Errorf("overlay: background zoom must be within [0,%g]", maxBackgroundZoom)
 	}
 	if bg.Zoom > 0 && bg.Zoom < 1 {
-		return Layer{}, false, fmt.Errorf("overlay: background zoom must be >= 1 when declared")
+		return "", fmt.Errorf("overlay: background zoom must be >= 1 when declared")
 	}
 	if layerKind == "color" && bg.Zoom > 0 {
-		return Layer{}, false, fmt.Errorf("overlay: background zoom is only valid for image/video plates")
+		return "", fmt.Errorf("overlay: background zoom is only valid for image/video plates")
 	}
 	for _, ref := range bg.AssetRefs {
 		if _, err := registry.Register(ref); err != nil {
-			return Layer{}, false, fmt.Errorf("overlay: background asset: %w", err)
+			return "", fmt.Errorf("overlay: background asset: %w", err)
 		}
 	}
+	return layerKind, nil
+}
+
+// buildBackgroundLayer writes the already-validated plate into renderer form.
+func buildBackgroundLayer(src *semanticPlan, layerKind string, registry *assetRegistry) (Layer, error) {
+	bg := src.Background
 	// Every plate is anchored at the canvas top-left in its own contract.
 	// Image and color layers take a centre offset, so [0,0] is the full
 	// canvas. A video layer takes the box top-left in canvas-centred
-	// coordinates and the engine adds half the box, so a full-canvas video
-	// needs [-W/2,-H/2]; [0,0] puts its centre at (+W/2,+H/2), i.e. the
-	// plate covers only the bottom-right quadrant. Keep the plate in screen
-	// space as well: when any text layer enables the 2.5D camera, the
-	// background must not enter the projected layer/depth bin.
+	// coordinates and the engine adds half the box.
 	position := []float64{0, 0}
 	if layerKind == "video" {
 		position = canvasBoxPosition("video", 0, 0,
@@ -433,7 +480,7 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 		// crop-to-fill, never silently downgraded.
 		fit, err := resolveBackgroundFit(bg.Fit)
 		if err != nil {
-			return Layer{}, false, err
+			return Layer{}, err
 		}
 		layer.Fit = fit
 	}
@@ -456,19 +503,16 @@ func compileBackgroundLayer(src *semanticPlan, registry *assetRegistry) (Layer, 
 		if bg.Zoom > 0 {
 			// Scale is the renderer's transform for a plate anchored at the
 			// canvas top-left, exactly like the verified image_backdrop path.
-			// Without it a zoomed request would render invisibly unchanged.
 			layer.Scale = []float64{bg.Zoom, bg.Zoom}
 		}
 		if bg.BlurPX > 0 {
 			// `blur_source` is expressed as the source plate plus this real
-			// compositor effect. Without it the plate is a sharp, differently
-			// scaled copy of the foreground and the card edge reads as a
-			// duplicated/glitched frame.
+			// compositor effect.
 			layer.Effects = append(layer.Effects, LayerEffect{
 				Type:   "gaussian_blur",
 				Params: map[string]any{"radius": bg.BlurPX},
 			})
 		}
 	}
-	return layer, true, nil
+	return layer, nil
 }

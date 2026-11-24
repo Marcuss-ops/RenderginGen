@@ -93,34 +93,79 @@ func decodeOverlayImport(raw []byte) (overlayImportEnvelope, error) {
 // identity. No producer assertion can substitute for these checks.
 func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (queue.Artifact, error) {
 	started := time.Now()
-	if err := validate(job); err != nil {
+	request, asset, err := validateOverlayImportJob(job)
+	if err != nil {
 		return queue.Artifact{}, err
 	}
+	workerlog.BindJob(job.ParentJobID, job.ID)
+	ws, cleanup, err := p.openImportWorkspace(ctx, job, asset)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	defer cleanup()
+	localPath, err := ws.AssetPath(asset.LogicalPath)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	sha, size, staged, identityDuration, err := p.resolveImportedIdentity(ctx, job.ID, localPath, request.SourceSHA256, request.SourceSizeBytes)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	probe, probeDuration, err := probeImportedMP4(ctx, sha, localPath, request)
+	if err != nil {
+		return queue.Artifact{}, err
+	}
+	metrics := importedArtifactMetrics(request, identityDuration, probeDuration)
+	artifact := p.newImportedArtifact(job, request, sha, size, probe, metrics)
+	if !staged {
+		if err := p.store.PutFile(ctx, sha, localPath); err != nil {
+			return queue.Artifact{}, fmt.Errorf("processor: persist imported artifact: %w", err)
+		}
+	}
+	metrics[metricnames.ImportTotalUS] = float64(time.Since(started).Microseconds())
+	if p.recorder != nil {
+		artifact, err = p.recordArtifact(ctx, job.ID, artifact, &probe, overlay.Stats{}, size, nil)
+		if err != nil {
+			return queue.Artifact{}, err
+		}
+	}
+	workerlog.ByJobID(job.ID).Infof("producer artifact imported and verified: sha256=%s size=%d frames=%d %dx%d fps=%d/%d; Chronon was not invoked",
+		sha, size, probe.FrameCount, probe.Width, probe.Height, probe.FPSNum, probe.FPSDen)
+	return artifact, nil
+}
+
+func validateOverlayImportJob(job *queue.Job) (overlayImportEnvelope, queue.AssetRef, error) {
+	if err := validate(job); err != nil {
+		return overlayImportEnvelope{}, queue.AssetRef{}, err
+	}
 	if job.JobType != queue.JobTypeOverlayImport {
-		return queue.Artifact{}, fmt.Errorf("processor: import requires job type %q", queue.JobTypeOverlayImport)
+		return overlayImportEnvelope{}, queue.AssetRef{}, fmt.Errorf("processor: import requires job type %q", queue.JobTypeOverlayImport)
 	}
 	request, err := decodeOverlayImport(job.RenderPlan)
 	if err != nil {
-		return queue.Artifact{}, err
+		return overlayImportEnvelope{}, queue.AssetRef{}, err
 	}
 	if len(job.Assets) != 1 {
-		return queue.Artifact{}, fmt.Errorf("processor: overlay.import requires exactly one source asset")
+		return overlayImportEnvelope{}, queue.AssetRef{}, fmt.Errorf("processor: overlay.import requires exactly one source asset")
 	}
 	asset := job.Assets[0]
 	if !strings.EqualFold(asset.Hash, request.SourceSHA256) || asset.Hash != request.SourceSHA256 {
-		return queue.Artifact{}, fmt.Errorf("processor: import asset hash %q does not match request source_sha256 %q", asset.Hash, request.SourceSHA256)
+		return overlayImportEnvelope{}, queue.AssetRef{}, fmt.Errorf("processor: import asset hash %q does not match request source_sha256 %q", asset.Hash, request.SourceSHA256)
 	}
 	if path.Ext(asset.LogicalPath) != ".mp4" {
-		return queue.Artifact{}, fmt.Errorf("processor: overlay.import source logical_path must end in .mp4")
+		return overlayImportEnvelope{}, queue.AssetRef{}, fmt.Errorf("processor: overlay.import source logical_path must end in .mp4")
 	}
-	workerlog.BindJob(job.ParentJobID, job.ID)
+	return request, asset, nil
+}
+
+func (p *Processor) openImportWorkspace(ctx context.Context, job *queue.Job, asset queue.AssetRef) (*workspace.Workspace, func(), error) {
 	ws, err := workspace.New(p.jobsRoot, job.ID+"-import")
 	if err != nil {
-		return queue.Artifact{}, err
+		return nil, nil, err
 	}
 	if err := ws.WriteLease(time.Now().Add(p.workspaceLeaseDuration())); err != nil {
 		p.cleanupWorkspace(ws, job.ID)
-		return queue.Artifact{}, fmt.Errorf("processor: establish import workspace lease: %w", err)
+		return nil, nil, fmt.Errorf("processor: establish import workspace lease: %w", err)
 	}
 	refreshDone := make(chan struct{})
 	go func() {
@@ -141,70 +186,75 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 			}
 		}
 	}()
-	defer func() {
+	cleanup := func() {
 		close(refreshDone)
 		p.cleanupWorkspace(ws, job.ID)
-	}()
+	}
 	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, []queue.AssetRef{asset}); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: materialize imported map MP4: %w", err)
+		cleanup()
+		return nil, nil, fmt.Errorf("processor: materialize imported map MP4: %w", err)
 	}
-	localPath, err := ws.AssetPath(asset.LogicalPath)
-	if err != nil {
-		return queue.Artifact{}, err
-	}
+	return ws, cleanup, nil
+}
+
+func (p *Processor) resolveImportedIdentity(ctx context.Context, jobID, localPath, wantSHA string, wantSize int64) (sha string, size int64, staged bool, took time.Duration, err error) {
 	identityStarted := time.Now()
-	sha := ""
-	var size int64
-	staged := false
 	if p.store != nil {
-		stagedSHA, stagedSize, stageErr := p.store.PutStagedFile(ctx, stagingSessionID(job.ID+"-import:"+asset.LogicalPath), localPath)
+		stagedSHA, stagedSize, stageErr := p.store.PutStagedFile(ctx, stagingSessionID(jobID+"-import:"+localPath), localPath)
 		switch {
 		case stageErr == nil:
 			sha, size, staged = stagedSHA, stagedSize, true
-			workerlog.ByJobID(job.ID).Infof("imported map identity from the staged upload stream (bytes=%d)", stagedSize)
+			workerlog.ByJobID(jobID).Infof("imported map identity from the staged upload stream (bytes=%d)", stagedSize)
 		case errors.Is(stageErr, storage.ErrStagingUnsupported):
 			// Memory/test backends keep the classic hash-then-PUT path.
 		default:
 			// A failed optimization must not fail an import whose bytes are
 			// intact: the classic path re-reads and publishes the same file.
-			workerlog.ByJobID(job.ID).Warnf("import staged upload failed; falling back to hash-then-PUT: %v", stageErr)
+			workerlog.ByJobID(jobID).Warnf("import staged upload failed; falling back to hash-then-PUT: %v", stageErr)
 		}
 	}
 	if !staged {
 		sha, size, err = hashio.File(localPath)
 		if err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: hash imported map MP4: %w", err)
+			return "", 0, false, 0, fmt.Errorf("processor: hash imported map MP4: %w", err)
 		}
 	}
-	if size != request.SourceSizeBytes {
-		return queue.Artifact{}, fmt.Errorf("processor: imported MP4 size %d does not match request %d", size, request.SourceSizeBytes)
+	if size != wantSize {
+		return "", 0, false, 0, fmt.Errorf("processor: imported MP4 size %d does not match request %d", size, wantSize)
 	}
-	if sha != request.SourceSHA256 {
-		return queue.Artifact{}, fmt.Errorf("processor: imported MP4 sha256 %s does not match request %s", sha, request.SourceSHA256)
+	if sha != wantSHA {
+		return "", 0, false, 0, fmt.Errorf("processor: imported MP4 sha256 %s does not match request %s", sha, wantSHA)
 	}
+	return sha, size, staged, time.Since(identityStarted), nil
+}
+
+func probeImportedMP4(ctx context.Context, sha, localPath string, request overlayImportEnvelope) (media.ProbeResult, time.Duration, error) {
 	probeStarted := time.Now()
 	// The content hash is verified above, so it is the probe cache key:
-	// re-importing identical bytes reuses the certified facts (including the
-	// closed-GOP verdict) instead of re-running up to 3 ffprobe processes.
+	// re-importing identical bytes reuses the certified facts.
 	probe, err := media.ProbeFileCached(ctx, sha, localPath)
 	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: probe imported map MP4: %w", err)
+		return media.ProbeResult{}, 0, fmt.Errorf("processor: probe imported map MP4: %w", err)
 	}
 	if err := probe.ValidateOverlay(request.Width, request.Height, request.FPSNum, request.FPSDen); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: imported map media contract: %w", err)
+		return media.ProbeResult{}, 0, fmt.Errorf("processor: imported map media contract: %w", err)
 	}
 	if probe.FrameCount != request.FrameCount {
-		return queue.Artifact{}, fmt.Errorf("processor: imported map frame_count %d does not match producer %d", probe.FrameCount, request.FrameCount)
+		return media.ProbeResult{}, 0, fmt.Errorf("processor: imported map frame_count %d does not match producer %d", probe.FrameCount, request.FrameCount)
 	}
 	if delta := probe.DurationUS - request.DurationUS; delta < -int64(request.FPSDen)*1_000_000/int64(request.FPSNum) || delta > int64(request.FPSDen)*1_000_000/int64(request.FPSNum) {
-		return queue.Artifact{}, fmt.Errorf("processor: imported map duration %dus differs from producer %dus by more than one frame", probe.DurationUS, request.DurationUS)
+		return media.ProbeResult{}, 0, fmt.Errorf("processor: imported map duration %dus differs from producer %dus by more than one frame", probe.DurationUS, request.DurationUS)
 	}
 	if err := media.ValidateDecode(ctx, localPath); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: fully decode imported map MP4: %w", err)
+		return media.ProbeResult{}, 0, fmt.Errorf("processor: fully decode imported map MP4: %w", err)
 	}
-	probeUS := time.Since(probeStarted).Microseconds()
+	return probe, time.Since(probeStarted), nil
+}
+
+func importedArtifactMetrics(request overlayImportEnvelope, identityDuration, probeDuration time.Duration) map[string]float64 {
+	probeUS := probeDuration.Microseconds()
 	metrics := map[string]float64{
-		metricnames.ImportIdentityUS: float64(time.Since(identityStarted).Microseconds()),
+		metricnames.ImportIdentityUS: float64(identityDuration.Microseconds()),
 		metricnames.ProbeUS:          float64(probeUS),
 		metricnames.ProbeMS:          float64(probeUS) / 1000,
 		metricnames.ImportVerified:   1,
@@ -215,7 +265,11 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 			metrics[metricnames.OverlayRenderBatch] = 1
 		}
 	}
-	artifact := queue.Artifact{
+	return metrics
+}
+
+func (p *Processor) newImportedArtifact(job *queue.Job, request overlayImportEnvelope, sha string, size int64, probe media.ProbeResult, metrics map[string]float64) queue.Artifact {
+	return queue.Artifact{
 		Kind: "overlay_import", StorageKey: sha, ArtifactURL: p.artifactURL(sha), ArtifactHash: sha,
 		ContentType: "video/mp4", SizeBytes: size,
 		Width: probe.Width, Height: probe.Height, FPSNum: probe.FPSNum, FPSDen: probe.FPSDen,
@@ -232,24 +286,4 @@ func (p *Processor) ImportOverlayArtifact(ctx context.Context, job *queue.Job) (
 			ProducerTelemetry: append(json.RawMessage(nil), request.ProducerTelemetry...),
 		},
 	}
-	// PipelineGen's worker already staged these exact bytes under their content
-	// address. The staged path removed the separate hash read (upload and hash
-	// share one pass) and warmed L2; the classic fallback verifies the
-	// content-addressed L3 write and warms L2 itself. There is no re-encode or
-	// byte transformation on either path.
-	if !staged {
-		if err := p.store.PutFile(ctx, sha, localPath); err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: persist imported artifact: %w", err)
-		}
-	}
-	metrics[metricnames.ImportTotalUS] = float64(time.Since(started).Microseconds())
-	if p.recorder != nil {
-		artifact, err = p.recordArtifact(ctx, job.ID, artifact, &probe, overlay.Stats{}, size, nil)
-		if err != nil {
-			return queue.Artifact{}, err
-		}
-	}
-	workerlog.ByJobID(job.ID).Infof("producer artifact imported and verified: sha256=%s size=%d frames=%d %dx%d fps=%d/%d; Chronon was not invoked",
-		sha, size, probe.FrameCount, probe.Width, probe.Height, probe.FPSNum, probe.FPSDen)
-	return artifact, nil
 }

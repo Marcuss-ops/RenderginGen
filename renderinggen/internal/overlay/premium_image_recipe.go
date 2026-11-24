@@ -347,14 +347,26 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 	if len(image.Size) < 2 || image.Size[0] <= 0 || image.Size[1] <= 0 {
 		return Layer{}, fmt.Errorf("overlay: image layer %q has no positive geometry for component %q", image.ID, component.ID)
 	}
-	width, height := image.Size[0], image.Size[1]
+	width, height, position, sizeScale := premiumComponentBox(src, image, component)
+	layer := newPremiumComponentLayer(image, component, width, height, position, sizeScale)
+	if err := applyPremiumComponentPayload(&layer, image, component, definition, width, height); err != nil {
+		return Layer{}, err
+	}
+	applyPremiumComponentState(&layer, &image, component, definition)
+	applyPremiumComponentCanvas(&layer, src, component)
+	applyPremiumComponentEffects(&layer, image, component, definition)
+	return layer, nil
+}
+
+func premiumComponentBox(src *semanticPlan, image Layer, component motion.ImageMotionComponent) (width, height float64, position, sizeScale []float64) {
+	width, height = image.Size[0], image.Size[1]
 	if component.CanvasSize {
 		width, height = float64(src.Width), float64(src.Height)
 	} else if len(component.SizeScale) == 2 {
 		width *= component.SizeScale[0]
 		height *= component.SizeScale[1]
 	}
-	position := []float64{float64(src.Width) / 2, float64(src.Height) / 2}
+	position = []float64{float64(src.Width) / 2, float64(src.Height) / 2}
 	if !component.CanvasSize && len(image.Position) >= 2 {
 		position[0] += image.Position[0]
 		position[1] += image.Position[1]
@@ -372,11 +384,15 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 	if component.ZOffset != 0 || component.SyncTransform && image.Enable3D {
 		position = append(position, component.ZOffset)
 	}
-	sizeScale := append([]float64(nil), component.SizeScale...)
+	sizeScale = append([]float64(nil), component.SizeScale...)
 	if !component.CanvasSize && len(sizeScale) == 0 {
 		sizeScale = []float64{1, 1}
 	}
-	layer := Layer{ID: image.ID + ":premium:" + component.ID, Type: component.Type,
+	return width, height, position, sizeScale
+}
+
+func newPremiumComponentLayer(image Layer, component motion.ImageMotionComponent, width, height float64, position, sizeScale []float64) Layer {
+	return Layer{ID: image.ID + ":premium:" + component.ID, Type: component.Type,
 		Size: []float64{width, height}, Position: position,
 		StartFrame: image.StartFrame, DurationFrames: image.DurationFrames,
 		PremiumParentImageID: image.ID, PremiumParentSize: []float64{width, height},
@@ -386,78 +402,86 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		PremiumShapeKind: component.Shape, PremiumPathKind: component.PathKind,
 		PremiumCanvasSize: component.CanvasSize, PremiumSyncTransform: component.SyncTransform,
 		PremiumAbsolutePosition: component.AbsolutePosition}
+}
+
+func applyPremiumComponentPayload(layer *Layer, image Layer, component motion.ImageMotionComponent, definition motion.MotionDefinition, width, height float64) error {
 	if component.Type == "color" {
 		layer.Color = append([]float64(nil), component.Fill...)
 	}
-	if component.Type == "shape" {
-		shapeType := component.Shape
-		if shapeType == "" {
-			shapeType = "rounded_rect"
-		}
-		var fill any
-		if len(component.Fill) > 0 {
-			fill = component.Fill
-		} else if shapeType == "path" {
-			// Recipe paths are commonly decorative outlines. The render-plan
-			// decoder defaults an omitted path fill to opaque white, which makes
-			// stroke-only paths fall out of the native Vulkan path-stroke lane.
-			fill = []float64{0, 0, 0, 0}
-		}
-		if component.Gradient != nil {
-			fill = nil
-		}
-		shape := &LayerShape{Type: shapeType, Fill: fill}
-		if component.Gradient != nil {
-			gradient := &LayerGradient{Type: component.Gradient.Type,
-				Start: append([]float64(nil), component.Gradient.Start...),
-				End:   append([]float64(nil), component.Gradient.End...)}
-			for _, stop := range component.Gradient.Stops {
-				gradient.ColorStops = append(gradient.ColorStops, LayerGradientStop{
-					Position: stop.Position, Color: append([]float64(nil), stop.Color...)})
-			}
-			shape.Fill = gradient
-		}
-		switch shapeType {
-		case "rounded_rect":
-			shape.Radius = component.RadiusScale
-			if !component.AbsoluteRadius {
-				shape.Radius *= image.Radius
-			}
-			if shape.Radius <= 0 {
-				shape.Radius = image.Radius
-			}
-		case "path":
-			radius := component.RadiusScale
-			if !component.AbsoluteRadius {
-				radius *= image.Radius
-			}
-			if radius == 0 {
-				radius = image.Radius
-			}
-			path, ok := componentPath(component.PathKind, width, height, radius)
-			if !ok {
-				return Layer{}, fmt.Errorf("overlay: motion %q component %q has unsupported path_kind %q", definition.ID, component.ID, component.PathKind)
-			}
-			shape.Path = path
-		}
-		if component.Stroke != nil {
-			shape.Stroke = &LayerStroke{Color: component.Stroke.Color, Width: component.Stroke.Width}
-		}
-		if component.Trim != nil {
-			shape.Operators = []LayerPathOperator{{Kind: "trim", Params: LayerTrimParams{
-				Start: component.Trim.Start, End: component.Trim.End,
-				Animation: premiumNativePathAnimation(component.Trim.Animation, image.DurationFrames, int64(definition.Enter))}}}
-		}
-		layer.Shape = shape
+	if component.Type != "shape" {
+		return nil
 	}
+	shapeType := component.Shape
+	if shapeType == "" {
+		shapeType = "rounded_rect"
+	}
+	var fill any
+	if len(component.Fill) > 0 {
+		fill = component.Fill
+	} else if shapeType == "path" {
+		// Recipe paths are commonly decorative outlines. The render-plan
+		// decoder defaults an omitted path fill to opaque white, which makes
+		// stroke-only paths fall out of the native Vulkan path-stroke lane.
+		fill = []float64{0, 0, 0, 0}
+	}
+	if component.Gradient != nil {
+		fill = nil
+	}
+	shape := &LayerShape{Type: shapeType, Fill: fill}
+	if component.Gradient != nil {
+		gradient := &LayerGradient{Type: component.Gradient.Type,
+			Start: append([]float64(nil), component.Gradient.Start...),
+			End:   append([]float64(nil), component.Gradient.End...)}
+		for _, stop := range component.Gradient.Stops {
+			gradient.ColorStops = append(gradient.ColorStops, LayerGradientStop{
+				Position: stop.Position, Color: append([]float64(nil), stop.Color...)})
+		}
+		shape.Fill = gradient
+	}
+	switch shapeType {
+	case "rounded_rect":
+		shape.Radius = component.RadiusScale
+		if !component.AbsoluteRadius {
+			shape.Radius *= image.Radius
+		}
+		if shape.Radius <= 0 {
+			shape.Radius = image.Radius
+		}
+	case "path":
+		radius := component.RadiusScale
+		if !component.AbsoluteRadius {
+			radius *= image.Radius
+		}
+		if radius == 0 {
+			radius = image.Radius
+		}
+		path, ok := componentPath(component.PathKind, width, height, radius)
+		if !ok {
+			return fmt.Errorf("overlay: motion %q component %q has unsupported path_kind %q", definition.ID, component.ID, component.PathKind)
+		}
+		shape.Path = path
+	}
+	if component.Stroke != nil {
+		shape.Stroke = &LayerStroke{Color: component.Stroke.Color, Width: component.Stroke.Width}
+	}
+	if component.Trim != nil {
+		shape.Operators = []LayerPathOperator{{Kind: "trim", Params: LayerTrimParams{
+			Start: component.Trim.Start, End: component.Trim.End,
+			Animation: premiumNativePathAnimation(component.Trim.Animation, image.DurationFrames, int64(definition.Enter))}}}
+	}
+	layer.Shape = shape
+	return nil
+}
+
+func applyPremiumComponentState(layer *Layer, image *Layer, component motion.ImageMotionComponent, definition motion.MotionDefinition) {
 	if component.Opacity != nil {
 		opacity := *component.Opacity
 		layer.Opacity = &opacity
 	}
 	if component.SyncTransform {
-		SyncPremiumComponentTransform(&image, &layer)
+		SyncPremiumComponentTransform(image, layer)
 	} else {
-		premiumLayerActive(&layer, premiumComponentTracks(definition, component.Tracks, image.DurationFrames))
+		premiumLayerActive(layer, premiumComponentTracks(definition, component.Tracks, image.DurationFrames))
 	}
 	if component.ZOffset != 0 {
 		layer.Enable3D = true
@@ -467,12 +491,19 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 			layer.Position[2] = component.ZOffset
 		}
 	}
-	if component.CanvasSize {
-		layer.Position = []float64{0, 0}
-		layer.Size = []float64{float64(src.Width), float64(src.Height)}
-		layer.Color = append([]float64(nil), component.Fill...)
-		layer.Opacity = nil
+}
+
+func applyPremiumComponentCanvas(layer *Layer, src *semanticPlan, component motion.ImageMotionComponent) {
+	if !component.CanvasSize {
+		return
 	}
+	layer.Position = []float64{0, 0}
+	layer.Size = []float64{float64(src.Width), float64(src.Height)}
+	layer.Color = append([]float64(nil), component.Fill...)
+	layer.Opacity = nil
+}
+
+func applyPremiumComponentEffects(layer *Layer, image Layer, component motion.ImageMotionComponent, definition motion.MotionDefinition) {
 	for _, effect := range component.Effects {
 		params := make(map[string]any, len(effect.Params))
 		for key, value := range effect.Params {
@@ -480,29 +511,28 @@ func compilePremiumComponent(src *semanticPlan, image Layer, definition motion.M
 		}
 		layer.Effects = append(layer.Effects, LayerEffect{Type: effect.Type, Params: params})
 	}
-
 	for _, track := range component.EffectParamTracks {
 		animation := premiumNativePathAnimation(track.Track, image.DurationFrames, int64(definition.Enter))
 		layer.EffectParamTracks = append(layer.EffectParamTracks, LayerEffectParamTrack{
 			EffectID: track.EffectID, Param: track.Param, Keyframes: animation.Keyframes, Easing: animation.Easing})
 	}
-	if len(component.EffectParamTracks) > 0 {
-		// Built-in shorthand effects are the native (and more portable) form
-		// for effect params; apply each parameter's authored initial sample to
-		// the shorthand effect and keep its V3 param track beside it.
-		for i := range layer.Effects {
-			for _, track := range component.EffectParamTracks {
-				if imageRecipeEffectID(layer.Effects[i].Type) != track.EffectID || len(track.Track.Keyframes) == 0 {
-					continue
-				}
-				if layer.Effects[i].Params == nil {
-					layer.Effects[i].Params = make(map[string]any)
-				}
-				layer.Effects[i].Params[track.Param] = track.Track.Keyframes[0].Value
+	if len(component.EffectParamTracks) == 0 {
+		return
+	}
+	// Built-in shorthand effects are the native (and more portable) form for
+	// effect params; apply each parameter's authored initial sample to the
+	// shorthand effect and keep its V3 param track beside it.
+	for i := range layer.Effects {
+		for _, track := range component.EffectParamTracks {
+			if imageRecipeEffectID(layer.Effects[i].Type) != track.EffectID || len(track.Track.Keyframes) == 0 {
+				continue
 			}
+			if layer.Effects[i].Params == nil {
+				layer.Effects[i].Params = make(map[string]any)
+			}
+			layer.Effects[i].Params[track.Param] = track.Track.Keyframes[0].Value
 		}
 	}
-	return layer, nil
 }
 
 func compilePremiumComponents(src *semanticPlan, image Layer, definition motion.MotionDefinition) ([]Layer, error) {

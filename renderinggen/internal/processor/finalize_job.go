@@ -12,6 +12,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
@@ -177,29 +178,9 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 	job := prepared.Job
 	metrics := prepared.Metrics
 	workerlog.ByJobID(job.ID).Statef("finalizing", "segments=%d", len(prepared.Segments))
-	// Canonicalized profiles (V3 overlays, V1 assembly clips) must EMIT the
-	// canonical x264 bitstream. The pass is CPU-only, so it runs HERE, in the
-	// post pool, after the GPU lane has been released — never on the render
-	// lane, where it held a device while re-encoding an already-finished
-	// artifact. It runs before every gate below (segment verification, receipt
-	// read, profile probe, hash), so all of them see the final bytes and the
-	// canonical receipt this pass writes.
-	if _, err := p.canonicalizePreparedOutputs(ctx, prepared); err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: canonical output emission: %w", err)
-	}
-	// P4 batch superjob: verify every per-item segment independently
-	// (probe/digest/receipt), re-render ONLY a failed segment once, and store
-	// each verified segment under its own content address. The returned batch
-	// receipt ("voci per segmento") rides the artifact's producer telemetry;
-	// the fused whole-timeline clip keeps flowing through the ordinary
-	// single-artifact path below.
-	var segmentEntries []SegmentArtifact
-	if len(prepared.Segments) > 0 {
-		entries, segmentErr := p.finalizeSegments(ctx, prepared)
-		if segmentErr != nil {
-			return queue.Artifact{}, segmentErr
-		}
-		segmentEntries = entries
+	segmentEntries, err := p.finalizePreparedArtifactPhase(ctx, prepared)
+	if err != nil {
+		return queue.Artifact{}, err
 	}
 	// The staged upload was handed to THIS phase by RunGPU. storeArtifact
 	// finishes (commits) it after the gates; any earlier return must discard
@@ -216,72 +197,103 @@ func (p *Processor) FinalizeJob(ctx context.Context, prepared *PreparedJob) (art
 	plan := prepared.Plan
 	metadata := planMetadataOf(plan)
 	receipt, receiptErr := chronon.ReadMediaReceipt(outputPath)
-	var probe *media.ProbeResult
-	if requiresStructuralProbe(job) || metadata.ProfileID != "" {
-		probeStart := time.Now()
-		// The plan already certifies how many frames this render should contain.
-		// Hand that count to the probe so a fragmented MP4 without nb_frames does
-		// not pay a full -count_frames decode to re-derive it. The stream facts and
-		// the closed-GOP cadence are still measured from the bytes.
-		canvasFrames := int64(0)
-		if plan != nil {
-			canvasFrames = plan.Canvas.DurationFrames
-		}
-		knownFrameCount := knownFrameCountForProbe(canvasFrames, job.FrameRange)
-		probed, source, err := probeFactsForFinalize(ctx, receipt, receiptErr, outputPath, knownFrameCount)
-		if err != nil {
-			return queue.Artifact{}, fmt.Errorf("processor: overlay ffprobe: %w", err)
-		}
-		if source != probeSourceReceipt {
-			// Not fatal, but never silent: a job whose facts came from a local
-			// probe is paying the duplicate verification the receipt exists to
-			// avoid, and that is worth seeing in the log.
-			workerlog.ByJobID(job.ID).Warnf("media facts came from %s (no canonical receipt): the artifact was inspected locally", source)
-		}
-		probeUS := float64(time.Since(probeStart).Microseconds())
-		metrics[metricnames.ProbeUS] = probeUS
-		metrics[metricnames.ProbeMS] = probeUS / 1000
-
-		if metadata.ProfileID != "" {
-			profile, err := p.outputProfile(metadata.ProfileID)
-			if err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: output profile: %w", err)
-			}
-			if err := ensureCodecConfigProbe(ctx, outputPath, &probed, profile); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: avcC probe: %w", err)
-			}
-			if err := profile.ValidateProbe(probed); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: output profile certification: %w", err)
-			}
-		} else if job.JobType == queue.JobTypeOverlayRender {
-			if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: overlay media contract: %w", err)
-			}
-		}
-		if planHasVisualOverlay(plan) && p.deepVisualValidationEnabled() {
-			if err := probed.ValidateVisible(ctx, outputPath); err != nil {
-				return queue.Artifact{}, fmt.Errorf("processor: visual output gate: %w", err)
-			}
-		}
-		probe = &probed
+	probe, err := p.probeFinalizedOutput(ctx, job, plan, outputPath, metadata, receipt, receiptErr, metrics)
+	if err != nil {
+		return queue.Artifact{}, err
 	}
 	// Media decodability is verified EXACTLY ONCE per artifact and never on
-	// the render lane. Under a policy that promises a full decode (normal),
-	// the worker asks Chronon for the fast tier and runs the decode itself
-	// here in the post pool whenever the receipt cannot prove Chronon already
-	// decoded the output (receipt_verify.go, enforceDecodableOutput); the
-	// decode therefore overlaps the next render instead of holding a GPU lane
-	// for a second per item. fast/strict promise no decode. This runs for
-	// every finalized job, independent of overlay/profile probing.
-	// One gate, three verdicts: the receipt policy, the promised decode AND
-	// the artifact's byte identity. The store phase below consumes them rather
-	// than repeating any decision, so a hash that does not match the bytes —
-	// or a bitstream that does not decode — is rejected before the artifact is
-	// stored or published.
+	// the render lane. One gate, three verdicts: the receipt policy, the
+	// promised decode AND the artifact's byte identity. The store phase below
+	// consumes them rather than repeating any decision.
 	outcome, err := p.verifyArtifactReceipt(ctx, outputPath, receipt, receiptErr, metrics, job.ID)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	return p.storeArtifact(ctx, job.ID, outputPath, outcome, prepared.TailUpload, plan, metrics, prepared.totalStart, probe, prepared.Stats, prepared.InputBytes,
-		requiresStructuralProbe(job) || metadata.ProfileID != "", prepared.EffectiveBackend, prepared.NativeCertified, segmentEntries)
+	return p.storeArtifact(ctx, storeArtifactInput{
+		jobID:            job.ID,
+		outputPath:       outputPath,
+		outcome:          outcome,
+		tail:             prepared.TailUpload,
+		plan:             plan,
+		phaseMetrics:     metrics,
+		totalStart:       prepared.totalStart,
+		probe:            probe,
+		stats:            prepared.Stats,
+		inputBytes:       prepared.InputBytes,
+		copyEligible:     requiresStructuralProbe(job) || metadata.ProfileID != "",
+		effectiveBackend: prepared.EffectiveBackend,
+		nativeCertified:  prepared.NativeCertified,
+		segmentEntries:   segmentEntries,
+	})
+}
+
+// finalizePreparedArtifactPhase runs the canonical CPU pass and verifies every
+// per-item segment before the artifact gates read the final bytes.
+func (p *Processor) finalizePreparedArtifactPhase(ctx context.Context, prepared *PreparedJob) ([]SegmentArtifact, error) {
+	// Canonicalized profiles (V3 overlays, V1 assembly clips) must EMIT the
+	// canonical x264 bitstream. The pass is CPU-only, so it runs HERE, in the
+	// post pool, after the GPU lane has been released.
+	if _, err := p.canonicalizePreparedOutputs(ctx, prepared); err != nil {
+		return nil, fmt.Errorf("processor: canonical output emission: %w", err)
+	}
+	if len(prepared.Segments) == 0 {
+		return nil, nil
+	}
+	// P4 batch superjob: verify every per-item segment independently
+	// (probe/digest/receipt), re-render ONLY a failed segment once, and store
+	// each verified segment under its own content address.
+	return p.finalizeSegments(ctx, prepared)
+}
+
+// probeFinalizedOutput reads structural facts from the canonical receipt,
+// falling back to one local probe, and applies the profile/overlay/visual gates.
+func (p *Processor) probeFinalizedOutput(ctx context.Context, job *queue.Job, plan *overlay.Plan, outputPath string, metadata planMetadata, receipt chronon.MediaReceipt, receiptErr error, metrics map[string]float64) (*media.ProbeResult, error) {
+	if !requiresStructuralProbe(job) && metadata.ProfileID == "" {
+		return nil, nil
+	}
+	probeStart := time.Now()
+	// The plan already certifies how many frames this render should contain.
+	// Hand that count to the probe so a fragmented MP4 without nb_frames does
+	// not pay a full -count_frames decode to re-derive it.
+	canvasFrames := int64(0)
+	if plan != nil {
+		canvasFrames = plan.Canvas.DurationFrames
+	}
+	knownFrameCount := knownFrameCountForProbe(canvasFrames, job.FrameRange)
+	probed, source, err := probeFactsForFinalize(ctx, receipt, receiptErr, outputPath, knownFrameCount)
+	if err != nil {
+		return nil, fmt.Errorf("processor: overlay ffprobe: %w", err)
+	}
+	if source != probeSourceReceipt {
+		// Not fatal, but never silent: a job whose facts came from a local
+		// probe is paying the duplicate verification the receipt exists to
+		// avoid, and that is worth seeing in the log.
+		workerlog.ByJobID(job.ID).Warnf("media facts came from %s (no canonical receipt): the artifact was inspected locally", source)
+	}
+	probeUS := float64(time.Since(probeStart).Microseconds())
+	metrics[metricnames.ProbeUS] = probeUS
+	metrics[metricnames.ProbeMS] = probeUS / 1000
+
+	if metadata.ProfileID != "" {
+		profile, err := p.outputProfile(metadata.ProfileID)
+		if err != nil {
+			return nil, fmt.Errorf("processor: output profile: %w", err)
+		}
+		if err := ensureCodecConfigProbe(ctx, outputPath, &probed, profile); err != nil {
+			return nil, fmt.Errorf("processor: avcC probe: %w", err)
+		}
+		if err := profile.ValidateProbe(probed); err != nil {
+			return nil, fmt.Errorf("processor: output profile certification: %w", err)
+		}
+	} else if job.JobType == queue.JobTypeOverlayRender {
+		if err := probed.ValidateOverlay(metadata.Width, metadata.Height, metadata.FPSNum, metadata.FPSDen); err != nil {
+			return nil, fmt.Errorf("processor: overlay media contract: %w", err)
+		}
+	}
+	if planHasVisualOverlay(plan) && p.deepVisualValidationEnabled() {
+		if err := probed.ValidateVisible(ctx, outputPath); err != nil {
+			return nil, fmt.Errorf("processor: visual output gate: %w", err)
+		}
+	}
+	return &probed, nil
 }

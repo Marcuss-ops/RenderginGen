@@ -136,30 +136,57 @@ func parseCanonical(raw []byte) (Catalog, error) {
 	if err := json.Unmarshal(raw, &catalog); err != nil {
 		return Catalog{}, fmt.Errorf("motion: decode canonical catalog: %w", err)
 	}
+	if err := validateCanonicalHeader(catalog); err != nil {
+		return Catalog{}, err
+	}
+	if err := validateCanonicalSections(catalog); err != nil {
+		return Catalog{}, err
+	}
+	motionIDs, err := validateCanonicalMotionCatalog(catalog)
+	if err != nil {
+		return Catalog{}, err
+	}
+	imagePresets, err := validateCanonicalPresetCatalog(catalog)
+	if err != nil {
+		return Catalog{}, err
+	}
+	if err := validateCanonicalSelections(catalog, motionIDs, imagePresets); err != nil {
+		return Catalog{}, err
+	}
+	return catalog, nil
+}
+
+// validateCanonicalHeader checks the schema, emitter identity and that the
+// document declares at least one motion.
+func validateCanonicalHeader(catalog Catalog) error {
 	if catalog.SchemaVersion != canonicalCatalogSchemaVersion {
-		return Catalog{}, fmt.Errorf("motion: canonical catalog schema_version %d, expected %d",
+		return fmt.Errorf("motion: canonical catalog schema_version %d, expected %d",
 			catalog.SchemaVersion, canonicalCatalogSchemaVersion)
 	}
 	if catalog.Source != canonicalCatalogSource {
-		return Catalog{}, fmt.Errorf("motion: canonical catalog source %q, expected %q",
+		return fmt.Errorf("motion: canonical catalog source %q, expected %q",
 			catalog.Source, canonicalCatalogSource)
 	}
 	if len(catalog.Motions) == 0 {
-		return Catalog{}, fmt.Errorf("motion: canonical catalog defines no motions")
+		return fmt.Errorf("motion: canonical catalog defines no motions")
 	}
+	return nil
+}
+
+// validateCanonicalSections validates the presentation, 3D-preset material and
+// non-empty unique template/preset sections.
+func validateCanonicalSections(catalog Catalog) error {
 	if err := validateEntityPresentationCatalog(catalog.EntityPresentation, catalog.Motions); err != nil {
-		return Catalog{}, err
+		return err
 	}
 	// The template and composition-preset sections are owned by ChrononTemplate
 	// and are not rendered by this repository; they are still validated here
-	// because an emitter that lost either section produced a truncated artifact,
-	// and consuming four fifths of a catalog is not a partial success.
+	// because an emitter that lost either section produced a truncated artifact.
 	for _, preset := range catalog.Final3DPresets {
 		if err := validatePresetMaterial(preset); err != nil {
-			return Catalog{}, err
+			return err
 		}
 	}
-
 	for _, section := range []struct {
 		name string
 		ids  []string
@@ -168,38 +195,48 @@ func parseCanonical(raw []byte) (Catalog, error) {
 		{"final3d_presets", presetIDs(catalog.Final3DPresets)},
 	} {
 		if len(section.ids) == 0 {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog declares no %s", section.name)
+			return fmt.Errorf("motion: canonical catalog declares no %s", section.name)
 		}
 		seen := make(map[string]struct{}, len(section.ids))
 		for _, id := range section.ids {
 			if strings.TrimSpace(id) == "" {
-				return Catalog{}, fmt.Errorf("motion: canonical catalog %s section has an empty id", section.name)
+				return fmt.Errorf("motion: canonical catalog %s section has an empty id", section.name)
 			}
 			if _, duplicate := seen[id]; duplicate {
-				return Catalog{}, fmt.Errorf("motion: canonical catalog repeats %s id %q", section.name, id)
+				return fmt.Errorf("motion: canonical catalog repeats %s id %q", section.name, id)
 			}
 			seen[id] = struct{}{}
 		}
 	}
+	return nil
+}
 
+// validateCanonicalMotionCatalog validates every definition, deduplicates the
+// motion ids and enforces paired map renderers.
+func validateCanonicalMotionCatalog(catalog Catalog) (map[string]struct{}, error) {
 	motionIDs := make(map[string]struct{}, len(catalog.Motions))
 	for _, definition := range catalog.Motions {
 		if err := ValidateDefinition(definition); err != nil {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog: %w", err)
+			return nil, fmt.Errorf("motion: canonical catalog: %w", err)
 		}
 		if _, duplicate := motionIDs[definition.ID]; duplicate {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog repeats motion %q", definition.ID)
+			return nil, fmt.Errorf("motion: canonical catalog repeats motion %q", definition.ID)
 		}
 		motionIDs[definition.ID] = struct{}{}
 	}
 	if err := validateMapRendererPairs(catalog.Motions); err != nil {
-		return Catalog{}, err
+		return nil, err
 	}
+	return motionIDs, nil
+}
 
+// validateCanonicalPresetCatalog validates overlay preset families and returns
+// the image-preset ids used by selection validation.
+func validateCanonicalPresetCatalog(catalog Catalog) (map[string]struct{}, error) {
 	imagePresets := make(map[string]struct{})
 	for family, ids := range catalog.OverlayPresets {
 		if len(ids) == 0 {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog lists no %q overlay presets", family)
+			return nil, fmt.Errorf("motion: canonical catalog lists no %q overlay presets", family)
 		}
 		if family == "image" {
 			for _, id := range ids {
@@ -209,40 +246,44 @@ func parseCanonical(raw []byte) (Catalog, error) {
 	}
 	for _, required := range []string{"text", "image"} {
 		if len(catalog.OverlayPresets[required]) == 0 {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog is missing the %q overlay preset family", required)
+			return nil, fmt.Errorf("motion: canonical catalog is missing the %q overlay preset family", required)
 		}
 	}
+	return imagePresets, nil
+}
 
+// validateCanonicalSelections proves every selection names a declared motion or
+// image preset, and that the phrase pool is non-empty and duplicate-free.
+func validateCanonicalSelections(catalog Catalog, motionIDs, imagePresets map[string]struct{}) error {
 	for _, id := range catalog.Selections.TysonPhraseMotions {
 		if _, ok := motionIDs[id]; !ok {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog selection tyson_phrase_motions names unknown motion %q", id)
+			return fmt.Errorf("motion: canonical catalog selection tyson_phrase_motions names unknown motion %q", id)
 		}
 	}
 	if len(catalog.Selections.PhraseMotionPool) == 0 {
-		return Catalog{}, fmt.Errorf("motion: canonical catalog selection phrase_motion_pool is empty")
+		return fmt.Errorf("motion: canonical catalog selection phrase_motion_pool is empty")
 	}
 	phrasePoolSeen := make(map[string]struct{}, len(catalog.Selections.PhraseMotionPool))
 	for _, id := range catalog.Selections.PhraseMotionPool {
 		if _, ok := motionIDs[id]; !ok {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog selection phrase_motion_pool names unknown motion %q", id)
+			return fmt.Errorf("motion: canonical catalog selection phrase_motion_pool names unknown motion %q", id)
 		}
 		if _, duplicate := phrasePoolSeen[id]; duplicate {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog selection phrase_motion_pool repeats motion %q", id)
+			return fmt.Errorf("motion: canonical catalog selection phrase_motion_pool repeats motion %q", id)
 		}
 		phrasePoolSeen[id] = struct{}{}
 	}
 	for _, row := range catalog.Selections.MatrixPhraseOverlays {
 		if _, ok := motionIDs[row.Motion]; !ok {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog selection matrix_phrase_overlays names unknown motion %q", row.Motion)
+			return fmt.Errorf("motion: canonical catalog selection matrix_phrase_overlays names unknown motion %q", row.Motion)
 		}
 	}
 	for _, id := range catalog.Selections.MatrixImageOverlays {
 		if _, ok := imagePresets[id]; !ok {
-			return Catalog{}, fmt.Errorf("motion: canonical catalog selection matrix_image_overlays names unknown image preset %q", id)
+			return fmt.Errorf("motion: canonical catalog selection matrix_image_overlays names unknown image preset %q", id)
 		}
 	}
-
-	return catalog, nil
+	return nil
 }
 
 // validateMapRendererPairs keeps each authored country/action available from

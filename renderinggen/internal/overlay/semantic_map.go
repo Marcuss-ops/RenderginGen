@@ -378,6 +378,22 @@ func validateMapPin(pin SemanticMapPin, index int, window geo.Window) error {
 }
 
 func validateMapTextStyle(style *SemanticMapTextStyle, index int) error {
+	if err := validateMapTextFont(style, index); err != nil {
+		return err
+	}
+	if err := validateMapTextStroke(style.Stroke, index); err != nil {
+		return err
+	}
+	if err := validateMapTextShadow(style.Shadow, index); err != nil {
+		return err
+	}
+	if err := validateMapTextGlow(style.Glow, index); err != nil {
+		return err
+	}
+	return validateMapTextBackground(style.Background, index)
+}
+
+func validateMapTextFont(style *SemanticMapTextStyle, index int) error {
 	if style.Preset != "" {
 		if _, ok := geographicTagStylePreset(style.Preset); !ok {
 			return fmt.Errorf("pin[%d] label_style.preset %q is unsupported", index, style.Preset)
@@ -394,31 +410,51 @@ func validateMapTextStyle(style *SemanticMapTextStyle, index int) error {
 	if style.Fill != "" && !isHexColor(style.Fill) {
 		return fmt.Errorf("pin[%d] label_style.fill must be #RRGGBB", index)
 	}
-	if stroke := style.Stroke; stroke != nil {
-		if !isHexColor(stroke.Color) || !finite(stroke.Width) || stroke.Width < 0 || stroke.Width > 16 {
-			return fmt.Errorf("pin[%d] label_style.stroke requires #RRGGBB and width in [0,16]", index)
-		}
+	return nil
+}
+
+func validateMapTextStroke(stroke *semanticMapTextStroke, index int) error {
+	if stroke == nil {
+		return nil
 	}
-	if shadow := style.Shadow; shadow != nil {
-		if !isHexColor(shadow.Color) || !finite(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 ||
-			!finite(shadow.Blur) || shadow.Blur < 0 || shadow.Blur > 64 || len(shadow.Offset) != 2 ||
-			!finite(shadow.Offset[0]) || !finite(shadow.Offset[1]) || math.Abs(shadow.Offset[0]) > 128 || math.Abs(shadow.Offset[1]) > 128 {
-			return fmt.Errorf("pin[%d] label_style.shadow has invalid color/opacity/blur/offset", index)
-		}
+	if !isHexColor(stroke.Color) || !finite(stroke.Width) || stroke.Width < 0 || stroke.Width > 16 {
+		return fmt.Errorf("pin[%d] label_style.stroke requires #RRGGBB and width in [0,16]", index)
 	}
-	if glow := style.Glow; glow != nil {
-		if !isHexColor(glow.Color) || !finite(glow.Radius) || glow.Radius < 0 || glow.Radius > 128 ||
-			!finite(glow.Intensity) || glow.Intensity < 0 || glow.Intensity > 1 {
-			return fmt.Errorf("pin[%d] label_style.glow has invalid color/radius/intensity", index)
-		}
+	return nil
+}
+
+func validateMapTextShadow(shadow *semanticMapTextShadow, index int) error {
+	if shadow == nil {
+		return nil
 	}
-	if plate := style.Background; plate != nil {
-		if !isHexColor(plate.Color) || !finite(plate.Opacity) || plate.Opacity < 0 || plate.Opacity > 1 ||
-			!finite(plate.Radius) || plate.Radius < 0 || plate.Radius > 128 || len(plate.Padding) != 2 ||
-			!finite(plate.Padding[0]) || !finite(plate.Padding[1]) || plate.Padding[0] < 0 || plate.Padding[1] < 0 ||
-			plate.Padding[0] > 128 || plate.Padding[1] > 128 {
-			return fmt.Errorf("pin[%d] label_style.background has invalid color/opacity/radius/padding", index)
-		}
+	if !isHexColor(shadow.Color) || !finite(shadow.Opacity) || shadow.Opacity < 0 || shadow.Opacity > 1 ||
+		!finite(shadow.Blur) || shadow.Blur < 0 || shadow.Blur > 64 || len(shadow.Offset) != 2 ||
+		!finite(shadow.Offset[0]) || !finite(shadow.Offset[1]) || math.Abs(shadow.Offset[0]) > 128 || math.Abs(shadow.Offset[1]) > 128 {
+		return fmt.Errorf("pin[%d] label_style.shadow has invalid color/opacity/blur/offset", index)
+	}
+	return nil
+}
+
+func validateMapTextGlow(glow *semanticMapTextGlow, index int) error {
+	if glow == nil {
+		return nil
+	}
+	if !isHexColor(glow.Color) || !finite(glow.Radius) || glow.Radius < 0 || glow.Radius > 128 ||
+		!finite(glow.Intensity) || glow.Intensity < 0 || glow.Intensity > 1 {
+		return fmt.Errorf("pin[%d] label_style.glow has invalid color/radius/intensity", index)
+	}
+	return nil
+}
+
+func validateMapTextBackground(plate *semanticMapTextPlate, index int) error {
+	if plate == nil {
+		return nil
+	}
+	if !isHexColor(plate.Color) || !finite(plate.Opacity) || plate.Opacity < 0 || plate.Opacity > 1 ||
+		!finite(plate.Radius) || plate.Radius < 0 || plate.Radius > 128 || len(plate.Padding) != 2 ||
+		!finite(plate.Padding[0]) || !finite(plate.Padding[1]) || plate.Padding[0] < 0 || plate.Padding[1] < 0 ||
+		plate.Padding[0] > 128 || plate.Padding[1] > 128 {
+		return fmt.Errorf("pin[%d] label_style.background has invalid color/opacity/radius/padding", index)
 	}
 	return nil
 }
@@ -701,10 +737,42 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 	duration := ri.End - ri.Start
 	layers := make([]Layer, 0, 1+2*len(resolved.Pins)+1)
 	mapAnimation := resolved.Motion
+	basemap := buildMapBasemapLayer(ri, src, registry, resolved, duration)
+	// Both static plates and camera-moved plates receive their pre-resolved
+	// map_view treatment, with map and pin layers sharing the same recipe.
+	applyMotionRouting(&basemap, mapAnimation)
+	layers = append(layers, basemap)
+
 	var err error
-	var basemap Layer
+	layers, err = appendMapRouteLayers(layers, ri, src, resolved, duration)
+	if err != nil {
+		return nil, err
+	}
+	layers, err = appendMapPinLayers(layers, ri, src, resolved, mapAnimation, duration)
+	if err != nil {
+		return nil, err
+	}
+	fxLayers, err := compileMapFxLayers(ri, src, resolved, duration)
+	if err != nil {
+		return nil, err
+	}
+	layers = append(layers, fxLayers...)
+	credit, err := resolveMapAttribution(ri, src, resolved.Attribution, duration)
+	if err != nil {
+		return nil, err
+	}
+	// Attribution is HUD, not map-plane content: it stays screen-space on both
+	// static plates and camera moves so the credit never drifts with the flight.
+	credit.ScreenSpace = true
+	layers = append(layers, credit)
+	return layers, nil
+}
+
+// buildMapBasemapLayer chooses the static plate or the single certified plate
+// on the continuous Web-Mercator plane used by the camera move.
+func buildMapBasemapLayer(ri resolvedItem, src *semanticPlan, registry *assetRegistry, resolved *resolvedMap, duration int64) Layer {
 	if resolved.Camera == nil {
-		basemap = Layer{
+		return Layer{
 			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
 			Asset:    registry.Path(resolved.StaticAssetID),
 			BoxWidth: resolved.RasterWidth, BoxHeight: resolved.RasterHeight, MapRasterWidth: resolved.RasterWidth, MapRasterHeight: resolved.RasterHeight,
@@ -712,34 +780,32 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 			StartFrame: ri.Start, DurationFrames: duration,
 			Scale: []float64{float64(src.Width) / float64(resolved.RasterWidth), float64(src.Height) / float64(resolved.RasterHeight)},
 		}
-	} else {
-		// Keep one certified base plate on the continuous Web-Mercator plane
-		// for the whole move. Crossfading independent raster planes produces
-		// visible rectangles on the native Vulkan path; a single opaque plate
-		// lets the camera animate without LOD switching or flicker.
-		move := resolved.Camera
-		originX, originY := geo.LatLonToGlobalPixel(move.From.Latitude, move.From.Longitude, int(move.StartZoom))
-		worldSize := geo.MercatorTileSize * math.Pow(2, move.StartZoom)
-		lod := resolved.LODs[0]
-		centerX, centerY := geo.LatLonToGlobalPixel(lod.Center.Latitude, lod.Center.Longitude, int(move.StartZoom))
-		scale := math.Pow(2, move.StartZoom-float64(lod.Zoom))
-		basemap = Layer{
-			ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
-			Asset:    registry.Path(lod.AssetID),
-			BoxWidth: lod.Width, BoxHeight: lod.Height,
-			MapRasterWidth: lod.Width, MapRasterHeight: lod.Height,
-			Size: []float64{float64(lod.Width), float64(lod.Height)}, Fit: FitStretch,
-			Position: []float64{
-				wrapMapPlaneDelta(centerX-originX, worldSize), -(centerY - originY), 0,
-			},
-			Scale: []float64{scale, scale}, Enable3D: true,
-			StartFrame: ri.Start, DurationFrames: duration,
-		}
 	}
-	// Both static plates and camera-moved plates receive their pre-resolved
-	// map_view treatment, with map and pin layers sharing the same recipe.
-	applyMotionRouting(&basemap, mapAnimation)
-	layers = append(layers, basemap)
+	// Keep one certified base plate on the continuous Web-Mercator plane for
+	// the whole move. Crossfading independent raster planes produces visible
+	// rectangles on the native Vulkan path.
+	move := resolved.Camera
+	originX, originY := geo.LatLonToGlobalPixel(move.From.Latitude, move.From.Longitude, int(move.StartZoom))
+	worldSize := geo.MercatorTileSize * math.Pow(2, move.StartZoom)
+	lod := resolved.LODs[0]
+	centerX, centerY := geo.LatLonToGlobalPixel(lod.Center.Latitude, lod.Center.Longitude, int(move.StartZoom))
+	scale := math.Pow(2, move.StartZoom-float64(lod.Zoom))
+	return Layer{
+		ID: mapBasemapLayerID(ri.Item.ID), Type: "image",
+		Asset:    registry.Path(lod.AssetID),
+		BoxWidth: lod.Width, BoxHeight: lod.Height,
+		MapRasterWidth: lod.Width, MapRasterHeight: lod.Height,
+		Size: []float64{float64(lod.Width), float64(lod.Height)}, Fit: FitStretch,
+		Position: []float64{
+			wrapMapPlaneDelta(centerX-originX, worldSize), -(centerY - originY), 0,
+		},
+		Scale: []float64{scale, scale}, Enable3D: true,
+		StartFrame: ri.Start, DurationFrames: duration,
+	}
+}
+
+// appendMapRouteLayers lowers every resolved route onto the map plate.
+func appendMapRouteLayers(layers []Layer, ri resolvedItem, src *semanticPlan, resolved *resolvedMap, duration int64) ([]Layer, error) {
 	for _, route := range resolved.Routes {
 		routeLayers, err := compileMapRoutes(ri.Item.ID, []SemanticMapRoute{route.Contract}, route.Origin, route.Zoom,
 			src.Width, src.Height, ri.Start, duration)
@@ -748,13 +814,13 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 		}
 		layers = append(layers, routeLayers...)
 	}
-	// Every grounded point shares the basemap lifetime: the flight is one shot,
-	// not a sequence of reveals. Staggered entrances and exclusive windows
-	// were tried (delayed reveal, then one marker at a time) and reverted:
-	// markers that pop in late or leave mid-flight read as a glitch on the
-	// certified look, and the golden canary pins the full-lifetime plate
-	// (TestGoldenMapFlyoverCanary). Re-time the pins only by re-baselining
-	// that golden deliberately, never by drifting the lowering.
+	return layers, nil
+}
+
+// appendMapPinLayers lowers every grounded pin and its label. Every point
+// shares the basemap lifetime: the flight is one shot, not a sequence of
+// reveals.
+func appendMapPinLayers(layers []Layer, ri resolvedItem, src *semanticPlan, resolved *resolvedMap, mapAnimation *LayerAnimation, duration int64) ([]Layer, error) {
 	for _, resolvedPin := range resolved.Pins {
 		pin := resolvedPin.Contract
 		marker, err := mapPinLayer(ri, src, pin, resolvedPin.RasterX, resolvedPin.RasterY, duration)
@@ -779,34 +845,28 @@ func compileResolvedMapLayers(ri resolvedItem, src *semanticPlan, registry *asse
 			applyMotionRouting(&label, mapPinMotion(pinAnimation, label.Position))
 		}
 		if resolved.Camera != nil {
-			worldX, worldY := mapWorldPoint(pin.Latitude, pin.Longitude, resolved.Zoom, resolved.Camera.From)
-			marker.Enable3D = true
-			marker.Position = []float64{worldX + float64(src.Width)/2, worldY + float64(src.Height)/2, 0}
-			label.Enable3D = true
-			labelRasterX, labelRasterY := resolvedPin.RasterX, resolvedPin.RasterY
-			labelCenterX := resolvedPin.LabelTopLeft[0] + resolvedPin.LabelWidth/2
-			labelCenterY := resolvedPin.LabelTopLeft[1] + resolvedPin.LabelHeight/2
-			label.Position = []float64{
-				worldX + float64(src.Width)/2 + labelCenterX - labelRasterX,
-				worldY + float64(src.Height)/2 - (labelCenterY - labelRasterY), 0,
-			}
+			positionMapPinForCamera(&marker, &label, resolvedPin, src, resolved)
 		}
 		layers = append(layers, marker, label)
 	}
-	fxLayers, err := compileMapFxLayers(ri, src, resolved, duration)
-	if err != nil {
-		return nil, err
-	}
-	layers = append(layers, fxLayers...)
-	credit, err := resolveMapAttribution(ri, src, resolved.Attribution, duration)
-	if err != nil {
-		return nil, err
-	}
-	// Attribution is HUD, not map-plane content: it stays screen-space on both
-	// static plates and camera moves so the credit never drifts with the flight.
-	credit.ScreenSpace = true
-	layers = append(layers, credit)
 	return layers, nil
+}
+
+// positionMapPinForCamera projects a pin and its label onto the moving map
+// plane while leaving the attribution in screen space.
+func positionMapPinForCamera(marker, label *Layer, resolvedPin resolvedMapPin, src *semanticPlan, resolved *resolvedMap) {
+	pin := resolvedPin.Contract
+	worldX, worldY := mapWorldPoint(pin.Latitude, pin.Longitude, resolved.Zoom, resolved.Camera.From)
+	marker.Enable3D = true
+	marker.Position = []float64{worldX + float64(src.Width)/2, worldY + float64(src.Height)/2, 0}
+	label.Enable3D = true
+	labelRasterX, labelRasterY := resolvedPin.RasterX, resolvedPin.RasterY
+	labelCenterX := resolvedPin.LabelTopLeft[0] + resolvedPin.LabelWidth/2
+	labelCenterY := resolvedPin.LabelTopLeft[1] + resolvedPin.LabelHeight/2
+	label.Position = []float64{
+		worldX + float64(src.Width)/2 + labelCenterX - labelRasterX,
+		worldY + float64(src.Height)/2 - (labelCenterY - labelRasterY), 0,
+	}
 }
 
 func resolveMapPinLabel(ri resolvedItem, src *semanticPlan, resolvedPin resolvedMapPin, duration int64) (Layer, error) {

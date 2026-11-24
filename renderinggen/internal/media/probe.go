@@ -264,27 +264,44 @@ func ProbeFileWithKnownFrameCount(ctx context.Context, path string, knownFrameCo
 // NOT gated on FrameCount — the gate is invariant whether the count came
 // from ffprobe, the caller, or the fallback.
 func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResult, error) {
-	// ONE ffprobe invocation certifies both halves of the probe: the
-	// stream/format facts AND the first-frame keyframe check. The keyframe check
-	// used to be a second process doing its own open and read of the same file;
-	// `-read_intervals %+#1` keeps the added section to the first frame of each
-	// stream, so merging removes a whole process from the post-render path
-	// instead of adding work to it.
-	stdout, _, err := runTool(ctx, ffprobeBinary(), "-v", "error",
-		"-show_streams", "-show_format",
-		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame,stream_index",
-		"-show_data", "-of", "json", path)
+	doc, err := readProbeDocument(ctx, path)
 	if err != nil {
-		return ProbeResult{}, fmt.Errorf("ffprobe %s: %w", path, err)
-	}
-	var doc ffprobeDocument
-	if err := json.Unmarshal(stdout, &doc); err != nil {
-		return ProbeResult{}, fmt.Errorf("ffprobe decode %s: %w", path, err)
+		return ProbeResult{}, err
 	}
 	result := ProbeResult{Container: doc.Format.FormatName}
 	if duration, err := strconv.ParseFloat(doc.Format.Duration, 64); err == nil && duration > 0 {
 		result.DurationUS = int64(duration * 1_000_000)
 	}
+	videoStreamIndex := applyProbeStreamFacts(&result, doc)
+	result.HasAudio = result.AudioStreams > 0
+	applyFirstFrameKeyframe(ctx, path, &result, doc, videoStreamIndex)
+	applyProbeFrameCount(ctx, path, &result, knownFrameCount)
+	// Closed-GOP certification reads only the container packet table (no
+	// decode), so the cadence check is cheap even on long clips.
+	result.ClosedGOP, result.ClosedGOPUncertifiable, result.KeyframeInterval = probeClosedGOP(ctx, path)
+	return result, nil
+}
+
+// readProbeDocument runs the ONE merged ffprobe invocation that certifies the
+// stream/format facts and the first-frame keyframe check.
+func readProbeDocument(ctx context.Context, path string) (ffprobeDocument, error) {
+	stdout, _, err := runTool(ctx, ffprobeBinary(), "-v", "error",
+		"-show_streams", "-show_format",
+		"-read_intervals", "%+#1", "-show_entries", "frame=key_frame,stream_index",
+		"-show_data", "-of", "json", path)
+	if err != nil {
+		return ffprobeDocument{}, fmt.Errorf("ffprobe %s: %w", path, err)
+	}
+	var doc ffprobeDocument
+	if err := json.Unmarshal(stdout, &doc); err != nil {
+		return ffprobeDocument{}, fmt.Errorf("ffprobe decode %s: %w", path, err)
+	}
+	return doc, nil
+}
+
+// applyProbeStreamFacts copies the first video and first audio stream facts
+// into the result and returns the video stream index.
+func applyProbeStreamFacts(result *ProbeResult, doc ffprobeDocument) int {
 	videoSeen, audioSeen := false, false
 	videoStreamIndex := -1
 	for _, stream := range doc.Streams {
@@ -338,37 +355,29 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 			num, numErr := strconv.Atoi(parts[0])
 			den, denErr := strconv.Atoi(parts[1])
 			// A parseable rate must be positive on both sides: "0/0" (or a
-			// malformed string) means the fps contract cannot be certified, and
-			// the artifact must fail a declared fps check — never silently
-			// exempt it (the gate must not depend on data the same function
-			// just failed to parse).
+			// malformed string) means the fps contract cannot be certified.
 			if numErr != nil || denErr != nil || num <= 0 || den <= 0 {
 				result.FPSUncertifiable = true
-				log.Printf("media: ffprobe %s: unparseable r_frame_rate %q; fps contract cannot be certified", path, stream.Rate)
+				log.Printf("media: ffprobe unparseable r_frame_rate %q; fps contract cannot be certified", stream.Rate)
 			} else {
 				result.FPSNum, result.FPSDen = num, den
 			}
 		} else {
 			result.FPSUncertifiable = true
-			log.Printf("media: ffprobe %s: malformed r_frame_rate %q; fps contract cannot be certified", path, stream.Rate)
+			log.Printf("media: ffprobe malformed r_frame_rate %q; fps contract cannot be certified", stream.Rate)
 		}
 	}
-	result.HasAudio = result.AudioStreams > 0
+	return videoStreamIndex
+}
 
-	// A packet-copy segment must begin with an IDR/key frame, so the first
-	// frame of the video stream is read from the SAME probe document. A missing
-	// frames section fails closed (first_frame_keyframe=false) but never
-	// silently: a systematically broken keyframe probe would otherwise produce
-	// first_frame_keyframe=false forever with no signal pointing at ffprobe,
-	// silently disabling the copy-eligible fast path.
+// applyFirstFrameKeyframe certifies the video stream's first frame, using the
+// video-only fallback when the merged document carries no frames.
+func applyFirstFrameKeyframe(ctx context.Context, path string, result *ProbeResult, doc ffprobeDocument, videoStreamIndex int) {
 	if frame, ok := firstFrameOfStream(doc.Frames, videoStreamIndex); ok {
 		result.FirstFrameKeyframe = frame.Key == 1
 	} else if videoStreamIndex >= 0 {
-		// The merged document returns NO frames at all when the input also
-		// carries audio (measured on canonical assembly clips: streams
-		// [video,audio], frames []). Falling through would report a real IDR
-		// as "not a keyframe" and reject every audio-bearing clip, so probe
-		// the video stream alone before concluding anything.
+		// The merged document returns NO frames when the input also carries
+		// audio; probe the video stream alone before concluding anything.
 		key, keyErr := probeFirstVideoFrameKey(ctx, path)
 		if keyErr != nil {
 			log.Printf("media: ffprobe %s: first-frame keyframe probe failed: %v (first_frame_keyframe=false)", path, keyErr)
@@ -378,33 +387,26 @@ func probeFile(ctx context.Context, path string, knownFrameCount int) (ProbeResu
 	} else {
 		log.Printf("media: ffprobe %s: first-frame keyframe probe returned no frame (first_frame_keyframe=false)", path)
 	}
+}
 
-	// MP4 normally exposes nb_frames in the stream metadata above. When it
-	// does not, prefer the caller's already-certified count over a second
-	// ffprobe process, and pay the full frame-count scan only when neither
-	// exists — instead of on every render.
+// applyProbeFrameCount prefers the caller's certified count over a full
+// -count_frames scan, and runs the scan only when neither source exists.
+func applyProbeFrameCount(ctx context.Context, path string, result *ProbeResult, knownFrameCount int) {
 	if result.FrameCount == 0 && knownFrameCount > 0 {
 		result.FrameCount = knownFrameCount
 	}
-	if result.FrameCount == 0 {
-		countOut, _, err := runTool(ctx, ffprobeBinary(), "-v", "error", "-count_frames", "-select_streams", "v:0",
-			"-show_entries", "stream=nb_read_frames", "-of", "default=nokey=1:noprint_wrappers=1", path)
-		if err == nil {
-			if n, err := strconv.Atoi(strings.TrimSpace(string(countOut))); err == nil {
-				result.FrameCount = n
-			}
-		} else {
-			log.Printf("media: ffprobe %s: frame-count fallback unavailable: %v (frame_count=0)", path, err)
-		}
+	if result.FrameCount != 0 {
+		return
 	}
-
-	// Closed-GOP certification: reads only the container packet table (no
-	// decode), so the cadence check is cheap even on long clips. The probe
-	// reports whether the verdict was actually observed (see
-	// ClosedGOPUncertifiable) so "no ffprobe" is never confused with "open
-	// GOP". The same scan yields the measured GOP length.
-	result.ClosedGOP, result.ClosedGOPUncertifiable, result.KeyframeInterval = probeClosedGOP(ctx, path)
-	return result, nil
+	countOut, _, err := runTool(ctx, ffprobeBinary(), "-v", "error", "-count_frames", "-select_streams", "v:0",
+		"-show_entries", "stream=nb_read_frames", "-of", "default=nokey=1:noprint_wrappers=1", path)
+	if err == nil {
+		if n, err := strconv.Atoi(strings.TrimSpace(string(countOut))); err == nil {
+			result.FrameCount = n
+		}
+	} else {
+		log.Printf("media: ffprobe %s: frame-count fallback unavailable: %v (frame_count=0)", path, err)
+	}
 }
 
 // parseRational parses ffprobe's "num/den" (time_base) and "num:den"

@@ -159,43 +159,43 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 			p.cleanupWorkspace(ws, job.ID)
 		}
 	}()
-	// Liveness marker for the stale-workspace sweeper: a prepared workspace
-	// can sit idle until a GPU lane picks it up, and materialization or a
-	// long render may write nothing new to the workspace directory tree for
-	// more than the sweeper horizon. The marker is written at creation (not
-	// after materialize) so even a >1h asset download is never swept, and
-	// refreshed by the GPU lane for the whole RunGPU stage. Without a valid
-	// marker, CleanupStale would RemoveAll a live job's directory.
-	//
-	// The window comes from pipeline.workspace_lease_ttl (see
-	// processor.Options.WorkspaceLeaseTTL); config guarantees the TTL exceeds
-	// the refresh period, so one missed refresh can never make a live render
-	// sweepable.
+	if err := p.initializePrepareWorkspace(ws, job); err != nil {
+		return err
+	}
+	phaseStart := time.Now()
+	matStart := time.Now()
+	if err := p.materializePrepareAssets(ctx, ws, st); err != nil {
+		return err
+	}
+	if err := p.recompilePreparedPlan(ws, st); err != nil {
+		return err
+	}
+	if err := p.prescalePreparedPlan(ctx, ws, st); err != nil {
+		return err
+	}
+	if err := p.finishPrepareWorkspace(ctx, ws, st, phaseStart, matStart); err != nil {
+		return err
+	}
+	st.ws = ws
+	return nil
+}
+
+// initializePrepareWorkspace establishes the liveness marker and the per-job
+// diagnostic log before any materialized bytes exist. A missing lease marker
+// fails closed: without it CleanupStale could sweep a live job.
+func (p *Processor) initializePrepareWorkspace(ws *workspace.Workspace, job *queue.Job) error {
 	if err := ws.WriteLease(time.Now().Add(p.workspaceLeaseDuration())); err != nil {
-		// Fail closed: without the initial marker CleanupStale would treat an
-		// active workspace as sweepable (its mtime can predate the sweeper
-		// horizon while materialization or the GPU lane is still running), so
-		// the liveness invariant must hold from the moment the workspace
-		// exists. Occasional refresh failures during RunGPU stay tolerable
-		// (the TTL covers them); the missing first marker is not.
 		return fmt.Errorf("processor: establish workspace lease for %s: %w", job.ID, err)
 	}
-	// Per-job log file, live inside the workspace this job owns: it is what an
-	// operator (and the collector) reads while the job runs, and what survives
-	// on disk when pipeline.keep_workspace is set. The durable copy under the
-	// jobs root was attached at claim, so this file starts at the prepare stage
-	// while the durable one already holds the claim lines.
 	if _, logErr := workerlog.AttachJobLog(job.ID, filepath.Join(ws.Root(), "worker.log")); logErr != nil {
 		// Fail-open: a job is never failed because a diagnostic file could not
 		// be created, but the reason is recorded on the job's own record.
 		workerlog.ByJobID(job.ID).Warnf("per-job workspace log unavailable: %v", logErr)
 	}
-	phaseStart := time.Now()
-	matStart := time.Now()
-	// Capture resolver sizes directly from the streaming resolver instead of
-	// re-statting every materialized file after MaterializePaths. The resolver
-	// already returns ResolvedAsset.SizeBytes (from L2/ContextPath or L3 header)
-	// so a second os.Stat loop is pure duplicate I/O.
+	return nil
+}
+
+func (p *Processor) materializePrepareAssets(ctx context.Context, ws *workspace.Workspace, st *prepareState) error {
 	resolvedSizes := make(map[string]int64, len(st.assets))
 	var resolvedSizesMu sync.Mutex
 	var totalResolveDur time.Duration
@@ -218,18 +218,18 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	for _, a := range st.assets {
 		st.inputBytes += resolvedSizes[a.LogicalPath]
 	}
+	return nil
+}
+
+func (p *Processor) recompilePreparedPlan(ws *workspace.Workspace, st *prepareState) error {
 	// The first compile ran before a single byte existed on disk, so any image
 	// whose box depends on its source aspect was left at its provisional
-	// geometry. Now that the promised assets are materialized, probe their real
-	// dimensions and lower the plan a second time: the fitted box and the
-	// caption interval pinned to it are what every frame renders, so they
-	// cannot be patched in after the compile. The recompile consumes the same
-	// producer document; only the size table is new.
+	// geometry. Probe the real dimensions and lower the plan a second time.
 	sizes, err := probePlanImageSizes(ws.Root(), st.plan)
 	if err != nil {
 		return err
 	}
-	sized, err := p.compileSemanticWithAssetSizes(job.RenderPlan, sizes)
+	sized, err := p.compileSemanticWithAssetSizes(st.job.RenderPlan, sizes)
 	if err != nil {
 		return fmt.Errorf("processor: sized recompile after materialize: %w", err)
 	}
@@ -238,8 +238,6 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	st.stats = sized.Stats
 	st.preparedPackage = sized.Prepared
 	st.compiledAssets = sized.Assets
-	// normalizeMaterializedImagePaths mutates the ONE typed plan in place —
-	// no JSON round-trip.
 	renamed, err := normalizeMaterializedImagePaths(ws.Root(), st.plan)
 	if err != nil {
 		return err
@@ -247,25 +245,16 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	st.renamed = renamed
 	if len(renamed) > 0 {
 		// Image sniffing may normalize a producer extension (for example
-		// .jpeg to .jpg), so the concrete plan now points at the renamed path
-		// and the compiler's package describes the old one.
-		workerlog.ByJobID(job.ID).Infof("normalized %d image asset extension(s) to match the verified bytes", len(renamed))
+		// .jpeg to .jpg), so the concrete plan now points at the renamed path.
+		workerlog.ByJobID(st.job.ID).Infof("normalized %d image asset extension(s) to match the verified bytes", len(renamed))
 	}
-	// Everything from here to the package build can change what the prepared
-	// sidecar must contain: the normalized asset path and the burned subtitle
-	// layers. The mutations are RECORDED and the package is rebuilt exactly
-	// ONCE from the final plan. The historical shape rebuilt it after the
-	// renames and again after the burn, so a job that did both paid for two
-	// full builds and the sidecar in between described a plan state no frame
-	// ever rendered.
+	// The package is rebuilt once from the final plan; the renames and the
+	// subtitle burn both make the previous build stale.
 	st.packageStale = len(renamed) > 0
-	if err := validateMapRasterAssets(ws.Root(), st.plan); err != nil {
-		return err
-	}
-	// Still images have no need to reach Chronon at their catalog resolution.
-	// Create a separate display-bound derivative (never overwriting the
-	// content-addressed source), publish it under its own hash, and point the
-	// compiled plan at it. Map rasters are excluded by prescalePlanImages.
+	return validateMapRasterAssets(ws.Root(), st.plan)
+}
+
+func (p *Processor) prescalePreparedPlan(ctx context.Context, ws *workspace.Workspace, st *prepareState) error {
 	prescaleStart := time.Now()
 	sourceHashes := make(map[string]string, len(st.assets)+len(st.renamed))
 	for _, asset := range st.assets {
@@ -273,15 +262,14 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 			sourceHashes[asset.LogicalPath] = asset.Hash
 		}
 	}
-	// st.renamed is newPath -> producerPath. The plan references newPath,
-	// while st.assets still carries the producer path and its hash.
+	// st.renamed is newPath -> producerPath; the plan references newPath while
+	// st.assets still carries the producer path and its hash.
 	for newPath, producerPath := range st.renamed {
 		if hash := sourceHashes[producerPath]; hash != "" {
 			sourceHashes[newPath] = hash
 		}
 	}
-	prescaled, err := prescalePlanImages(
-		ws.Root(), st.plan, filepath.Join(p.jobsRoot, ".prescaled-images"), sourceHashes)
+	prescaled, err := prescalePlanImages(ws.Root(), st.plan, filepath.Join(p.jobsRoot, ".prescaled-images"), sourceHashes)
 	if err != nil {
 		return err
 	}
@@ -298,23 +286,19 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 				cached++
 			}
 		}
-		workerlog.ByJobID(job.ID).Infof(
+		workerlog.ByJobID(st.job.ID).Infof(
 			"pre-scaled %d image(s) before Chronon: %d bytes -> %d bytes, cache_hits=%d, %dms",
 			len(prescaled), before, after, cached, time.Since(prescaleStart).Milliseconds())
 	}
-	if err := materializeBuiltinFonts(ws.Root(), st.plan); err != nil {
-		return err
-	}
-	// Every path this stage created: each manifest asset MaterializePaths
-	// resolved (it returns nil only when all of them landed) plus each rename
-	// target normalization just wrote. The gate below still stats anything the
-	// plan references that is NOT in here, so an asset the producer referenced
-	// but never materialized is still caught before Chronon.
-	proven := make(map[string]struct{}, len(st.assets)+len(renamed))
+	return materializeBuiltinFonts(ws.Root(), st.plan)
+}
+
+func (p *Processor) finishPrepareWorkspace(ctx context.Context, ws *workspace.Workspace, st *prepareState, phaseStart, matStart time.Time) error {
+	proven := make(map[string]struct{}, len(st.assets)+len(st.renamed))
 	for _, a := range st.assets {
 		proven[a.LogicalPath] = struct{}{}
 	}
-	for name := range renamed {
+	for name := range st.renamed {
 		proven[name] = struct{}{}
 	}
 	if err := validateMaterializedPlanAssets(ws.Root(), st.plan, proven); err != nil {
@@ -322,13 +306,9 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	}
 	st.record(metricnames.PrepareMaterializeStem, matStart)
 	prefetchStart := time.Now()
-	p.prefetchWarmAssets(ctx, job.ID, ws.Root(), st.assets)
+	p.prefetchWarmAssets(ctx, st.job.ID, ws.Root(), st.assets)
 	st.record(metricnames.PreparePrefetchStem, prefetchStart)
-	// The phase name is the metric-name stem; "asset_materialize" matches the
-	// artifact ledger's column and projection (asset_materialize_us), so one
-	// phase has ONE name across the wire, the mirror and PostgreSQL.
 	st.record(metricnames.AssetMaterializeStem, phaseStart)
-	st.ws = ws
 	return nil
 }
 

@@ -568,28 +568,38 @@ var _ json.Unmarshaler = (*semanticItem)(nil)
 // Keep wire-only identity/timing fields out of the render model while still
 // requiring them where the contract says they are authoritative.
 func (i *semanticItem) UnmarshalJSON(data []byte) error {
+	decoded, err := decodeSemanticItemWire(data)
+	if err != nil {
+		return err
+	}
+	*i = decoded
+	if err := normalizeSemanticItemTiming(i); err != nil {
+		return err
+	}
+	return validateSemanticItemContract(i)
+}
+
+// decodeSemanticItemWire keeps DisallowUnknownFields load-bearing: because
+// semanticItem implements json.Unmarshaler, the outer plan decoder hands this
+// method the item's raw bytes and its own DisallowUnknownFields stops applying.
+func decodeSemanticItemWire(data []byte) (semanticItem, error) {
 	type alias semanticItem
 	var decoded alias
-	// DisallowUnknownFields here is load-bearing, not decoration: because
-	// semanticItem implements json.Unmarshaler, the outer plan decoder hands
-	// this method the item's raw bytes and its own DisallowUnknownFields stops
-	// applying. A plain json.Unmarshal silently DROPPED any item-level field
-	// outside the contract — including the nested map block, whose schema and
-	// SemanticMap mirror forbid additional properties precisely so map
-	// geometry and legal attribution can never be discarded unnoticed.
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&decoded); err != nil {
-		return err
+		return semanticItem{}, err
 	}
+	return semanticItem(decoded), nil
+}
 
-	*i = semanticItem(decoded)
-
+// normalizeSemanticItemTiming reconciles the microsecond and millisecond
+// timelines without rejecting timeline-start or legacy-ms items.
+func normalizeSemanticItemTiming(i *semanticItem) error {
 	// The producer (PipelineGen OverlayItem) declares start_us/duration_us
 	// with omitempty: a zero StartUS is dropped from the wire, and a zero
 	// DurationUS marks the legacy millisecond path with fallback to
-	// StartMs/EndMs. Default instead of rejecting so timeline-start items
-	// (start_us=0) and legacy-ms items keep decoding.
+	// StartMs/EndMs.
 	if i.StartUS == nil && i.DurationUS != nil {
 		zero := int64(0)
 		i.StartUS = &zero
@@ -620,15 +630,19 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 			return fmt.Errorf("overlay: item %q duration_ms %d does not match end_ms-start_ms %d", i.ID, *i.DurationMS, want)
 		}
 	}
+	return nil
+}
 
+// validateSemanticItemContract resolves the item kind once and validates the
+// optional data, shape and entity blocks against it.
+func validateSemanticItemContract(i *semanticItem) error {
 	spec := templateSpecFor(i.Template)
 	kind, err := spec.resolveKind(i.Kind, i.ID)
 	if err != nil {
 		return err
 	}
 	// The optional metric/date payload is validated on the same pass that
-	// resolves the kind, so "this block belongs to this card" is decided once,
-	// by the same resolver the motion gate uses.
+	// resolves the kind, so "this block belongs to this card" is decided once.
 	if err := validateSemanticDataBlocks(*i, kind); err != nil {
 		return err
 	}
@@ -639,9 +653,7 @@ func (i *semanticItem) UnmarshalJSON(data []byte) error {
 	}
 	if len(i.ImageLayers) > 0 && (kind == KindEntityImage || isImageKind(kind)) {
 		// Composite image declarations carry their own independently timed
-		// layers. A parent duration is not consumed by the compiler, but when
-		// PipelineGen supplies it, the usual positive/matching check above
-		// still applies. Require an explicit kind and preset for entity cards.
+		// layers. Require an explicit kind and preset for entity cards.
 		if kind == KindEntityImage && (strings.TrimSpace(i.Kind) == "" || strings.TrimSpace(i.PresetID) == "") {
 			return fmt.Errorf("overlay: composite entity image %q requires kind and preset_id from PipelineGen", i.ID)
 		}

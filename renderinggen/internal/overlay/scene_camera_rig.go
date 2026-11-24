@@ -80,6 +80,22 @@ func validateSceneCamera(sc *SemanticSceneCamera) error {
 	if sc == nil {
 		return nil
 	}
+	if err := validateSceneCameraNode(sc); err != nil {
+		return err
+	}
+	if err := validateSceneCameraLens(sc); err != nil {
+		return err
+	}
+	if err := validateSceneCameraDOF(sc.DOF); err != nil {
+		return err
+	}
+	if err := validateSceneCameraRig(sc.Rig); err != nil {
+		return err
+	}
+	return validateSceneCameraDepthGroups(sc.DepthGroups)
+}
+
+func validateSceneCameraNode(sc *SemanticSceneCamera) error {
 	node := strings.TrimSpace(sc.Node)
 	if node == "" {
 		node = "one_node"
@@ -90,6 +106,10 @@ func validateSceneCamera(sc *SemanticSceneCamera) error {
 	if node == "two_node" && sc.Target == nil {
 		return fmt.Errorf("overlay: scene_camera.node two_node requires target (point of interest)")
 	}
+	return nil
+}
+
+func validateSceneCameraLens(sc *SemanticSceneCamera) error {
 	if sc.LensPresetMM != 0 && !IsAELensPreset(sc.LensPresetMM) {
 		return fmt.Errorf("overlay: scene_camera.lens_preset_mm %v is not an AE preset (24/28/35/50/85)", sc.LensPresetMM)
 	}
@@ -112,28 +132,37 @@ func validateSceneCamera(sc *SemanticSceneCamera) error {
 	if sc.IrisBlades < 0 || sc.IrisBlades > 12 {
 		return fmt.Errorf("overlay: scene_camera.iris_blades %d is outside [0, 12]", sc.IrisBlades)
 	}
-	if dof := sc.DOF; dof != nil {
-		if dof.FocusDistance != 0 && (dof.FocusDistance <= 0 || dof.FocusDistance > 10000000) {
-			return fmt.Errorf("overlay: scene_camera.dof.focus_distance %v is outside (0, 10000000]", dof.FocusDistance)
-		}
-		if dof.Aperture < 0 || dof.Aperture > 1 {
-			return fmt.Errorf("overlay: scene_camera.dof.aperture %v is outside [0, 1]", dof.Aperture)
-		}
-		if dof.MaxBlur < 0 || dof.MaxBlur > 256 {
-			return fmt.Errorf("overlay: scene_camera.dof.max_blur %v is outside [0, 256]", dof.MaxBlur)
-		}
-		if dof.FStop != 0 && (dof.FStop < 0.7 || dof.FStop > 32) {
-			return fmt.Errorf("overlay: scene_camera.dof.f_stop %v is outside [0.7, 32]", dof.FStop)
-		}
-		if dof.IrisBlades < 0 || dof.IrisBlades > 12 {
-			return fmt.Errorf("overlay: scene_camera.dof.iris_blades %d is outside [0, 12]", dof.IrisBlades)
-		}
-		if dof.HighlightGain < 0 || dof.HighlightGain > 8 {
-			return fmt.Errorf("overlay: scene_camera.dof.highlight_gain %v is outside [0, 8]", dof.HighlightGain)
-		}
+	return nil
+}
+
+func validateSceneCameraDOF(dof *SemanticSceneCameraDOF) error {
+	if dof == nil {
+		return nil
 	}
+	if dof.FocusDistance != 0 && (dof.FocusDistance <= 0 || dof.FocusDistance > 10000000) {
+		return fmt.Errorf("overlay: scene_camera.dof.focus_distance %v is outside (0, 10000000]", dof.FocusDistance)
+	}
+	if dof.Aperture < 0 || dof.Aperture > 1 {
+		return fmt.Errorf("overlay: scene_camera.dof.aperture %v is outside [0, 1]", dof.Aperture)
+	}
+	if dof.MaxBlur < 0 || dof.MaxBlur > 256 {
+		return fmt.Errorf("overlay: scene_camera.dof.max_blur %v is outside [0, 256]", dof.MaxBlur)
+	}
+	if dof.FStop != 0 && (dof.FStop < 0.7 || dof.FStop > 32) {
+		return fmt.Errorf("overlay: scene_camera.dof.f_stop %v is outside [0.7, 32]", dof.FStop)
+	}
+	if dof.IrisBlades < 0 || dof.IrisBlades > 12 {
+		return fmt.Errorf("overlay: scene_camera.dof.iris_blades %d is outside [0, 12]", dof.IrisBlades)
+	}
+	if dof.HighlightGain < 0 || dof.HighlightGain > 8 {
+		return fmt.Errorf("overlay: scene_camera.dof.highlight_gain %v is outside [0, 8]", dof.HighlightGain)
+	}
+	return nil
+}
+
+func validateSceneCameraRig(rig []SemanticCameraRigSegment) error {
 	seen := map[string]bool{}
-	for i, seg := range sc.Rig {
+	for i, seg := range rig {
 		if strings.TrimSpace(seg.ID) == "" {
 			return fmt.Errorf("overlay: scene_camera.rig[%d] needs an id", i)
 		}
@@ -156,7 +185,11 @@ func validateSceneCamera(sc *SemanticSceneCamera) error {
 			}
 		}
 	}
-	for i, g := range sc.DepthGroups {
+	return nil
+}
+
+func validateSceneCameraDepthGroups(groups []SemanticCameraDepthGroup) error {
+	for i, g := range groups {
 		if len(g.LayerIDs) == 0 {
 			return fmt.Errorf("overlay: scene_camera.depth_groups[%d] needs layer_ids", i)
 		}

@@ -37,25 +37,6 @@ func chainPanTrack(strip panStrip, spacing float64, spec cameraPanSpec) Animatio
 	return strip.track(property, spacing, spec.travelSign)
 }
 
-func layerAnimationTrack(anim *LayerAnimation, property string) *AnimationTrack {
-	if anim == nil {
-		return nil
-	}
-	for index := range anim.Tracks {
-		if anim.Tracks[index].Property == property {
-			return &anim.Tracks[index]
-		}
-	}
-	return nil
-}
-
-// chainPanAnimation is the single animation every layer of a strip segment
-// shares: the travelling position track on the pan axis, a neutral track on
-// the other axis, and constant opacity. No per-image entrance survives.
-func chainPanAnimation(pan AnimationTrack, duration int64, axis string) *LayerAnimation {
-	return panAnimation(pan, duration, axis, nil)
-}
-
 // rebaseLayerAnimation moves a chain-timeline track onto a layer that starts
 // at `start`. Chronon evaluates tracks in layer-local frames and rejects
 // negative keyframes, so the first key is the sampled value at the layer's

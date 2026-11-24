@@ -121,6 +121,17 @@ func textBackgroundPlate(layer *Layer, canvas Canvas, usedIDs map[string]struct{
 		shadow.Offset = append([]float64(nil), background.Shadow.Offset...)
 		plate.Style = &LayerStyle{Shadow: &shadow}
 	}
+	applyTextPlateMotion(&plate, layer, background, plateIndex, width)
+	if layer.TransitionIn != nil {
+		transition := *layer.TransitionIn
+		plate.TransitionIn = &transition
+	}
+	return plate, true
+}
+
+// applyTextPlateMotion copies the card entrance, or the text's own animation
+// when the card has no authored motion. The label starts when the plate settles.
+func applyTextPlateMotion(plate, layer *Layer, background *LayerBackground, plateIndex int, width float64) {
 	if motion := plateMotionForIndex(background, plateIndex); motion != "" {
 		enter := int64(plateMotionDefaultEnterFrames)
 		if layer.DurationFrames > 0 && enter > layer.DurationFrames/2 {
@@ -134,8 +145,7 @@ func textBackgroundPlate(layer *Layer, canvas Canvas, usedIDs map[string]struct{
 		}
 		// The plate entrance owns the card. Starting the label on the frame the
 		// plate settles keeps it (and its shadow/glow) from hanging outside a
-		// half-drawn or half-scaled rectangle. A short local fade softens the
-		// arrival without re-introducing a card track that fights the plate.
+		// half-drawn or half-scaled rectangle.
 		if layer.DurationFrames > enter {
 			layer.StartFrame += enter
 			layer.DurationFrames -= enter
@@ -144,11 +154,6 @@ func textBackgroundPlate(layer *Layer, canvas Canvas, usedIDs map[string]struct{
 	} else if layer.Animation != nil {
 		plate.Animation = &LayerAnimation{Tracks: cloneAnimationTracks(layer.Animation.Tracks)}
 	}
-	if layer.TransitionIn != nil {
-		transition := *layer.TransitionIn
-		plate.TransitionIn = &transition
-	}
-	return plate, true
 }
 
 func textPlateBox(layer Layer) (float64, float64) {

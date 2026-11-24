@@ -149,26 +149,59 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 			return nil, nil
 		}
 	}
-	var mapMotion *LayerAnimation
-	if strings.TrimSpace(m.MotionID) != "" {
-		animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0, "map", TargetMapView)
+	mapMotion, err := modernMapOverlayMotion(ri, duration)
+	if err != nil {
+		return nil, err
+	}
+	placed, err := placeModernMapPins(ri, src, fit, mapMotion, duration)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Layer, 0, 2*len(placed)+len(m.Routes)+2)
+	pins, err := modernMapPinLayers(ri, src, placed, duration)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, pins...)
+	routes, err := modernMapRouteLayers(ri, src, fit, mapMotion, duration)
+	if err != nil {
+		return nil, err
+	}
+	out = append(out, routes...)
+	if _, present := ri.Params["map_fx"]; present {
+		fx, err := modernMapFxLayers(ri, src, placed, duration)
 		if err != nil {
-			return nil, fmt.Errorf("overlay: ModernMap1 item %q map motion: %w", ri.Item.ID, err)
+			return nil, err
 		}
-		mapMotion = animation
+		out = append(out, fx...)
 	}
-	out := make([]Layer, 0, 2*len(m.Pins)+len(m.Routes)+2)
-	// Resolve pins through the vector fit so dots sit exactly on the drawn
-	// territory, then place labels collision-free in canvas space.
-	type placedPin struct {
-		pin     SemanticMapPin
-		x, y    float64
-		topLeft [2]float64
-		width   float64
-		height  float64
-		motion  *LayerAnimation
+	return out, nil
+}
+
+func modernMapOverlayMotion(ri resolvedItem, duration int64) (*LayerAnimation, error) {
+	m := ri.Item.Map
+	if strings.TrimSpace(m.MotionID) == "" {
+		return nil, nil
 	}
-	placed := make([]placedPin, 0, len(m.Pins))
+	animation, err := imageMotionAnimation(m.MotionID, nil, duration, 0, "map", TargetMapView)
+	if err != nil {
+		return nil, fmt.Errorf("overlay: ModernMap1 item %q map motion: %w", ri.Item.ID, err)
+	}
+	return animation, nil
+}
+
+type placedModernMapPin struct {
+	pin     SemanticMapPin
+	x, y    float64
+	topLeft [2]float64
+	width   float64
+	height  float64
+	motion  *LayerAnimation
+}
+
+func placeModernMapPins(ri resolvedItem, src *semanticPlan, fit tacticalfill.Fit, mapMotion *LayerAnimation, duration int64) ([]placedModernMapPin, error) {
+	m := ri.Item.Map
+	placed := make([]placedModernMapPin, 0, len(m.Pins))
 	occupied := make([][4]float64, 0, len(m.Pins))
 	for _, pin := range m.Pins {
 		point := fit.Project(pin.Longitude, pin.Latitude)
@@ -213,8 +246,13 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 			}
 			pinMotion = animation
 		}
-		placed = append(placed, placedPin{pin: pin, x: point[0], y: point[1], topLeft: topLeft, width: width, height: height, motion: pinMotion})
+		placed = append(placed, placedModernMapPin{pin: pin, x: point[0], y: point[1], topLeft: topLeft, width: width, height: height, motion: pinMotion})
 	}
+	return placed, nil
+}
+
+func modernMapPinLayers(ri resolvedItem, src *semanticPlan, placed []placedModernMapPin, duration int64) ([]Layer, error) {
+	out := make([]Layer, 0, 2*len(placed))
 	for _, entry := range placed {
 		marker, err := mapPinLayer(ri, src, entry.pin, entry.x, entry.y, duration)
 		if err != nil {
@@ -236,12 +274,15 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 		if entry.motion != nil {
 			applyMotionRouting(&marker, mapPinMotion(entry.motion, marker.Position))
 			applyMotionRouting(&label, mapPinMotion(entry.motion, label.Position))
-		} else if mapMotion != nil {
-			applyMotionRouting(&marker, mapPinMotion(mapMotion, marker.Position))
-			applyMotionRouting(&label, mapPinMotion(mapMotion, label.Position))
 		}
 		out = append(out, marker, label)
 	}
+	return out, nil
+}
+
+func modernMapRouteLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill.Fit, mapMotion *LayerAnimation, duration int64) ([]Layer, error) {
+	m := ri.Item.Map
+	out := make([]Layer, 0, len(m.Routes))
 	for _, route := range m.Routes {
 		samples, err := mapRouteGeoSamples(route.Stops)
 		if err != nil {
@@ -262,10 +303,6 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 		if !finite(trimStart) || !finite(trimEnd) || trimStart < 0 || trimEnd > 1 || trimEnd <= trimStart {
 			return nil, fmt.Errorf("overlay: ModernMap1 item %q route %q trim range must satisfy 0 <= trim_start < trim_end <= 1", ri.Item.ID, route.ID)
 		}
-		// Chronon's native path compiler applies the trim operator to the full
-		// polyline (render_plan_compiler_shape_path.cpp), so the route keeps its
-		// authored geometry and draws exactly [trim_start, trim_end]. The old
-		// pre-clip was a workaround for a renderer that ignored the operator.
 		commands := make([]LayerPathCommand, 0, len(projectedPoints))
 		for pointIndex, point := range projectedPoints {
 			commandType := "line_to"
@@ -278,11 +315,6 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 		trim := LayerPathOperator{Kind: "trim", Params: LayerTrimParams{Start: trimStart, End: trimEnd}}
 		routeLayer := Layer{
 			ID: ri.Item.ID + ":modernmap1:route:" + route.ID, Type: "shape",
-			// Path points are authored in the layer's own [0,size] space and the
-			// position is the box centre relative to the canvas centre (the same
-			// convention Grid and the graticule use). A full-canvas path therefore
-			// sits at -size/2, and carries no depth: an explicit position_z
-			// without enable_3d is rejected by the render-plan decoder.
 			Position:   []float64{-float64(src.Width) / 2, -float64(src.Height) / 2},
 			Size:       []float64{float64(src.Width), float64(src.Height)},
 			StartFrame: ri.Start, DurationFrames: duration,
@@ -293,22 +325,19 @@ func modernMapOverlayLayers(ri resolvedItem, src *semanticPlan, fit tacticalfill
 		}
 		out = append(out, routeLayer)
 	}
-	if _, present := ri.Params["map_fx"]; present {
-		resolvedPins := make([]resolvedMapPin, 0, len(placed))
-		for _, entry := range placed {
-			resolvedPins = append(resolvedPins, resolvedMapPin{
-				Contract: entry.pin, RasterX: entry.x, RasterY: entry.y,
-				LabelTopLeft: entry.topLeft, LabelWidth: entry.width, LabelHeight: entry.height,
-				Motion: entry.motion,
-			})
-		}
-		fxLayers, err := compileMapFxLayers(ri, src, &resolvedMap{Pins: resolvedPins}, duration)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, fxLayers...)
-	}
 	return out, nil
+}
+
+func modernMapFxLayers(ri resolvedItem, src *semanticPlan, placed []placedModernMapPin, duration int64) ([]Layer, error) {
+	resolvedPins := make([]resolvedMapPin, 0, len(placed))
+	for _, entry := range placed {
+		resolvedPins = append(resolvedPins, resolvedMapPin{
+			Contract: entry.pin, RasterX: entry.x, RasterY: entry.y,
+			LabelTopLeft: entry.topLeft, LabelWidth: entry.width, LabelHeight: entry.height,
+			Motion: entry.motion,
+		})
+	}
+	return compileMapFxLayers(ri, src, &resolvedMap{Pins: resolvedPins}, duration)
 }
 
 // modernMapFillRevealLayer returns the paper cover that wipes the territory

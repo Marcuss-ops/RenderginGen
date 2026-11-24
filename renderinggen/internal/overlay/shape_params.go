@@ -13,110 +13,167 @@ import (
 // unless the item is a world_map shape or declares the block explicitly.
 func applyWorldMapParams(shape *LayerShape, ri resolvedItem, shapeType string) error {
 	wmRaw, wmExists := ri.Params["world_map"]
-	if shapeType == "world_map" || wmExists {
-		srcMap, ok := wmRaw.(map[string]any)
-		if !ok && wmExists {
-			return fmt.Errorf("overlay: item %q world_map must be an object", ri.Item.ID)
-		}
-		if srcMap == nil {
-			srcMap = ri.Params
-		}
-		proj := "mercator"
-		if rawProjection, exists := srcMap["projection"]; exists {
-			p, ok := rawProjection.(string)
-			if !ok || (p != "mercator" && p != "equirectangular" && p != "equirect") {
-				return fmt.Errorf("overlay: item %q world_map projection must be mercator or equirectangular", ri.Item.ID)
-			}
-			if p == "equirect" {
-				p = "equirectangular"
-			}
-			proj = p
-		}
-		for key := range srcMap {
-			switch key {
-			case "projection", "center", "zoom", "highlight", "highlight_color", "route", "dots":
-			default:
-				return fmt.Errorf("overlay: item %q world_map has unsupported property %q", ri.Item.ID, key)
-			}
-		}
-		center := []float64{0, 0}
-		if cRaw, ok := srcMap["center"]; ok {
-			c, err := parse2Floats(cRaw)
-			if err != nil || c[0] < -180 || c[0] > 180 || c[1] < -90 || c[1] > 90 {
-				return fmt.Errorf("overlay: item %q world_map center must be [lon, lat] within [-180, 180] and [-90, 90]", ri.Item.ID)
-			}
-			center = c
-		}
-		zoom := 1.0
-		if z, ok, err := optionalShapeNumber(srcMap, ri.Item.ID, "zoom", 1, 8, "zoom"); err != nil {
-			return err
-		} else if ok {
-			zoom = z
-		}
-		var highlight []string
-		if rawHighlight, exists := srcMap["highlight"]; exists {
-			hlRaw, ok := rawHighlight.([]any)
-			if !ok {
-				return fmt.Errorf("overlay: item %q world_map highlight must be an array", ri.Item.ID)
-			}
-			if len(hlRaw) > 64 {
-				return fmt.Errorf("overlay: item %q world_map highlight cannot exceed 64 codes", ri.Item.ID)
-			}
-			for _, code := range hlRaw {
-				s, ok := code.(string)
-				if !ok || strings.TrimSpace(s) == "" {
-					return fmt.Errorf("overlay: item %q world_map highlight entries must be non-empty strings", ri.Item.ID)
-				}
-				highlight = append(highlight, s)
-			}
-		}
-		hlCol, _ := srcMap["highlight_color"].(string)
-		if rawColor, exists := srcMap["highlight_color"]; exists {
-			color, ok := rawColor.(string)
-			if !ok {
-				return fmt.Errorf("overlay: item %q world_map highlight_color must be a string", ri.Item.ID)
-			}
-			if _, err := parseHexColor(color); err != nil {
-				return fmt.Errorf("overlay: item %q world_map highlight_color is invalid", ri.Item.ID)
-			}
-			hlCol = color
-		}
-		var route [][]float64
-		if rawRoute, exists := srcMap["route"]; exists {
-			routeRaw, ok := rawRoute.([]any)
-			if !ok {
-				return fmt.Errorf("overlay: item %q world_map route must be an array", ri.Item.ID)
-			}
-			if len(routeRaw) > 256 {
-				return fmt.Errorf("overlay: item %q world_map route cannot exceed 256 points", ri.Item.ID)
-			}
-			for _, ptRaw := range routeRaw {
-				pt, err := parse2Floats(ptRaw)
-				if err != nil || pt[0] < -180 || pt[0] > 180 || pt[1] < -90 || pt[1] > 90 {
-					return fmt.Errorf("overlay: item %q world_map route coordinate out of range", ri.Item.ID)
-				}
-				route = append(route, pt)
-			}
-		}
-		dots, _ := srcMap["dots"].(bool)
-		if rawDots, exists := srcMap["dots"]; exists {
-			value, ok := rawDots.(bool)
-			if !ok {
-				return fmt.Errorf("overlay: item %q world_map dots must be a boolean", ri.Item.ID)
-			}
-			dots = value
-		}
-		shape.WorldMap = &LayerWorldMap{
-			Projection:     proj,
-			Center:         center,
-			Zoom:           zoom,
-			Highlight:      highlight,
-			HighlightColor: hlCol,
-			Route:          route,
-			Dots:           dots,
-		}
+	if shapeType != "world_map" && !wmExists {
+		return nil
+	}
+	srcMap, ok := wmRaw.(map[string]any)
+	if !ok && wmExists {
+		return fmt.Errorf("overlay: item %q world_map must be an object", ri.Item.ID)
+	}
+	if srcMap == nil {
+		srcMap = ri.Params
+	}
+	proj, err := validateWorldMapProjection(srcMap, ri.Item.ID)
+	if err != nil {
+		return err
+	}
+	center, err := parseWorldMapCenter(srcMap, ri.Item.ID)
+	if err != nil {
+		return err
+	}
+	zoom := 1.0
+	if z, ok, err := optionalShapeNumber(srcMap, ri.Item.ID, "zoom", 1, 8, "zoom"); err != nil {
+		return err
+	} else if ok {
+		zoom = z
+	}
+	highlight, err := parseWorldMapHighlight(srcMap, ri.Item.ID)
+	if err != nil {
+		return err
+	}
+	hlCol, err := parseWorldMapHighlightColor(srcMap, ri.Item.ID)
+	if err != nil {
+		return err
+	}
+	route, err := parseWorldMapRoute(srcMap, ri.Item.ID)
+	if err != nil {
+		return err
+	}
+	dots, err := parseWorldMapDots(srcMap, ri.Item.ID)
+	if err != nil {
+		return err
+	}
+	shape.WorldMap = &LayerWorldMap{
+		Projection:     proj,
+		Center:         center,
+		Zoom:           zoom,
+		Highlight:      highlight,
+		HighlightColor: hlCol,
+		Route:          route,
+		Dots:           dots,
 	}
 	return nil
+}
+
+// validateWorldMapProjection normalizes the projection and rejects unknown
+// world_map properties before any value is parsed.
+func validateWorldMapProjection(srcMap map[string]any, itemID string) (string, error) {
+	proj := "mercator"
+	if rawProjection, exists := srcMap["projection"]; exists {
+		p, ok := rawProjection.(string)
+		if !ok || (p != "mercator" && p != "equirectangular" && p != "equirect") {
+			return "", fmt.Errorf("overlay: item %q world_map projection must be mercator or equirectangular", itemID)
+		}
+		if p == "equirect" {
+			p = "equirectangular"
+		}
+		proj = p
+	}
+	for key := range srcMap {
+		switch key {
+		case "projection", "center", "zoom", "highlight", "highlight_color", "route", "dots":
+		default:
+			return "", fmt.Errorf("overlay: item %q world_map has unsupported property %q", itemID, key)
+		}
+	}
+	return proj, nil
+}
+
+func parseWorldMapCenter(srcMap map[string]any, itemID string) ([]float64, error) {
+	center := []float64{0, 0}
+	if cRaw, ok := srcMap["center"]; ok {
+		c, err := parse2Floats(cRaw)
+		if err != nil || c[0] < -180 || c[0] > 180 || c[1] < -90 || c[1] > 90 {
+			return nil, fmt.Errorf("overlay: item %q world_map center must be [lon, lat] within [-180, 180] and [-90, 90]", itemID)
+		}
+		center = c
+	}
+	return center, nil
+}
+
+func parseWorldMapHighlight(srcMap map[string]any, itemID string) ([]string, error) {
+	var highlight []string
+	rawHighlight, exists := srcMap["highlight"]
+	if !exists {
+		return nil, nil
+	}
+	hlRaw, ok := rawHighlight.([]any)
+	if !ok {
+		return nil, fmt.Errorf("overlay: item %q world_map highlight must be an array", itemID)
+	}
+	if len(hlRaw) > 64 {
+		return nil, fmt.Errorf("overlay: item %q world_map highlight cannot exceed 64 codes", itemID)
+	}
+	for _, code := range hlRaw {
+		s, ok := code.(string)
+		if !ok || strings.TrimSpace(s) == "" {
+			return nil, fmt.Errorf("overlay: item %q world_map highlight entries must be non-empty strings", itemID)
+		}
+		highlight = append(highlight, s)
+	}
+	return highlight, nil
+}
+
+func parseWorldMapHighlightColor(srcMap map[string]any, itemID string) (string, error) {
+	hlCol, _ := srcMap["highlight_color"].(string)
+	rawColor, exists := srcMap["highlight_color"]
+	if !exists {
+		return hlCol, nil
+	}
+	color, ok := rawColor.(string)
+	if !ok {
+		return "", fmt.Errorf("overlay: item %q world_map highlight_color must be a string", itemID)
+	}
+	if _, err := parseHexColor(color); err != nil {
+		return "", fmt.Errorf("overlay: item %q world_map highlight_color is invalid", itemID)
+	}
+	return color, nil
+}
+
+func parseWorldMapRoute(srcMap map[string]any, itemID string) ([][]float64, error) {
+	var route [][]float64
+	rawRoute, exists := srcMap["route"]
+	if !exists {
+		return nil, nil
+	}
+	routeRaw, ok := rawRoute.([]any)
+	if !ok {
+		return nil, fmt.Errorf("overlay: item %q world_map route must be an array", itemID)
+	}
+	if len(routeRaw) > 256 {
+		return nil, fmt.Errorf("overlay: item %q world_map route cannot exceed 256 points", itemID)
+	}
+	for _, ptRaw := range routeRaw {
+		pt, err := parse2Floats(ptRaw)
+		if err != nil || pt[0] < -180 || pt[0] > 180 || pt[1] < -90 || pt[1] > 90 {
+			return nil, fmt.Errorf("overlay: item %q world_map route coordinate out of range", itemID)
+		}
+		route = append(route, pt)
+	}
+	return route, nil
+}
+
+func parseWorldMapDots(srcMap map[string]any, itemID string) (bool, error) {
+	dots, _ := srcMap["dots"].(bool)
+	rawDots, exists := srcMap["dots"]
+	if !exists {
+		return dots, nil
+	}
+	value, ok := rawDots.(bool)
+	if !ok {
+		return false, fmt.Errorf("overlay: item %q world_map dots must be a boolean", itemID)
+	}
+	return value, nil
 }
 
 // applyArrowParams lowers and validates the arrow direction and head geometry.

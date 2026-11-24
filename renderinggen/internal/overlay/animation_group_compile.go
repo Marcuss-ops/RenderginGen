@@ -102,127 +102,26 @@ func resolveAnimationGroup(
 	claimedItems map[string]string,
 	assignments *[]animationGroupAssignment,
 ) error {
-	if strings.TrimSpace(group.ID) == "" {
-		return fmt.Errorf("id is required")
-	}
-	if err := validateAnimationGroupIDs(group.ID, ""); err != nil {
-		return err
-	}
-	if _, exists := groupIDs[group.ID]; exists {
-		return fmt.Errorf("duplicate animation group id")
-	}
-	groupIDs[group.ID] = struct{}{}
-
-	choreography := strings.TrimSpace(group.ChoreographyID)
-	if choreography == "" {
-		choreography = AnimationGroupChoreographySequenceV1
-	}
-	if choreography != AnimationGroupChoreographySequenceV1 {
-		return fmt.Errorf("unsupported choreography_id %q", choreography)
-	}
-	if group.StartMS < 0 || group.EndMS <= group.StartMS {
-		return fmt.Errorf("start_ms/end_ms must describe a positive window")
-	}
-	staggerFrames, err := animationGroupStaggerFrames(group.Params)
+	durationMS, staggerMS, err := beginAnimationGroup(src, group, groupIDs)
 	if err != nil {
 		return err
 	}
-	if len(group.Members) < animationGroupMinimumMembers || len(group.Members) > animationGroupMaximumMembers {
-		return fmt.Errorf("requires %d..%d members, got %d", animationGroupMinimumMembers, animationGroupMaximumMembers, len(group.Members))
-	}
-
-	durationMS := group.EndMS - group.StartMS
-	staggerMS := int64(math.Round(float64(staggerFrames) * 1000 * float64(src.FPSDen) / float64(src.FPSNum)))
 	poolCache := make(map[string][]string)
 	stableSelections := make(map[string]string)
-
 	for memberIndex := range group.Members {
 		member := &group.Members[memberIndex]
-		role := strings.TrimSpace(member.Role)
-		if _, ok := animationGroupRoleSet[role]; !ok {
-			return fmt.Errorf("member %q has unsupported role %q", member.ItemID, member.Role)
-		}
-		if strings.TrimSpace(member.ItemID) == "" || strings.TrimSpace(member.ItemID) != member.ItemID {
-			return fmt.Errorf("member %d has an empty or untrimmed item_id", memberIndex)
-		}
-		item, ok := items[member.ItemID]
-		if !ok {
-			return fmt.Errorf("member %q references an item that does not exist", member.ItemID)
-		}
-		spec := templateSpecFor(item.Template)
-		kind, err := spec.resolveKind(item.Kind, item.ID)
+		role, item, err := claimAnimationGroupMember(group, member, memberIndex, items, claimed, claimedItems)
 		if err != nil {
-			return fmt.Errorf("member %q: %w", member.ItemID, err)
+			return err
 		}
-		if err := animationGroupRoleCompatibility(*item, kind, role); err != nil {
-			return fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
-		}
-		// The item's start/end fields are shared by every layer it lowers, so an
-		// item cannot be split across groups even when each group claims a
-		// different role: the second group would overwrite the first's window.
-		if owner, exists := claimedItems[member.ItemID]; exists && owner != group.ID {
-			return fmt.Errorf("member %q is already owned by animation group %q; an item can belong to only one group", member.ItemID, owner)
-		}
-		claimedItems[member.ItemID] = group.ID
-
-		key := animationGroupMemberKey{itemID: member.ItemID, role: role}
-		if owner, exists := claimed[key]; exists {
-			return fmt.Errorf("member %q role %q is already claimed by animation group %q", member.ItemID, role, owner)
-		}
-		claimed[key] = group.ID
-
-		// Any legacy owner on the item conflicts with the group, not only the
-		// field matching this member's role: the group moves the item window, so
-		// a motion left on the other role would animate against a timeline the
-		// group did not author.
-		if strings.TrimSpace(item.MotionID) != "" {
-			return fmt.Errorf("member %q role %q already owns motion_id %q; an animation group must be the only animation owner", member.ItemID, role, item.MotionID)
-		}
-		if strings.TrimSpace(item.CaptionMotionID) != "" {
-			return fmt.Errorf("member %q role %q already owns caption_motion_id %q; an animation group must be the only animation owner", member.ItemID, role, item.CaptionMotionID)
-		}
-		if strings.TrimSpace(item.GroupMotionID) != "" {
-			return fmt.Errorf("member %q role %q already owns group_motion_id %q; an animation group must be the only animation owner", member.ItemID, role, item.GroupMotionID)
-		}
-
-		motionID, err := animationGroupMemberMotion(src, group.ID, role, member, poolCache, stableSelections)
+		motionID, err := resolveGroupMemberMotion(src, group.ID, role, member, poolCache, stableSelections)
 		if err != nil {
-			return fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
+			return err
 		}
-		definition, err := resolveMotionDefinition(motionID)
-		if err != nil || definition == nil {
-			return fmt.Errorf("member %q role %q: motion %q did not resolve", member.ItemID, role, motionID)
+		offsetMS, endOffsetMS, err := animationGroupMemberWindow(member, role, memberIndex, durationMS, staggerMS)
+		if err != nil {
+			return err
 		}
-		if err := motion.ValidateDefinition(*definition); err != nil {
-			return fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
-		}
-		if err := animationGroupMotionMetadata(definition); err != nil {
-			return fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
-		}
-		if !animationGroupRestPose(definition) {
-			return fmt.Errorf("member %q role %q: motion %q does not rest at its neutral pose", member.ItemID, role, motionID)
-		}
-		if len(member.MotionParams) > 0 {
-			if _, _, err := motionWindows(member.MotionParams, 0); err != nil {
-				return fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
-			}
-		}
-
-		offsetMS := int64(memberIndex) * staggerMS
-		if member.OffsetMS != nil {
-			offsetMS = *member.OffsetMS
-		}
-		if offsetMS < 0 || offsetMS >= durationMS {
-			return fmt.Errorf("member %q role %q offset_ms %d is outside the group window", member.ItemID, role, offsetMS)
-		}
-		endOffsetMS := durationMS
-		if member.EndOffsetMS != nil {
-			endOffsetMS = *member.EndOffsetMS
-		}
-		if endOffsetMS <= offsetMS || endOffsetMS > durationMS {
-			return fmt.Errorf("member %q role %q end_offset_ms %d is outside the group window", member.ItemID, role, endOffsetMS)
-		}
-
 		*assignments = append(*assignments, animationGroupAssignment{
 			item:         item,
 			role:         role,
@@ -233,6 +132,152 @@ func resolveAnimationGroup(
 		})
 	}
 	return nil
+}
+
+// beginAnimationGroup validates the group header and registers its ID before
+// returning the window and stagger used by every member.
+func beginAnimationGroup(src *semanticPlan, group *semanticAnimationGroup, groupIDs map[string]struct{}) (int64, int64, error) {
+	if strings.TrimSpace(group.ID) == "" {
+		return 0, 0, fmt.Errorf("id is required")
+	}
+	if err := validateAnimationGroupIDs(group.ID, ""); err != nil {
+		return 0, 0, err
+	}
+	if _, exists := groupIDs[group.ID]; exists {
+		return 0, 0, fmt.Errorf("duplicate animation group id")
+	}
+	groupIDs[group.ID] = struct{}{}
+
+	choreography := strings.TrimSpace(group.ChoreographyID)
+	if choreography == "" {
+		choreography = AnimationGroupChoreographySequenceV1
+	}
+	if choreography != AnimationGroupChoreographySequenceV1 {
+		return 0, 0, fmt.Errorf("unsupported choreography_id %q", choreography)
+	}
+	if group.StartMS < 0 || group.EndMS <= group.StartMS {
+		return 0, 0, fmt.Errorf("start_ms/end_ms must describe a positive window")
+	}
+	staggerFrames, err := animationGroupStaggerFrames(group.Params)
+	if err != nil {
+		return 0, 0, err
+	}
+	if len(group.Members) < animationGroupMinimumMembers || len(group.Members) > animationGroupMaximumMembers {
+		return 0, 0, fmt.Errorf("requires %d..%d members, got %d", animationGroupMinimumMembers, animationGroupMaximumMembers, len(group.Members))
+	}
+	durationMS := group.EndMS - group.StartMS
+	staggerMS := int64(math.Round(float64(staggerFrames) * 1000 * float64(src.FPSDen) / float64(src.FPSNum)))
+	return durationMS, staggerMS, nil
+}
+
+// claimAnimationGroupMember resolves the member item, checks role compatibility
+// and records both the item-level and role-level ownership.
+func claimAnimationGroupMember(
+	group *semanticAnimationGroup,
+	member *semanticAnimationGroupMember,
+	memberIndex int,
+	items map[string]*semanticItem,
+	claimed map[animationGroupMemberKey]string,
+	claimedItems map[string]string,
+) (string, *semanticItem, error) {
+	role := strings.TrimSpace(member.Role)
+	if _, ok := animationGroupRoleSet[role]; !ok {
+		return "", nil, fmt.Errorf("member %q has unsupported role %q", member.ItemID, member.Role)
+	}
+	if strings.TrimSpace(member.ItemID) == "" || strings.TrimSpace(member.ItemID) != member.ItemID {
+		return "", nil, fmt.Errorf("member %d has an empty or untrimmed item_id", memberIndex)
+	}
+	item, ok := items[member.ItemID]
+	if !ok {
+		return "", nil, fmt.Errorf("member %q references an item that does not exist", member.ItemID)
+	}
+	spec := templateSpecFor(item.Template)
+	kind, err := spec.resolveKind(item.Kind, item.ID)
+	if err != nil {
+		return "", nil, fmt.Errorf("member %q: %w", member.ItemID, err)
+	}
+	if err := animationGroupRoleCompatibility(*item, kind, role); err != nil {
+		return "", nil, fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
+	}
+	// The item's start/end fields are shared by every layer it lowers, so an
+	// item cannot be split across groups.
+	if owner, exists := claimedItems[member.ItemID]; exists && owner != group.ID {
+		return "", nil, fmt.Errorf("member %q is already owned by animation group %q; an item can belong to only one group", member.ItemID, owner)
+	}
+	claimedItems[member.ItemID] = group.ID
+
+	key := animationGroupMemberKey{itemID: member.ItemID, role: role}
+	if owner, exists := claimed[key]; exists {
+		return "", nil, fmt.Errorf("member %q role %q is already claimed by animation group %q", member.ItemID, role, owner)
+	}
+	claimed[key] = group.ID
+
+	// Any legacy owner on the item conflicts with the group, not only the
+	// field matching this member's role.
+	if strings.TrimSpace(item.MotionID) != "" {
+		return "", nil, fmt.Errorf("member %q role %q already owns motion_id %q; an animation group must be the only animation owner", member.ItemID, role, item.MotionID)
+	}
+	if strings.TrimSpace(item.CaptionMotionID) != "" {
+		return "", nil, fmt.Errorf("member %q role %q already owns caption_motion_id %q; an animation group must be the only animation owner", member.ItemID, role, item.CaptionMotionID)
+	}
+	if strings.TrimSpace(item.GroupMotionID) != "" {
+		return "", nil, fmt.Errorf("member %q role %q already owns group_motion_id %q; an animation group must be the only animation owner", member.ItemID, role, item.GroupMotionID)
+	}
+	return role, item, nil
+}
+
+// resolveGroupMemberMotion chooses, resolves and validates the one motion that
+// owns this member, including its rest pose and motion parameter window.
+func resolveGroupMemberMotion(
+	src *semanticPlan,
+	groupID, role string,
+	member *semanticAnimationGroupMember,
+	pools map[string][]string,
+	stable map[string]string,
+) (string, error) {
+	motionID, err := animationGroupMemberMotion(src, groupID, role, member, pools, stable)
+	if err != nil {
+		return "", fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
+	}
+	definition, err := resolveMotionDefinition(motionID)
+	if err != nil || definition == nil {
+		return "", fmt.Errorf("member %q role %q: motion %q did not resolve", member.ItemID, role, motionID)
+	}
+	if err := motion.ValidateDefinition(*definition); err != nil {
+		return "", fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
+	}
+	if err := animationGroupMotionMetadata(definition); err != nil {
+		return "", fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
+	}
+	if !animationGroupRestPose(definition) {
+		return "", fmt.Errorf("member %q role %q: motion %q does not rest at its neutral pose", member.ItemID, role, motionID)
+	}
+	if len(member.MotionParams) > 0 {
+		if _, _, err := motionWindows(member.MotionParams, 0); err != nil {
+			return "", fmt.Errorf("member %q role %q: %w", member.ItemID, role, err)
+		}
+	}
+	return motionID, nil
+}
+
+// animationGroupMemberWindow applies the group stagger and the optional
+// per-member offsets, then validates the resulting half-open window.
+func animationGroupMemberWindow(member *semanticAnimationGroupMember, role string, memberIndex int, durationMS, staggerMS int64) (int64, int64, error) {
+	offsetMS := int64(memberIndex) * staggerMS
+	if member.OffsetMS != nil {
+		offsetMS = *member.OffsetMS
+	}
+	if offsetMS < 0 || offsetMS >= durationMS {
+		return 0, 0, fmt.Errorf("member %q role %q offset_ms %d is outside the group window", member.ItemID, role, offsetMS)
+	}
+	endOffsetMS := durationMS
+	if member.EndOffsetMS != nil {
+		endOffsetMS = *member.EndOffsetMS
+	}
+	if endOffsetMS <= offsetMS || endOffsetMS > durationMS {
+		return 0, 0, fmt.Errorf("member %q role %q end_offset_ms %d is outside the group window", member.ItemID, role, endOffsetMS)
+	}
+	return offsetMS, endOffsetMS, nil
 }
 
 func animationGroupMemberMotion(
