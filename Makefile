@@ -13,7 +13,7 @@
 
 CHRONON_RUNTIME ?= ghcr.io/marcuss-ops/chronon3d-runtime:0.1.0
 
-.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes deadcode verify
+.PHONY: native-build golden-e2e golden-e2e-runtime golden-e2e-reset golden-e2e-down test-architecture conformance test-gofmt test-unit test-certification test-module-standalone check-gpu-lanes deadcode deadcode-renderinggen deadcode-queue deadcode-objectstore verify
 
 # check-gpu-lanes — verify profile-specific GPU lane contracts. Native, Docker,
 # and CI profiles intentionally differ; this catches accidental divergence
@@ -149,22 +149,48 @@ DEADCODE_VERSION ?= v0.36.0
 # tolerated findings; anything else fails the target.
 DEADCODE_ALLOWED := unreachable func: (Lookup|PNG|Entries|RegistryType\.ShortPhraseStyles)
 
-# The gate runs on the renderinggen module only, and that scope is deliberate:
-# deadcode resolves reachability inside ONE module, so the queue and
-# objectstore client APIs would be reported as unreachable even though the
-# worker (a different module) imports and calls them. Running it there would
-# produce a permanently red gate that teaches people to ignore it.
-deadcode:
+# deadcode resolves reachability inside ONE module. The worker module is
+# scanned in full; queue and objectstore are scanned too, with an explicit
+# allowlist for their cross-module public API (the worker imports them from a
+# different module, so those exports are unreachable in this call graph).
+# Internal packages are still gated, which is what caught RG-HYG-02.
+DEADCODE_QUEUE_ALLOWED := ^client/|unreachable func: (AllWorkerLivenesses|AllWorkerStatuses|States|AttemptStatuses|Service\.SubmitBatch)$$
+
+deadcode: deadcode-renderinggen deadcode-queue deadcode-objectstore
+
+deadcode-renderinggen:
 	@out=$$(cd renderinggen && go run golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION) -test ./...); \
-	if [ -z "$$out" ]; then echo "deadcode: clean"; exit 0; fi; \
+	if [ -z "$$out" ]; then echo "deadcode renderinggen: clean"; exit 0; fi; \
 	echo "$$out"; \
 	unexpected=$$(printf '%s\n' "$$out" | grep -vE '$(DEADCODE_ALLOWED)'); \
 	if [ -n "$$unexpected" ]; then \
-	  echo "deadcode: unreachable code not in the external-contract allowlist:"; \
+	  echo "deadcode renderinggen: unreachable code not in the external-contract allowlist:"; \
 	  echo "$$unexpected"; \
 	  exit 1; \
 	fi; \
-	echo "deadcode: only the documented external-contract exports are unreachable"
+	echo "deadcode renderinggen: only the documented external-contract exports are unreachable"
+
+deadcode-queue:
+	@out=$$(cd queue && go run golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION) -test ./internal/...); \
+	if [ -z "$$out" ]; then echo "deadcode queue: clean"; exit 0; fi; \
+	unexpected=$$(printf '%s\n' "$$out" | grep -vE '$(DEADCODE_QUEUE_ALLOWED)'); \
+	if [ -n "$$unexpected" ]; then \
+	  echo "deadcode queue: unreachable code outside the cross-module allowlist:"; \
+	  echo "$$unexpected"; \
+	  exit 1; \
+	fi; \
+	echo "deadcode queue: only the documented cross-module exports are unreachable"
+
+deadcode-objectstore:
+	@out=$$(cd objectstore && go run golang.org/x/tools/cmd/deadcode@$(DEADCODE_VERSION) -test ./...); \
+	if [ -z "$$out" ]; then echo "deadcode objectstore: clean"; exit 0; fi; \
+	unexpected=$$(printf '%s\n' "$$out" | grep -vE '$(DEADCODE_ALLOWED)'); \
+	if [ -n "$$unexpected" ]; then \
+	  echo "deadcode objectstore: unreachable code outside the external-contract allowlist:"; \
+	  echo "$$unexpected"; \
+	  exit 1; \
+	fi; \
+	echo "deadcode objectstore: only the documented external-contract exports are unreachable"
 
 # verify — one local command for the checks every change must pass.
 #
