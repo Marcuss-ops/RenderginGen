@@ -255,6 +255,13 @@ func resolveAssetPaths(registry *assetRegistry, refs []SemanticAssetRef) map[str
 	return paths
 }
 
+// legacyCompositeReplayDeadline is the declared end of the sealed-plan replay
+// window. It is deliberately a constant rather than a runtime clock check: the
+// path must be deleted (not silently refused) once the window closes, and
+// TestLegacyCompositeReplayWindowExpires fails the unit gate after this date
+// while it still exists.
+const legacyCompositeReplayDeadline = "2026-12-31"
+
 // compileLegacyCompositeImageLayers is the replay path for sealed plans that
 // predate group_motion_id. It is a thin wrapper over the shared member
 // lowering plus the legacy child-grid rule, and it is reachable ONLY behind

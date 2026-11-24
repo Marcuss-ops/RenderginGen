@@ -26,6 +26,12 @@ semantiche di motion per-child e un marker wire che nessun producer nuovo usa.
 | 2026-12-15 | PR di rimozione: codice, contratto, fixture, test e documentazione. |
 | 2026-12-31 | Deadline. Dopo questa data il marker non è più accettato. |
 
+Il gate `TestLegacyCompositeReplayWindowExpires`
+(`renderinggen/internal/overlay/legacy_composite_replay_test.go`) legge la
+costante `legacyCompositeReplayDeadline = "2026-12-31"` e fa fallire
+`make test-unit` dopo la mezzanotte UTC della deadline finché il path esiste:
+la scadenza non è solo documentale.
+
 ## Censimento
 
 ```sh

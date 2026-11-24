@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 )
 
 func legacyCompositePlan(marker bool) []byte {
@@ -57,5 +58,23 @@ func TestSealedCompositeReplayIsMarkedAndCounted(t *testing.T) {
 	}
 	if result.Stats.LegacyCompositeImageCount != 1 || result.Stats.LegacyCompositeReplayCount != 1 {
 		t.Fatalf("legacy composite counters = %d/%d, want 1/1", result.Stats.LegacyCompositeImageCount, result.Stats.LegacyCompositeReplayCount)
+	}
+}
+
+// TestLegacyCompositeReplayWindowExpires is the scheduled-removal gate for the
+// sealed replay path. It is intentionally time-dependent: the documented window
+// closes on legacyCompositeReplayDeadline, and leaving the path in place after
+// that date must fail the unit suite instead of becoming another permanent
+// compatibility branch. Removing the path removes the constant this test reads,
+// so the test cannot outlive its subject silently.
+func TestLegacyCompositeReplayWindowExpires(t *testing.T) {
+	deadline, err := time.Parse(time.DateOnly, legacyCompositeReplayDeadline)
+	if err != nil {
+		t.Fatalf("legacy composite replay deadline %q is not a date: %v", legacyCompositeReplayDeadline, err)
+	}
+	// The window includes the whole deadline day, in UTC.
+	closedAt := deadline.Add(24*time.Hour - time.Nanosecond).UTC()
+	if now := time.Now().UTC(); now.After(closedAt) {
+		t.Fatalf("the sealed legacy composite replay window closed at %s: delete compileLegacyCompositeImageLayers, the legacy_composite_replay marker, its counters, metrics, schema property and tests", closedAt.Format(time.RFC3339))
 	}
 }
