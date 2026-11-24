@@ -209,8 +209,8 @@ func TestIPCRenderTimeoutScalesWithFrameCountAndCaps(t *testing.T) {
 		want   time.Duration
 	}{
 		{frames: 1, want: defaultIPCRenderTimeout},
-		{frames: 180, want: defaultIPCRenderTimeout},
-		{frames: 181, want: 90*time.Second + 500*time.Millisecond},
+		{frames: 180, want: 270 * time.Second},
+		{frames: 181, want: 271*time.Second + 500*time.Millisecond},
 		{frames: 100_000, want: maxIPCRenderTimeout},
 	}
 	for _, tt := range tests {

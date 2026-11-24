@@ -20,7 +20,10 @@ import (
 const (
 	defaultIPCRenderTimeout = 90 * time.Second
 	maxIPCRenderTimeout     = 15 * time.Minute
-	ipcRenderBudgetPerFrame = 500 * time.Millisecond
+	// Image-heavy overlays need more headroom than the former 500 ms/frame
+	// budget when several Chronon daemons share a GPU. A 120-frame overlay
+	// gets three minutes instead of timing out while valid work is in flight.
+	ipcRenderBudgetPerFrame = 1500 * time.Millisecond
 )
 
 // renderJobPayload is the JSON payload for the RENDER_JOB IPC command.  It is
