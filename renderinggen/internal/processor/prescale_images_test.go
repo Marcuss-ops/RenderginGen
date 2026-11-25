@@ -190,6 +190,21 @@ func mustReadFile(t *testing.T, path string) []byte {
 	return data
 }
 
+func TestImageDisplayBoundUsesDisplayPixelsForImageFocusReveal(t *testing.T) {
+	layer := overlay.Layer{ID: "image-focus-reveal__scene-01-image-0__image__01", Type: "image", Size: []float64{1340, 760}}
+	if got := imageDisplayBound(layer); got != 1340 {
+		t.Fatalf("image-focus bound = %d, want 1340 (1x display box)", got)
+	}
+	underscored := overlay.Layer{ID: "image_focus_reveal__scene-01-image-0__image__01", Type: "image", Size: []float64{1340, 760}}
+	if got := imageDisplayBound(underscored); got != 1340 {
+		t.Fatalf("image_focus_reveal bound = %d, want 1340 (1x display box)", got)
+	}
+	regular := overlay.Layer{ID: "regular-image", Type: "image", Size: []float64{1340, 760}}
+	if got := imageDisplayBound(regular); got != 2048 {
+		t.Fatalf("regular bound = %d, want 2048 (2x cap)", got)
+	}
+}
+
 func TestDisplayBoundSize(t *testing.T) {
 	tests := []struct {
 		width, height, max int

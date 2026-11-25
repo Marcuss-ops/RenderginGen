@@ -1,0 +1,44 @@
+# Single-daemon RenderingGen profile for the overlay/GPU consolidation
+# (docs/tickets/implementazione-2026-11-24/08-OVERLAY-GPU-WORKERS-DRIVE-DELIVERY.md).
+#
+# Install as /etc/renderinggen/renderinggen.yaml during a maintenance window.
+# It keeps ONE Chronon socket, so the GPU has one execution domain, while the
+# two lanes pipeline CPU preparation/post-processing. Keep
+# RENDERINGGEN_GPU_LANES and RENDERINGGEN_GPU_SLOTS at 2 in the systemd drop-in.
+#
+# Rollback: restore the previous three-socket configuration and
+# `systemctl enable --now chronon3d-b chronon3d-c`.
+worker:
+  id: renderinggen-single
+  pipeline_workers: 3
+  # One daemon executes one RENDER_JOB at a time; lanes only pipeline the
+  # per-worker preparation and post-processing chain.
+  gpu_lanes: 2
+
+queue:
+  endpoint: http://127.0.0.1:8081
+
+artifact_store:
+  endpoint: http://127.0.0.1:9000
+  local_cache_dir: /var/lib/renderinggen/cache
+
+workspace:
+  root: /dev/shm/renderinggen/jobs
+
+chronon:
+  profile: gpu-vulkan-native
+  home: /usr/local
+  binary: /usr/local/bin/chronon3d_cli
+  mode: ipc
+  # The ONLY socket of the consolidated topology.
+  socket_path: /run/chronon3d/chronon.sock
+  strict_native_backend: true
+  encode_preset: p1
+  pipe_pixfmt: nv12
+  no_dirty_rects: true
+
+gpu:
+  device: 0
+
+health:
+  addr: 127.0.0.1:8080

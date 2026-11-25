@@ -9,11 +9,13 @@ import (
 )
 
 // The typewriter family exists in two halves, and the split is the whole point:
-// the four short gestures must not appear in the long/important-phrase picker
-// and the four long ones must not appear in the short picker. The pool is a
-// flat list, so nothing but `targets` keeps them apart — an entry tagged
-// `short_phrase` is grouped into the short use case alone, and an untagged
-// phrase motion into the long one.
+// every short gesture must not appear in the long/important-phrase picker and
+// every long one must not appear in the short picker. The pool is a flat list,
+// so nothing but `targets` keeps them apart — an entry tagged `short_phrase`
+// is grouped into the short use case alone, and an untagged phrase motion into
+// the long one. Both the 2D and the 3D gestures are pinned here: the pack
+// renders fifteen 2D and fourteen 3D clips, and all of them must survive the
+// catalog round trip into the two pickers.
 var (
 	typewriterShortIDs = []string{
 		"typewriter_glyph_drift_short",
@@ -26,12 +28,27 @@ var (
 		"typewriter_word_burst_short",
 		"typewriter_word_lift_short",
 		"typewriter_word_step_short",
+		"typewriter3d_yaw_flip_short",
+		"typewriter3d_pitch_lift_short",
+		"typewriter3d_roll_settle_short",
+		"typewriter3d_z_bounce_short",
+		"typewriter3d_orbit_short",
+		"typewriter3d_hero_pull_short",
+		"typewriter3d_parallax_split_short",
+		"typewriter3d_camera_whip_short",
 	}
 	typewriterLongIDs = []string{
+		"typewriter_breath_long",
 		"typewriter_editorial_line_long",
 		"typewriter_glyph_wrap_long",
 		"typewriter_soft_edge_long",
 		"typewriter_terminal_block_long",
+		"typewriter3d_depth_push_long",
+		"typewriter3d_card_swing_long",
+		"typewriter3d_dolly_settle_long",
+		"typewriter3d_spin_in_long",
+		"typewriter3d_camera_rise_long",
+		"typewriter3d_iso_slide_long",
 	}
 )
 
@@ -49,7 +66,7 @@ func useCaseMotionIDs(t *testing.T, id string) []string {
 func typewriterIDs(ids []string) []string {
 	var out []string
 	for _, id := range ids {
-		if strings.HasPrefix(id, "typewriter_") {
+		if strings.HasPrefix(id, "typewriter_") || strings.HasPrefix(id, "typewriter3d_") {
 			out = append(out, id)
 		}
 	}

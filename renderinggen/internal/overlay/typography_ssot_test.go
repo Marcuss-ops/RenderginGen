@@ -1,6 +1,7 @@
 package overlay
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 )
@@ -55,6 +56,35 @@ func TestTypographySSOTCaptionColorRespectsPayload(t *testing.T) {
 		}
 	}
 	t.Fatal("no caption layer found")
+}
+
+// SSOT: a typewriter gesture is animation only. The payload's font family and
+// fill reach the lowered text layer for both halves of the family, so a 2D
+// clip's mono font or an orange accent can never leak into a job that chose
+// Inter and a white fill.
+func TestTypographySSOTTypewriterKeepsPayloadFontAndFill(t *testing.T) {
+	for _, motionID := range []string{
+		"typewriter_glyph_square_short",
+		"typewriter3d_yaw_flip_short",
+	} {
+		raw := fmt.Sprintf(`{"schema_version":"renderinggen.overlay-plan.v1","plan_id":"ssot-tw-payload","video_id":"v","width":1920,"height":1080,"fps_num":24,"fps_den":1,`+
+			`"items":[{"id":"phrase","kind":"important_phrase","template_id":"IMPORTANT_PHRASE","preset_id":"phrase_default","motion_id":%q,`+
+			`"text":"Hello world","start_ms":0,"end_ms":3000,"params":{"font_family":"inter","fill":"#FFFFFF"}}]}`, motionID)
+		result, err := CompileSemantic([]byte(raw))
+		if err != nil {
+			t.Fatalf("%s: %v", motionID, err)
+		}
+		if len(result.Plan.Layers) == 0 || result.Plan.Layers[0].Style == nil {
+			t.Fatalf("%s: no styled layer compiled", motionID)
+		}
+		layer := result.Plan.Layers[0]
+		if layer.Style.Font != "assets/fonts/Inter.ttf" {
+			t.Errorf("%s: font = %q, want payload Inter", motionID, layer.Style.Font)
+		}
+		if layer.Style.Fill != "#FFFFFF" {
+			t.Errorf("%s: fill = %q, want payload white", motionID, layer.Style.Fill)
+		}
+	}
 }
 
 // SSOT: phrase motions never force Bricolage; payload/preset default wins.

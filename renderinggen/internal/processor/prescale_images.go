@@ -134,6 +134,11 @@ func layerImageAsset(layer overlay.Layer) string {
 // imageDisplayBound mirrors LayerBuilder::image: 2x the longest fitted box
 // side, clamped to [512, 2048]. The global cap applies when the layer has no
 // declared box (intrinsic sizing).
+//
+// image-focus-reveal is a hold/focus preset: the image is shown at the box
+// size, not zoomed to 2x. Prescaling it to 1x removes a redundant 2x texture
+// upload without changing the visible resolution. Other image motions keep
+// the 2x sampler headroom.
 func imageDisplayBound(layer overlay.Layer) int {
 	displayExtent := 0.0
 	if len(layer.Size) >= 2 {
@@ -142,7 +147,14 @@ func imageDisplayBound(layer overlay.Layer) int {
 	if displayExtent <= 0 {
 		return prescaleMaxDimension
 	}
-	bound := int(math.Round(displayExtent * 2))
+	factor := 2.0
+	// Preset ids appear both hyphenated (the semantic item id) and
+	// underscored (the catalog id); normalize both spellings.
+	normalizedID := strings.NewReplacer("-", "", "_", "").Replace(strings.ToLower(layer.ID))
+	if strings.Contains(normalizedID, "imagefocusreveal") {
+		factor = 1.0
+	}
+	bound := int(math.Round(displayExtent * factor))
 	if bound < 512 {
 		bound = 512
 	}

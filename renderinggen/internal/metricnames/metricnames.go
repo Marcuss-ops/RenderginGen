@@ -140,6 +140,11 @@ const (
 	DriveUploadBytes          = "drive_upload_bytes"
 	ChrononTimingPreserved    = "chronon_timing_preserved"
 	ChrononTimingBytes        = "chronon_timing_bytes"
+	// Per-item Chronon cost projected from the timing summary. These are the
+	// keys the worker logs after ingest so a failed parent job (the remote 422
+	// case) still leaves item-level evidence in the worker log.
+	ChrononGPUUploadBytes     = "chronon_job_gpu_gpu_upload_bytes"
+	ChrononSummaryMeanFrameMS = "chronon_summary_mean_frame_ms"
 	// The compact companion the hot producer path reads instead of the raw
 	// per-frame document. The raw remains content-addressed for post-mortems.
 	ChrononTimingSummaryPreserved = "chronon_timing_summary_preserved"
@@ -296,6 +301,7 @@ var vocab = map[string]string{
 	MirrorFailure:           UnitCount,
 	DriveUploadChunks:       UnitCount, DriveUploadBytes: UnitBytes,
 	ChrononTimingPreserved: UnitCount, ChrononTimingBytes: UnitBytes,
+	ChrononGPUUploadBytes: UnitBytes, ChrononSummaryMeanFrameMS: UnitMS,
 	ChrononTelemetrySchemaRead: UnitCount, ChrononTelemetrySourceTiming: UnitCount,
 	ClosedGOPUncertifiable:        UnitCount,
 	PublicationDriveSkippedPolicy: UnitCount, PublicationDriveSkippedCapability: UnitCount,

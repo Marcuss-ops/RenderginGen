@@ -74,6 +74,7 @@ func (p *Processor) storeArtifact(ctx context.Context, in storeArtifactInput) (q
 	if err != nil {
 		return queue.Artifact{}, err
 	}
+	logChrononItemMetrics(in.jobID, in.phaseMetrics)
 	p.preserveRawTimingSidecar(ctx, &artifact, in.outputPath, in.jobID)
 	if artifact, err = p.recordArtifact(ctx, in.jobID, artifact, in.probe, in.stats, in.inputBytes, chrononTelemetry); err != nil {
 		return queue.Artifact{}, err
@@ -436,4 +437,23 @@ func mergeTelemetrySummaryMetrics(dst map[string]float64, raw json.RawMessage) {
 	for key, value := range chronon.TelemetryMetrics(raw) {
 		dst[key] = value
 	}
+}
+
+// logChrononItemMetrics makes the per-item cost readable even when the parent
+// job dies after the overlay stage (the r17b case: the final job returned 422,
+// so the run result never exposed overlay_render.items). The values are the
+// same documented Chronon projection already merged onto the artifact; this is
+// the worker-log carrier, not a second calculation.
+func logChrononItemMetrics(jobID string, metrics map[string]float64) {
+	upload, ok := metrics[metricnames.ChrononGPUUploadBytes]
+	if !ok {
+		return
+	}
+	renderMS := metrics[metricnames.RenderMS]
+	meanMS, hasMean := metrics[metricnames.ChrononSummaryMeanFrameMS]
+	if hasMean {
+		workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f mean_frame_ms=%.3f", renderMS, upload, meanMS)
+		return
+	}
+	workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f mean_frame_ms=not_reported", renderMS, upload)
 }

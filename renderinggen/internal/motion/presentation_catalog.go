@@ -132,8 +132,25 @@ func validateEntityPresentationMotion(d MotionDefinition) error {
 	if *d.Requires3D != *d.RequiresCamera || *d.Requires3D != motionHas3D(d) {
 		return fmt.Errorf("motion %q: 3D and camera requirements must match the camera-backed tracks", d.ID)
 	}
-	if d.Unit != "layer" || len(d.RequiredProperties) != len(d.Tracks) {
-		return fmt.Errorf("motion %q: presentation motions must be layer motions with required_properties for every track", d.ID)
+	if len(d.RequiredProperties) != len(d.Tracks) {
+		return fmt.Errorf("motion %q: presentation motions must declare required_properties for every track", d.ID)
+	}
+	// The typewriter families are the only presentation motions that type per
+	// glyph: the layer tracks keep the card entrance, while a staggered glyph
+	// animator hides the units that have not been typed yet. Every other family
+	// stays a pure layer motion so phrase animation cannot leak into a date or
+	// metric card.
+	if d.Category == "date_typewriter_v1" || d.Category == "metric_typewriter_v1" {
+		if d.Unit != "glyph" || len(d.TextAnimators) == 0 {
+			return fmt.Errorf("motion %q: %s motions must carry a glyph text animator (unit=%q, animators=%d)", d.ID, d.Category, d.Unit, len(d.TextAnimators))
+		}
+		for _, animator := range d.TextAnimators {
+			if animator.Selector.Kind != "glyph" || animator.Selector.Stagger <= 0 {
+				return fmt.Errorf("motion %q: typewriter animator %q must use a staggered glyph selector", d.ID, animator.ID)
+			}
+		}
+	} else if d.Unit != "layer" || len(d.TextAnimators) != 0 {
+		return fmt.Errorf("motion %q: %s motions must animate the card layer only (unit=%q, animators=%d)", d.ID, d.Category, d.Unit, len(d.TextAnimators))
 	}
 	for _, content := range d.SupportedContent {
 		if !containsMotionString(d.Targets, content) {
