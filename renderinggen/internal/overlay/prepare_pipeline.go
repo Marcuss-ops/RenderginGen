@@ -30,10 +30,11 @@ type PreparedResolve struct {
 	lowered  bool
 }
 
-// ResolveSemanticForPrepare decodes, validates, normalizes and resolves one
-// semantic plan. It performs no lowering: the returned handle still has no
-// layers for its items, so a caller can materialize Assets() and then lower
-// exactly once with the probed image sizes.
+// ResolveSemanticForPrepare decodes, validates and resolves one semantic plan.
+// It performs no lowering: the returned handle still has no layers for its
+// items, so a caller can materialize Assets() and then lower exactly once with
+// the probed image sizes. The decoded document is owned by the handle, so the
+// live document contracts are applied to it in place (no compatibility copy).
 //
 // The error taxonomy is the same one CompileSemantic has always produced
 // (invalid JSON, then schema identity, then the strict semantic decode), so the
@@ -47,11 +48,7 @@ func ResolveSemanticForPrepare(raw []byte, opts CompileOptions) (*PreparedResolv
 	if err != nil {
 		return nil, err
 	}
-	normalized, err := normalizeCompatibility(validated)
-	if err != nil {
-		return nil, err
-	}
-	resolved, err := resolvePlan(normalized)
+	resolved, err := resolvePlan(validated)
 	if err != nil {
 		return nil, err
 	}
@@ -74,8 +71,7 @@ func (r *PreparedResolve) LowerAndSeal(sizes map[string]ImageSize) (CompileResul
 		sizes = r.opts.AssetSizes
 	}
 	resolved := r.resolved
-	// The probe belongs to the document being lowered; set it after the copy
-	// stages so cloneSemanticPlan cannot drop it.
+	// The probe belongs to the document being lowered.
 	resolved.Document.assetSizes = sizes
 	concrete, stats, err := lowerPlan(resolved)
 	if err != nil {

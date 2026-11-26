@@ -52,22 +52,20 @@ type resolvedItem struct {
 // the historical permissive decode silently discarded project_id,
 // renderer_version and fingerprint on every job.
 //
+// The retired pre-v2 key animation_policies is named on the ERROR branch only:
+// a historical producer still gets the actionable migration message, while the
+// 100% of healthy jobs pay a single JSON pass (DEMOL-11).
+//
 // The error is returned UNWRAPPED so each entry point can apply its own
 // historical error taxonomy on top (see CompileSemantic's error path).
 func decodeSemanticPlan(raw []byte) (semanticPlan, error) {
-	// animation_policies is a retired pre-v2 wire field. Check it before the
-	// strict decode so a historical producer gets an actionable migration
-	// error instead of the generic DisallowUnknownFields diagnostic.
-	var envelope map[string]json.RawMessage
-	if err := json.Unmarshal(raw, &envelope); err == nil {
-		if _, retired := envelope["animation_policies"]; retired {
-			return semanticPlan{}, fmt.Errorf("animation_policies is retired; migrate to animation groups or explicit motion_id")
-		}
-	}
 	var src semanticPlan
 	decoder := json.NewDecoder(bytes.NewReader(raw))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&src); err != nil {
+		if strings.Contains(err.Error(), `unknown field "animation_policies"`) {
+			return semanticPlan{}, fmt.Errorf("animation_policies is retired; migrate to animation groups or explicit motion_id")
+		}
 		return semanticPlan{}, err
 	}
 	return src, nil
@@ -77,23 +75,20 @@ func decodeSemanticPlan(raw []byte) (semanticPlan, error) {
 // single semantic overlay-plan.v1 → concrete render-plan.v2 lowering; the
 // decode happens once upstream so the prepare path never re-reads the raw
 // document.
+//
+// The caller hands over ownership of src: the live document contracts (group
+// motion pins, animation groups, retired motions, map feature moves) run on it
+// in place, so the hot path never deep-copies the decoded tree. Replay decodes
+// the raw bytes again, which is why no clone is needed for determinism.
 func compileSemanticDecoded(src *semanticPlan, opts CompileOptions) (*Plan, []Asset, Stats, []string, error) {
 	validated, err := validateSemanticPlan(src)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	// normalizeCompatibility is the only mutable stage; it works on a deep
-	// copy, so the decoded document remains a replayable input.
-	normalized, err := normalizeCompatibility(validated)
+	resolved, err := resolvePlan(validated)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	resolved, err := resolvePlan(normalized)
-	if err != nil {
-		return nil, nil, Stats{}, nil, err
-	}
-	// The probe belongs to the document being lowered; set it after the copy
-	// stages so cloneSemanticPlan cannot drop it.
 	resolved.Document.assetSizes = opts.AssetSizes
 	concrete, stats, err := lowerPlan(resolved)
 	if err != nil {

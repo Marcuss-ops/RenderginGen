@@ -216,6 +216,13 @@ var templateRegistry = map[string]TemplateSpec{
 // stay so historical documents keep their kind instead of degrading to a bare
 // primitive. Keys are lower-case so the canonical uppercase id stays the only
 // canonical spelling in the registry.
+//
+// Census (DEMOL-11, 2026-11-26): BOTH aliases are still emitted by a live
+// producer. refactored's ChrononOverlayRegistry binds KindOrganization to
+// "org_default" and KindLocation to "gpe_default" (model/registry.go), and
+// neither id has an upper-case spelling anywhere in refactored. Removing an
+// alias would therefore fail closed on every organization/location card, so
+// the table stays: it is a live producer contract, not dead compatibility.
 var legacyTemplateAliases = map[string]string{
 	"org_default": "ORGANIZATION_DEFAULT",
 	"gpe_default": "LOCATION_DEFAULT",

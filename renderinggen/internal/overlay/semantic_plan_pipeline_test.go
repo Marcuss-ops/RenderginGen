@@ -94,12 +94,13 @@ func TestValidateSemanticPlanDoesNotMutateInput(t *testing.T) {
 	}
 }
 
-func TestNormalizeCompatibilityMutatesOnlyTheCopy(t *testing.T) {
+// TestDocumentContractsPinGroupMotionInPlace pins the post-DEMOL-11 ownership
+// contract: the live document contracts run on the owned decoded document, with
+// no compatibility copy, and replaying the same bytes produces the same pinned
+// document. Determinism therefore never depends on keeping the decoded tree
+// pristine.
+func TestDocumentContractsPinGroupMotionInPlace(t *testing.T) {
 	src, err := decodeSemanticPlan(stagePipelineFixture(t))
-	if err != nil {
-		t.Fatal(err)
-	}
-	before, err := json.Marshal(src)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,22 +108,39 @@ func TestNormalizeCompatibilityMutatesOnlyTheCopy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	normalized, err := normalizeCompatibility(validated)
+	resolved, err := resolvePlan(validated)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := normalized.Plan.Items[0].MotionID; got != "duo_split_reveal" {
-		t.Fatalf("normalized group motion = %q, want the pinned group_motion_id", got)
+	if got := resolved.Items[0].Item.MotionID; got != "duo_split_reveal" {
+		t.Fatalf("resolved group motion = %q, want the pinned group_motion_id", got)
 	}
-	if src.Items[0].MotionID != "" {
-		t.Fatal("normalizeCompatibility mutated the validated source document")
+	if got := resolved.Document.Items[0].MotionID; got != "duo_split_reveal" {
+		t.Fatalf("owned document group motion = %q, want the pinned group_motion_id", got)
 	}
-	after, err := json.Marshal(src)
+	first, err := json.Marshal(resolved.Document)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !bytes.Equal(before, after) {
-		t.Fatal("normalizeCompatibility changed the source document")
+
+	replay, err := decodeSemanticPlan(stagePipelineFixture(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayValidated, err := validateSemanticPlan(&replay)
+	if err != nil {
+		t.Fatal(err)
+	}
+	replayed, err := resolvePlan(replayValidated)
+	if err != nil {
+		t.Fatal(err)
+	}
+	second, err := json.Marshal(replayed.Document)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(first, second) {
+		t.Fatalf("document contracts are not replay-deterministic:\nfirst=%s\nsecond=%s", first, second)
 	}
 }
 
@@ -142,15 +160,17 @@ func TestStagePipelineMatchesCompileSemanticDecoded(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	validated, err := validateSemanticPlan(&src)
+	// The direct path owns and mutates its decoded document, so the stage path
+	// decodes the same bytes again instead of replaying a normalized value.
+	stageSrc, err := decodeSemanticPlan(stagePipelineFixture(t))
 	if err != nil {
 		t.Fatal(err)
 	}
-	normalized, err := normalizeCompatibility(validated)
+	validated, err := validateSemanticPlan(&stageSrc)
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := resolvePlan(normalized)
+	resolved, err := resolvePlan(validated)
 	if err != nil {
 		t.Fatal(err)
 	}

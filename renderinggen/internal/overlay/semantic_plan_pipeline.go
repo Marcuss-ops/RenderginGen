@@ -1,10 +1,13 @@
 // semantic_plan_pipeline.go owns the typed stages of the semantic overlay
-// compiler: decode → validate → normalize → resolve → lower → seal.
+// compiler: decode → validate → resolve → lower → seal.
 //
 // The stages exist to make the authoritative value explicit. Validation never
-// mutates the decoded document; compatibility normalization is the one stage
-// that mutates, and it mutates a deep copy so replay/snapshot callers keep the
-// document they decoded.
+// mutates the decoded document. resolvePlan applies the live document
+// contracts (group motion pins, animation groups, retired motions, map feature
+// moves) directly to the owned document before resolving its items: there is
+// no compatibility copy stage on the hot path (DEMOL-11). Replay decodes the
+// raw bytes again, so determinism does not depend on keeping the decoded tree
+// pristine.
 //
 // map[string]any boundary: open maps are wire/preset data only. After
 // resolvePlan, compilers read itemPresentation.Params through the existing
@@ -29,19 +32,12 @@ type frameRate struct {
 }
 
 // validatedPlan is the decoded document plus the identity facts validation
-// proved. Source is read-only.
+// proved. Source is owned by the resolve stage: validation itself never writes.
 type validatedPlan struct {
 	PlanID string
 	Canvas canvasSpec
 	FPS    frameRate
 	Source *semanticPlan
-}
-
-// normalizedPlan is the only mutable generation. Notes records the legacy
-// compatibility stages that actually ran.
-type normalizedPlan struct {
-	Plan  semanticPlan
-	Notes []string
 }
 
 // resolvedPlan is everything lowering needs: the constructed concrete plan,
@@ -88,49 +84,43 @@ func validateSemanticPlan(src *semanticPlan) (validatedPlan, error) {
 	}, nil
 }
 
-// normalizeCompatibility applies the legacy policy/group/map transformations
-// to a deep copy. The validated input remains byte-identical.
-func normalizeCompatibility(validated validatedPlan) (normalizedPlan, error) {
-	if validated.Source == nil {
-		return normalizedPlan{}, fmt.Errorf("overlay: validated plan lost its source document")
+// applyDocumentContracts runs the live pre-resolve contract stages ONCE, in
+// place, on the document the resolve stage owns. None of them is a pre-v2
+// compatibility shim: each enforces a published v2 rule that lowering depends
+// on. Plan-level animation_policies is retired at decode, so the composite
+// group pin is the only motion-selector floor left.
+func applyDocumentContracts(src *semanticPlan) error {
+	if src == nil {
+		return fmt.Errorf("overlay: validated plan lost its source document")
 	}
-	plan := *validated.Source
-	// Only copy when a compatibility stage can write. The notes are also the
-	// copy trigger, so the common phrase-only plan keeps the historical
-	// allocation profile while every legacy shape gets an owned value tree.
-	notes := semanticPlanCompatibilityNotes(&plan)
-	if len(notes) > 0 {
-		plan = cloneSemanticPlan(plan)
+	// The composite group pin validates group_motion_id and makes it the item's
+	// motion before groups or per-kind lowering run.
+	if err := pinGroupMotionIDs(src); err != nil {
+		return err
 	}
-	// Plan-level animation_policies are retired at decode (the decoder rejects
-	// the key). The live compatibility floor is the composite group pin: it
-	// validates group_motion_id and makes it the item's motion before groups or
-	// per-kind lowering run.
-	if err := pinGroupMotionIDs(&plan); err != nil {
-		return normalizedPlan{}, err
-	}
-	if len(plan.AnimationGroups) > 0 {
-		// Groups resolve after the legacy policy selector so the two
-		// generations cannot silently stack.
-		if err := resolveAnimationGroups(&plan); err != nil {
-			return normalizedPlan{}, err
+	if len(src.AnimationGroups) > 0 {
+		// Groups resolve after the group pin so the two selector generations
+		// cannot silently stack.
+		if err := resolveAnimationGroups(src); err != nil {
+			return err
 		}
 	}
-	// Retirement is checked after policies expand, so a motion arriving
-	// through a plan-level default is rejected exactly like an explicit one.
-	if err := validateDeprecatedMotions(&plan); err != nil {
-		return normalizedPlan{}, err
+	// Retirement is checked after the selectors expand, so a motion arriving
+	// through a group is rejected exactly like an explicit one.
+	if err := validateDeprecatedMotions(src); err != nil {
+		return err
 	}
-	if err := resolveMapFeatureMoves(&plan); err != nil {
-		return normalizedPlan{}, err
-	}
-	return normalizedPlan{Plan: plan, Notes: notes}, nil
+	return resolveMapFeatureMoves(src)
 }
 
-// resolvePlan builds the concrete plan's non-item layers and resolves every
-// item once. Asset registration order is the historical order.
-func resolvePlan(normalized normalizedPlan) (resolvedPlan, error) {
-	src := &normalized.Plan
+// resolvePlan applies the document contracts and builds the concrete plan's
+// non-item layers, then resolves every item once. Asset registration order is
+// the historical order.
+func resolvePlan(validated validatedPlan) (resolvedPlan, error) {
+	src := validated.Source
+	if err := applyDocumentContracts(src); err != nil {
+		return resolvedPlan{}, err
+	}
 	plan := newResolvedPlanShell(src)
 	registry := newAssetRegistry()
 	if err := appendPlanBackgroundLayer(plan, src, registry); err != nil {
@@ -178,7 +168,7 @@ func resolvePlan(normalized normalizedPlan) (resolvedPlan, error) {
 		return resolvedPlan{}, err
 	}
 	return resolvedPlan{
-		Plan: plan, Document: normalized.Plan, Items: resolved, Registry: registry,
+		Plan: plan, Document: *src, Items: resolved, Registry: registry,
 		Cameras: cameras, PendingSFX: pendingSFX, Duration: plan.Canvas.DurationFrames,
 		SourceLayerIndex: sourceLayerIndex, Unknown: unknown,
 	}, nil
@@ -349,183 +339,6 @@ func sealPlan(plan *Plan, stats Stats, resolved resolvedPlan, opts CompileOption
 	}
 	plan.Schema, plan.Version = RenderPlanWireVersion(plan)
 	return plan, resolved.Registry.Assets(), stats, resolved.Unknown, nil
-}
-
-func semanticPlanHasGroupMotionPins(src *semanticPlan) bool {
-	for i := range src.Items {
-		if src.Items[i].GroupMotionID != "" {
-			return true
-		}
-	}
-	return false
-}
-
-func semanticPlanHasMapFeatureMoves(src *semanticPlan) bool {
-	for i := range src.Items {
-		if src.Items[i].Map != nil && src.Items[i].Map.FlyToFeature != nil {
-			return true
-		}
-	}
-	return false
-}
-
-// semanticPlanCompatibilityNotes lists the live compatibility stages that can
-// write to the document. An empty list means normalization is validation-only
-// and the decoded value tree can be reused without a copy.
-func semanticPlanCompatibilityNotes(src *semanticPlan) []string {
-	if src == nil {
-		return nil
-	}
-	var notes []string
-	if semanticPlanHasGroupMotionPins(src) {
-		notes = append(notes, "group_motion_pins")
-	}
-	if len(src.AnimationGroups) > 0 {
-		notes = append(notes, "animation_groups")
-	}
-	if semanticPlanHasMapFeatureMoves(src) {
-		notes = append(notes, "map_feature_moves")
-	}
-	return notes
-}
-
-// cloneSemanticPlan deep-copies the fields normalization may touch. The
-// decoded document is a value tree; maps are copied one level because every
-// mutation replaces the map value rather than editing it in place.
-func cloneSemanticPlan(src semanticPlan) semanticPlan {
-	out := src
-	out.Items = make([]semanticItem, len(src.Items))
-	for i := range src.Items {
-		out.Items[i] = cloneSemanticItem(src.Items[i])
-	}
-	if src.AnimationGroups != nil {
-		out.AnimationGroups = make([]semanticAnimationGroup, len(src.AnimationGroups))
-		for i, group := range src.AnimationGroups {
-			copy := group
-			copy.Params = cloneAnyMap(group.Params)
-			copy.Members = append([]semanticAnimationGroupMember(nil), group.Members...)
-			for j := range copy.Members {
-				copy.Members[j].MotionParams = cloneAnyMap(group.Members[j].MotionParams)
-			}
-			out.AnimationGroups[i] = copy
-		}
-	}
-	return out
-}
-
-func cloneSemanticItem(item semanticItem) semanticItem {
-	out := item
-	out.TemplateSlots = cloneAnyMap(item.TemplateSlots)
-	out.MotionParams = cloneAnyMap(item.MotionParams)
-	out.CaptionMotionParams = cloneAnyMap(item.CaptionMotionParams)
-	out.Params = cloneAnyMap(item.Params)
-	out.Style = cloneAnyMap(item.Style)
-	out.Assets = append([]SemanticAssetRef(nil), item.Assets...)
-	out.Frame = cloneSourceFrame(item.Frame)
-	out.Map = cloneSemanticMap(item.Map)
-	out.Metric = cloneMetric(item.Metric)
-	out.Date = cloneDate(item.Date)
-	if item.SoundEffect != nil {
-		sfx := *item.SoundEffect
-		out.SoundEffect = &sfx
-	}
-	if item.ImageLayers != nil {
-		out.ImageLayers = make([]SemanticImageLayer, len(item.ImageLayers))
-		for i, child := range item.ImageLayers {
-			copy := child
-			copy.MotionParams = cloneAnyMap(child.MotionParams)
-			copy.CaptionMotionParams = cloneAnyMap(child.CaptionMotionParams)
-			copy.Params = cloneAnyMap(child.Params)
-			copy.Frame = cloneSourceFrame(child.Frame)
-			out.ImageLayers[i] = copy
-		}
-	}
-	return out
-}
-
-func cloneAnyMap(src map[string]any) map[string]any {
-	if src == nil {
-		return nil
-	}
-	out := make(map[string]any, len(src))
-	for k, v := range src {
-		out[k] = v
-	}
-	return out
-}
-
-func cloneSourceFrame(src *semanticSourceFrame) *semanticSourceFrame {
-	if src == nil {
-		return nil
-	}
-	out := *src
-	if src.Border != nil {
-		b := *src.Border
-		out.Border = &b
-	}
-	if src.Shadow != nil {
-		s := *src.Shadow
-		out.Shadow = &s
-	}
-	if src.Shadows != nil {
-		out.Shadows = append([]semanticFrameShadow(nil), src.Shadows...)
-	}
-	if src.Stroke != nil {
-		s := *src.Stroke
-		out.Stroke = &s
-	}
-	return &out
-}
-
-func cloneSemanticMap(src *SemanticMap) *SemanticMap {
-	if src == nil {
-		return nil
-	}
-	out := *src
-	if src.Pins != nil {
-		out.Pins = make([]SemanticMapPin, len(src.Pins))
-		for i, pin := range src.Pins {
-			out.Pins[i] = pin
-			if pin.LabelStyle != nil {
-				style := *pin.LabelStyle
-				out.Pins[i].LabelStyle = &style
-			}
-			out.Pins[i].LabelOffsetPX = append([]float64(nil), pin.LabelOffsetPX...)
-		}
-	}
-	out.LODs = append([]SemanticMapLOD(nil), src.LODs...)
-	if src.CameraMove != nil {
-		move := *src.CameraMove
-		out.CameraMove = &move
-	}
-	if src.FlyToFeature != nil {
-		f := *src.FlyToFeature
-		out.FlyToFeature = &f
-	}
-	if src.Routes != nil {
-		out.Routes = make([]SemanticMapRoute, len(src.Routes))
-		for i, route := range src.Routes {
-			out.Routes[i] = route
-			out.Routes[i].Stops = append([]SemanticMapPoint(nil), route.Stops...)
-		}
-	}
-	return &out
-}
-
-func cloneMetric(src *SemanticMetricData) *SemanticMetricData {
-	if src == nil {
-		return nil
-	}
-	out := *src
-	return &out
-}
-
-func cloneDate(src *SemanticDateData) *SemanticDateData {
-	if src == nil {
-		return nil
-	}
-	out := *src
-	return &out
 }
 
 // The two plan-wide stages that run after item
