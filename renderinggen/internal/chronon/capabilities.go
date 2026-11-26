@@ -37,6 +37,10 @@ type Capabilities struct {
 	// Requirements, or it becomes a field nothing enforces.
 	IPC      bool   `json:"ipc"`
 	BuildSHA string `json:"build_sha"`
+	// GPUEffects is Chronon's canonical effect catalog projected by doctor.
+	// Only entries marked supported on an enabled backend are advertised to
+	// producers; there is no Go-side allowlist.
+	GPUEffects []GPUEffect `json:"gpu_effects"`
 
 	// ready is the doctor's overall verdict: no check is in the Fail state.
 	// checks keeps the individual check results so Validate can demand
@@ -44,6 +48,43 @@ type Capabilities struct {
 	// h264_nvenc runtime probe lives in checks[encoder.nvenc]).
 	ready  bool
 	checks map[string]string
+}
+
+// GPUEffect is one row from Chronon's canonical GPU effect capability table.
+type GPUEffect struct {
+	ID             string `json:"id"`
+	Route          string `json:"route"`
+	BackendEnabled bool   `json:"backend_enabled"`
+	Supported      bool   `json:"supported"`
+	Diagnostic     string `json:"diagnostic"`
+}
+
+const gpuEffectCapabilityPrefix = "overlay.effect."
+
+// RendererCapabilities returns the queue vocabulary for effects this
+// Chronon binary says it can execute natively. Unsupported rows are omitted so
+// an empty result remains a fail-closed inventory.
+func (caps *Capabilities) RendererCapabilities() []string {
+	if caps == nil || !caps.ready || !caps.Vulkan {
+		return nil
+	}
+	out := make([]string, 0, len(caps.GPUEffects))
+	seen := make(map[string]struct{}, len(caps.GPUEffects)*2)
+	for _, effect := range caps.GPUEffects {
+		id := strings.TrimSpace(effect.ID)
+		if id == "" || !effect.BackendEnabled || !effect.Supported || effect.Route != "native_zero_readback" {
+			continue
+		}
+		for _, name := range []string{id, id[strings.LastIndex(id, ".")+1:]} {
+			capability := gpuEffectCapabilityPrefix + name
+			if _, exists := seen[capability]; exists {
+				continue
+			}
+			seen[capability] = struct{}{}
+			out = append(out, capability)
+		}
+	}
+	return out
 }
 
 // doctorJSON is the subset of `doctor --json` output this package consumes.

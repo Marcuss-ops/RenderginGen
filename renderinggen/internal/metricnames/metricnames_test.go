@@ -13,12 +13,17 @@ import (
 func TestUnitsAgreeWithNameSuffix(t *testing.T) {
 	for name, unit := range vocab {
 		want := ""
+		// `_delta` is a window MODIFIER, not a unit: `..._bytes_delta`
+		// declares bytes over a per-job window (PERFLIVE-01). Strip it before
+		// the suffix rule so the declaration agrees with the queue's
+		// derivation and the per-item cost stays a byte count, not a count.
+		stem := strings.TrimSuffix(name, "_delta")
 		switch {
-		case strings.HasSuffix(name, "_us"):
+		case strings.HasSuffix(stem, "_us"):
 			want = UnitUS
-		case strings.HasSuffix(name, "_ms"):
+		case strings.HasSuffix(stem, "_ms"):
 			want = UnitMS
-		case strings.HasSuffix(name, "bytes"):
+		case strings.HasSuffix(stem, "bytes"):
 			want = UnitBytes
 		}
 		if want != "" && want != unit {

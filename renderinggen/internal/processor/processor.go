@@ -391,6 +391,17 @@ func (p *Processor) ObserveLaneWait(wait time.Duration) {
 	p.laneWaitHook(wait)
 }
 
+// ProgressSnapshot returns the latest frame position the renderer observed for
+// jobID, or nil when this renderer emitted no frame milestones. The worker's
+// GPU-lane liveness heartbeat uses it to keep reporting the real position
+// instead of resetting a renderer that does report frames back to 0/0.
+func (p *Processor) ProgressSnapshot(jobID string) *chronon.Progress {
+	if p == nil || p.progressTracker == nil {
+		return nil
+	}
+	return p.progressTracker.Snapshot(jobID)
+}
+
 func (p *Processor) recordPhase(phase string, start time.Time) {
 	if p.phaseHook == nil {
 		return

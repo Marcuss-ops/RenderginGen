@@ -92,6 +92,29 @@ func (t *ProgressTracker) Observe(jobID string, generation, done, total int64) {
 	t.latest.Store(entry)
 }
 
+// Touch records LIVENESS for a render whose transport cannot report frame
+// milestones. It refreshes lastFrameAt (and startAt on first sight) without
+// touching done/total, so Current() keeps reporting the same frame counters
+// with a fresh timestamp: the queue-side last_frame_at then doubles as the
+// liveness signal the producer's stall watchdog reads, exactly as it does for
+// a render that does report frames. It never invents a frame position — a
+// counterless render must stay "unknown", not "0/N".
+func (t *ProgressTracker) Touch(jobID string, generation int64) {
+	if jobID == "" {
+		return
+	}
+	entry := t.entry(jobID)
+	now := time.Now()
+	entry.mu.Lock()
+	if entry.state.startAt.IsZero() {
+		entry.state.startAt = now
+	}
+	entry.state.generation = generation
+	entry.state.lastFrameAt = now
+	entry.mu.Unlock()
+	t.latest.Store(entry)
+}
+
 // Forget drops all state for jobID (called when a job leaves the GPU lane).
 // It also retires the job as the "current" one, so a finished lane stops
 // answering health/pusher readers with a stale position.

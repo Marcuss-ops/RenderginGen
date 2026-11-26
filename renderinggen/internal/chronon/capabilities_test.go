@@ -38,7 +38,12 @@ const doctorReadyDoc = `{
     "nvdec": true,
     "nvenc": true,
     "ipc": false,
-    "build_sha": "abc1234"
+    "build_sha": "abc1234",
+    "gpu_effects": [
+      {"id":"color.vignette","route":"native_zero_readback","backend_enabled":true,"supported":true,"diagnostic":""},
+      {"id":"image.rounded_mask","route":"unsupported","backend_enabled":true,"supported":false,"diagnostic":"native route missing"},
+      {"id":"image.shadow","route":"native_zero_readback","backend_enabled":false,"supported":false,"diagnostic":"Vulkan disabled"}
+    ]
   },
   "checks": [
     {"id": "encoder.nvenc", "status": "pass", "message": "h264_nvenc hardware encoder available"}
@@ -58,6 +63,10 @@ func TestCapabilitiesParsesDoctorJSON(t *testing.T) {
 	}
 	if caps.BuildSHA != "abc1234" {
 		t.Fatalf("build_sha = %q", caps.BuildSHA)
+	}
+	got := caps.RendererCapabilities()
+	if len(got) != 2 || got[0] != "overlay.effect.color.vignette" || got[1] != "overlay.effect.vignette" {
+		t.Fatalf("renderer capabilities = %v, want canonical id and public alias only for the supported native effect", got)
 	}
 }
 

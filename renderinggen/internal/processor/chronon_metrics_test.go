@@ -1,8 +1,16 @@
 package processor
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"log"
+	"log/slog"
+	"strings"
 	"testing"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
 // The bounded timing-sidecar summary (chronon3d.frame-timing.v3) has a
@@ -21,6 +29,9 @@ func TestMergeTelemetrySummaryMetricsProjectsDocumentedSubset(t *testing.T) {
 	    "process_wall_ms": 5304.0, "render_loop_wall_ms": 2932.0, "mux_finalize_ms": 88.1,
 	    "gpu": {"nvenc_frames": 450, "vulkan_frames": 450, "software_fallback_nodes": 0,
 	            "cpu_readback_frames": 0, "gpu_readback_bytes": 0, "gpu_upload_bytes": 2048,
+	            "gpu_upload_bytes_delta": 2048, "gpu_readback_bytes_delta": 0,
+	            "gpu_asset_cache_hits_delta": 7, "gpu_asset_cache_misses_delta": 1,
+	            "software_fallback_frames_delta": 0,
 	            "cuda_host_upload_bytes": 0, "nv12_to_rgba_frames": 0, "rgba_to_nv12_frames": 0},
 	    "encoder": {"backpressure_wait_ms": 1.25}
 	  },
@@ -30,24 +41,29 @@ func TestMergeTelemetrySummaryMetricsProjectsDocumentedSubset(t *testing.T) {
 	mergeTelemetrySummaryMetrics(dst, summary)
 
 	want := map[string]float64{
-		"chronon_summary_render_loop_fps":          29.2,
-		"chronon_summary_end_to_end_fps":           28.9,
-		"chronon_summary_p95_frame_ms":             41.2,
-		"chronon_summary_frames_over_budget":       3,
-		"chronon_receipt_daemon_admission_wait_ms": 12.5,
-		"chronon_job_process_wall_ms":              5304.0,
-		"chronon_job_render_loop_wall_ms":          2932.0,
-		"chronon_job_mux_finalize_ms":              88.1,
-		"chronon_job_gpu_nvenc_frames":             450,
-		"chronon_job_gpu_vulkan_frames":            450,
-		"chronon_job_gpu_software_fallback_nodes":  0,
-		"chronon_job_gpu_cpu_readback_frames":      0,
-		"chronon_job_gpu_gpu_readback_bytes":       0,
-		"chronon_job_gpu_gpu_upload_bytes":         2048,
-		"chronon_job_gpu_cuda_host_upload_bytes":   0,
-		"chronon_job_gpu_nv12_to_rgba_frames":      0,
-		"chronon_job_gpu_rgba_to_nv12_frames":      0,
-		"chronon_job_encoder_backpressure_wait_ms": 1.25,
+		"chronon_summary_render_loop_fps":                29.2,
+		"chronon_summary_end_to_end_fps":                 28.9,
+		"chronon_summary_p95_frame_ms":                   41.2,
+		"chronon_summary_frames_over_budget":             3,
+		"chronon_receipt_daemon_admission_wait_ms":       12.5,
+		"chronon_job_process_wall_ms":                    5304.0,
+		"chronon_job_render_loop_wall_ms":                2932.0,
+		"chronon_job_mux_finalize_ms":                    88.1,
+		"chronon_job_gpu_nvenc_frames":                   450,
+		"chronon_job_gpu_vulkan_frames":                  450,
+		"chronon_job_gpu_software_fallback_nodes":        0,
+		"chronon_job_gpu_cpu_readback_frames":            0,
+		"chronon_job_gpu_gpu_readback_bytes":             0,
+		"chronon_job_gpu_gpu_upload_bytes":               2048,
+		"chronon_job_gpu_gpu_upload_bytes_delta":         2048,
+		"chronon_job_gpu_gpu_readback_bytes_delta":       0,
+		"chronon_job_gpu_gpu_asset_cache_hits_delta":     7,
+		"chronon_job_gpu_gpu_asset_cache_misses_delta":   1,
+		"chronon_job_gpu_software_fallback_frames_delta": 0,
+		"chronon_job_gpu_cuda_host_upload_bytes":         0,
+		"chronon_job_gpu_nv12_to_rgba_frames":            0,
+		"chronon_job_gpu_rgba_to_nv12_frames":            0,
+		"chronon_job_encoder_backpressure_wait_ms":       1.25,
 	}
 	for key, val := range want {
 		got, ok := dst[key]
@@ -56,6 +72,43 @@ func TestMergeTelemetrySummaryMetricsProjectsDocumentedSubset(t *testing.T) {
 		}
 		if got != val {
 			t.Fatalf("%s = %v, want %v", key, got, val)
+		}
+	}
+}
+
+func TestMergeTelemetrySummaryMetricsProjectsPositiveFallbackDelta(t *testing.T) {
+	summary := json.RawMessage(`{"schema":"chronon3d.frame-timing.v3","job":{"gpu":{"software_fallback_frames_delta":3}}}`)
+	dst := map[string]float64{}
+	mergeTelemetrySummaryMetrics(dst, summary)
+	if got := dst["chronon_job_gpu_software_fallback_frames_delta"]; got != 3 {
+		t.Fatalf("positive fallback delta = %v, want 3 (metrics=%v)", got, dst)
+	}
+}
+
+func TestItemMetricsLogIncludesMeasuredFallbackZeroAndPositive(t *testing.T) {
+	previousLogger := slog.Default()
+	previousOutput := log.Writer()
+	previousFlags := log.Flags()
+	var output bytes.Buffer
+	if err := workerlog.Init(workerlog.Options{Format: workerlog.FormatText, Writer: &output}); err != nil {
+		t.Fatalf("initialize captured worker logger: %v", err)
+	}
+	t.Cleanup(func() {
+		slog.SetDefault(previousLogger)
+		log.SetOutput(previousOutput)
+		log.SetFlags(previousFlags)
+	})
+
+	for _, delta := range []float64{0, 3} {
+		output.Reset()
+		logChrononItemMetrics("ovl-fallback-delta-test", map[string]float64{
+			metricnames.ChrononGPUUploadBytes:              0,
+			metricnames.RenderMS:                           12,
+			metricnames.ChrononSoftwareFallbackFramesDelta: delta,
+		})
+		want := fmt.Sprintf("software_fallback_frames_delta=%.0f", delta)
+		if got := output.String(); !strings.Contains(got, want) {
+			t.Fatalf("item_metrics log %q does not contain %q", got, want)
 		}
 	}
 }

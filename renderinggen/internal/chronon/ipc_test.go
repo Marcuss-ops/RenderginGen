@@ -208,10 +208,10 @@ func TestIPCRenderTimeoutScalesWithFrameCountAndCaps(t *testing.T) {
 		frames int64
 		want   time.Duration
 	}{
-		{frames: 1, want: defaultIPCRenderTimeout},
-		{frames: 180, want: 270 * time.Second},
-		{frames: 181, want: 271*time.Second + 500*time.Millisecond},
-		{frames: 100_000, want: maxIPCRenderTimeout},
+		{frames: 1, want: defaultIPCRenderTimeout + ipcRenderAdmissionAllowance},
+		{frames: 180, want: 270*time.Second + ipcRenderAdmissionAllowance},
+		{frames: 181, want: 271*time.Second + 500*time.Millisecond + ipcRenderAdmissionAllowance},
+		{frames: 100_000, want: maxIPCRenderTimeout + ipcRenderAdmissionAllowance},
 	}
 	for _, tt := range tests {
 		ctx, cancel := ipcRenderContextForFrames(context.Background(), tt.frames)

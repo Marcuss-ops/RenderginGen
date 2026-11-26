@@ -31,10 +31,17 @@ const ipcStatusPollTimeout = 5 * time.Second
 // requestRenderWithProgress keeps the non-idempotent render request on its own
 // connection while a second connection observes liveness. The signals are the
 // daemon lifecycle (GET_JOB_STATUS) and the bytes the daemon writes to the
-// output or its .chronon.tmp sibling. The daemon does not expose a frame
-// counter today, so output growth is the frame-progress proxy; a running job
-// that produces neither is aborted with ErrIPCStallTimeout.
-func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint32, payload []byte, jobIDs, outputs []string) (uint32, string, error) {
+// output or its .chronon.tmp sibling. A running job that produces neither is
+// aborted with ErrIPCStallTimeout.
+//
+// Every observed advancement is ALSO relayed to onProgress, when the caller
+// supplies one. That relay is what lets the producer's own stall watchdog see
+// a native render: the daemon may omit the frame counter, but the output it is
+// writing still proves the render is alive, and the queue-side last_frame_at
+// is the one timestamp that watchdog reads. Without the relay a renderer that
+// reports no milestones is indistinguishable from a dead one, so a healthy
+// long render is cancelled at the watchdog's threshold.
+func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint32, payload []byte, jobIDs, outputs []string, onProgress func(RenderProgress)) (uint32, string, error) {
 	stallTimeout := c.stallTimeout
 	if stallTimeout <= 0 {
 		stallTimeout = DefaultStallTimeout
@@ -48,6 +55,7 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 	stamps := make([]outputStamp, len(outputs))
 	states := make(map[string]string, len(jobIDs))
 	framesSeen := make(map[string]int64, len(jobIDs))
+	framesTotal := make(map[string]int64, len(jobIDs))
 	sawStatus := false
 	running := false
 	pollInterval := 2 * time.Second
@@ -82,6 +90,9 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 				// has not grown yet (the encoder may be buffering). Older daemons
 				// omit the field, so zero is indistinguishable from "not reported"
 				// and must never count as advancement.
+				if snapshot.framesTotal > framesTotal[jobID] {
+					framesTotal[jobID] = snapshot.framesTotal
+				}
 				if snapshot.framesDone > framesSeen[jobID] {
 					framesSeen[jobID] = snapshot.framesDone
 					progress = true
@@ -96,6 +107,7 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 			}
 			if progress {
 				lastProgress = now
+				relayIPCProgress(onProgress, jobIDs, framesSeen, framesTotal, now)
 				continue
 			}
 			// With a job id, a prepared admission wait is live and must not be
@@ -107,6 +119,25 @@ func (c *IPCClient) requestRenderWithProgress(ctx context.Context, command uint3
 			}
 		}
 	}
+}
+
+// relayIPCProgress forwards one observed advancement to the caller's progress
+// sink. Counters the daemon did not report stay zero: the relay is a liveness
+// signal, never an invented frame position.
+func relayIPCProgress(onProgress func(RenderProgress), jobIDs []string, framesSeen, framesTotal map[string]int64, at time.Time) {
+	if onProgress == nil {
+		return
+	}
+	var done, total int64
+	for _, jobID := range jobIDs {
+		if framesSeen[jobID] > done {
+			done = framesSeen[jobID]
+		}
+		if framesTotal[jobID] > total {
+			total = framesTotal[jobID]
+		}
+	}
+	onProgress(RenderProgress{FramesDone: done, FramesTotal: total, At: at})
 }
 
 // ipcJobSnapshot is the liveness projection of one GET_JOB_STATUS reply. The

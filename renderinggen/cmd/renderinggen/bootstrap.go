@@ -94,6 +94,7 @@ type rendererSet struct {
 	software       chronon.Renderer
 	assembler      chronon.Assembler
 	prefetcher     chronon.AssetPrefetcher
+	capabilities   []string
 	chrononVersion string
 	gpuLanes       int
 	sockets        []string
@@ -162,6 +163,14 @@ func buildRenderers(cfg *config.Config) rendererSet {
 			set.chrononVersion = cli.Version()
 		}
 	}
+	// Publish effect support from the same Chronon doctor catalog used by the
+	// renderer. The queue's live capability endpoint is consumed by producers
+	// during preflight; an empty inventory stays fail-closed.
+	declared, err := probe.Capabilities(context.Background())
+	if err != nil {
+		log.Fatalf("chronon renderer capabilities: %v", err)
+	}
+	set.capabilities = declared.RendererCapabilities()
 
 	// CPU/I/O stages execute concurrently, and the renderer is allowed up to
 	// cfg.Worker.GPULanes concurrent GPU sessions (the config default of 2
@@ -410,6 +419,7 @@ func startWorkerSurface(ctx context.Context, cfg *config.Config, gpuInfo gpu.Inf
 		GPUBackend:           gpuInfo.Backend,
 		GPUDevice:            fmt.Sprintf("%d", gpuInfo.Device),
 		GPUDriver:            gpuInfo.Driver,
+		Capabilities:         append([]string(nil), renderers.capabilities...),
 		StartedAt:            time.Now().UTC(),
 	}
 	if err := pipeline.queue.Register(ctx, workerRegistration); err != nil {

@@ -24,6 +24,16 @@ const (
 	// budget when several Chronon daemons share a GPU. A 120-frame overlay
 	// gets three minutes instead of timing out while valid work is in flight.
 	ipcRenderBudgetPerFrame = 1500 * time.Millisecond
+	// ipcRenderAdmissionAllowance covers the daemon-side GPU lane admission,
+	// which is NOT render time. On a single lane a healthy overlay can wait
+	// many minutes behind another item while GET_JOB_STATUS reports
+	// "prepared"; the watchdog already treats that state as live. Without this
+	// allowance the frame budget above expires during the wait and kills a
+	// perfectly healthy render (observed: a 120-frame item claimed with a
+	// 3-minute budget while the lane was busy). The stall watchdog still
+	// aborts a *running* job that makes no observable progress for its own
+	// window, so this only separates queue wait from render budget.
+	ipcRenderAdmissionAllowance = 60 * time.Minute
 )
 
 // renderJobPayload is the JSON payload for the RENDER_JOB IPC command.  It is
@@ -155,7 +165,9 @@ func (c *IPCClient) Render(ctx context.Context, req RenderRequest) error {
 	for _, seg := range req.OutputSegments {
 		outputs = append(outputs, seg.OutputPath)
 	}
-	status, message, err := c.requestRenderWithProgress(renderCtx, ipcCommandRenderJob, payload, []string{req.JobID}, outputs)
+	// req.Progress carries the caller's observer: the relay keeps a native
+	// render that reports no frame milestones observable on the queue.
+	status, message, err := c.requestRenderWithProgress(renderCtx, ipcCommandRenderJob, payload, []string{req.JobID}, outputs, req.Progress)
 	if err != nil {
 		return err
 	}
@@ -242,7 +254,7 @@ func (c *IPCClient) RenderBatch(ctx context.Context, requests []RenderRequest) (
 		}
 		jobIDs = append(jobIDs, req.JobID)
 	}
-	status, message, err := c.requestRenderWithProgress(renderCtx, ipcCommandRenderBatch, payload, jobIDs, outputs)
+	status, message, err := c.requestRenderWithProgress(renderCtx, ipcCommandRenderBatch, payload, jobIDs, outputs, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +314,10 @@ func ipcRenderContextForFrames(ctx context.Context, frames int64) (context.Conte
 			timeout = defaultIPCRenderTimeout
 		}
 	}
-	return context.WithTimeout(ctx, timeout)
+	// The deadline bounds the whole blocking call, so it must include the
+	// daemon's admission wait; otherwise a queued item dies with the very
+	// "context deadline exceeded" this client exists to make actionable.
+	return context.WithTimeout(ctx, timeout+ipcRenderAdmissionAllowance)
 }
 
 func requestedFrames(req RenderRequest) int64 {

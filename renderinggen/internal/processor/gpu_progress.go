@@ -57,14 +57,23 @@ func newRenderProgressObserver(job *queue.Job, tracker *chronon.ProgressTracker,
 
 // Observe records one milestone. I/O and tracker calls happen outside the
 // mutex so a slow sink cannot block the renderer's stream goroutines.
+//
+// An observation with no frame counters is a LIVENESS ping from a transport
+// that cannot report frames (the IPC daemon may omit them for the native
+// backend). It refreshes the tracker's last_frame_at — the producer's stall
+// watchdog reads exactly that timestamp — without claiming a frame position,
+// so the render stays observable and a truly silent one still ages out.
 func (o *RenderProgressObserver) Observe(progress chronon.RenderProgress) {
 	now := time.Now()
+	ping := progress.FramesTotal <= 0 && progress.FramesDone <= 0
 	o.mu.Lock()
-	o.saw = true
-	o.last = progress
+	if !ping {
+		o.saw = true
+		o.last = progress
+	}
 	o.lastAt = now
-	final := progress.FramesTotal > 0 && progress.FramesDone >= progress.FramesTotal
-	logNow := final || o.lastLogAt.IsZero() || now.Sub(o.lastLogAt) >= o.logEvery
+	final := !ping && progress.FramesTotal > 0 && progress.FramesDone >= progress.FramesTotal
+	logNow := !ping && (final || o.lastLogAt.IsZero() || now.Sub(o.lastLogAt) >= o.logEvery)
 	if logNow {
 		o.lastLogAt = now
 	}
@@ -77,7 +86,11 @@ func (o *RenderProgressObserver) Observe(progress chronon.RenderProgress) {
 			progress.At.Format(time.RFC3339Nano), o.backend, o.encoder)
 	}
 	if o.tracker != nil {
-		o.tracker.Observe(o.jobID, o.lease, progress.FramesDone, progress.FramesTotal)
+		if ping {
+			o.tracker.Touch(o.jobID, o.lease)
+		} else {
+			o.tracker.Observe(o.jobID, o.lease, progress.FramesDone, progress.FramesTotal)
+		}
 	}
 }
 

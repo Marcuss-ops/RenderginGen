@@ -451,9 +451,21 @@ func logChrononItemMetrics(jobID string, metrics map[string]float64) {
 	}
 	renderMS := metrics[metricnames.RenderMS]
 	meanMS, hasMean := metrics[metricnames.ChrononSummaryMeanFrameMS]
+	// PERFLIVE-01: the cumulative upload is device-scoped on the persistent
+	// daemon. Log the per-JOB delta next to it (and the fallback delta) so one
+	// item's texture cost is distinguishable from a canvas/effect-stack
+	// fallback without re-deriving anything from the monotonic total.
+	delta := "not_reported"
+	if value, present := metrics[metricnames.ChrononGPUUploadBytesDelta]; present {
+		delta = fmt.Sprintf("%.0f", value)
+	}
+	fallback := "-"
+	if value, present := metrics[metricnames.ChrononSoftwareFallbackFramesDelta]; present {
+		fallback = fmt.Sprintf("%.0f", value)
+	}
 	if hasMean {
-		workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f mean_frame_ms=%.3f", renderMS, upload, meanMS)
+		workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f gpu_upload_bytes_delta=%s software_fallback_frames_delta=%s mean_frame_ms=%.3f", renderMS, upload, delta, fallback, meanMS)
 		return
 	}
-	workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f mean_frame_ms=not_reported", renderMS, upload)
+	workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f gpu_upload_bytes_delta=%s software_fallback_frames_delta=%s mean_frame_ms=not_reported", renderMS, upload, delta, fallback)
 }

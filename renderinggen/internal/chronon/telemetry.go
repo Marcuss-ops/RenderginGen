@@ -293,6 +293,9 @@ func TelemetryMetrics(raw json.RawMessage) map[string]float64 {
 		"video_native_fallback_frames", "video_decode_native_surface_frames",
 		"video_decode_software_frames", "cpu_pixel_readback_frames",
 		"cpu_pixel_readback_bytes", "gpu_readback_bytes", "gpu_upload_bytes",
+		"gpu_upload_bytes_delta", "gpu_readback_bytes_delta",
+		"gpu_asset_cache_hits_delta", "gpu_asset_cache_misses_delta",
+		"software_fallback_frames_delta",
 		"cuda_host_upload_bytes", "nv12_to_rgba_frames", "rgba_to_nv12_frames",
 		"gpu_surface_copy_frames", "native_surface_reuse_count",
 		"video_composite_ms", "decode_wait_ms", "frame_slot_wait_ms"} {

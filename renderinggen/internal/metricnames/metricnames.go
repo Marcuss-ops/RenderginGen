@@ -145,6 +145,15 @@ const (
 	// case) still leaves item-level evidence in the worker log.
 	ChrononGPUUploadBytes     = "chronon_job_gpu_gpu_upload_bytes"
 	ChrononSummaryMeanFrameMS = "chronon_summary_mean_frame_ms"
+	// Per-JOB deltas over the device-cumulative backend counters (PERFLIVE-01).
+	// On the persistent daemon `chronon_job_gpu_gpu_upload_bytes` is monotonic
+	// across items, so it cannot discriminate a texture upload from a canvas
+	// fallback. The deltas are the comparable per-item cost.
+	ChrononGPUUploadBytesDelta         = "chronon_job_gpu_gpu_upload_bytes_delta"
+	ChrononGPUReadbackBytesDelta       = "chronon_job_gpu_gpu_readback_bytes_delta"
+	ChrononGPUAssetCacheHitsDelta      = "chronon_job_gpu_gpu_asset_cache_hits_delta"
+	ChrononGPUAssetCacheMissesDelta    = "chronon_job_gpu_gpu_asset_cache_misses_delta"
+	ChrononSoftwareFallbackFramesDelta = "chronon_job_gpu_software_fallback_frames_delta"
 	// The compact companion the hot producer path reads instead of the raw
 	// per-frame document. The raw remains content-addressed for post-mortems.
 	ChrononTimingSummaryPreserved = "chronon_timing_summary_preserved"
@@ -302,7 +311,10 @@ var vocab = map[string]string{
 	DriveUploadChunks:       UnitCount, DriveUploadBytes: UnitBytes,
 	ChrononTimingPreserved: UnitCount, ChrononTimingBytes: UnitBytes,
 	ChrononGPUUploadBytes: UnitBytes, ChrononSummaryMeanFrameMS: UnitMS,
-	ChrononTelemetrySchemaRead: UnitCount, ChrononTelemetrySourceTiming: UnitCount,
+	ChrononGPUUploadBytesDelta: UnitBytes, ChrononGPUReadbackBytesDelta: UnitBytes,
+	ChrononGPUAssetCacheHitsDelta: UnitCount, ChrononGPUAssetCacheMissesDelta: UnitCount,
+	ChrononSoftwareFallbackFramesDelta: UnitCount,
+	ChrononTelemetrySchemaRead:         UnitCount, ChrononTelemetrySourceTiming: UnitCount,
 	ClosedGOPUncertifiable:        UnitCount,
 	PublicationDriveSkippedPolicy: UnitCount, PublicationDriveSkippedCapability: UnitCount,
 	WorkspaceCleanupFailures: UnitCount, ChrononTelemetryMissing: UnitCount,

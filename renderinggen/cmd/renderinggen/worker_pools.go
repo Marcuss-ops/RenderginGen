@@ -15,6 +15,43 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workerlog"
 )
 
+// gpuLaneWaitHeartbeatInterval is how often a job reports liveness to the
+// queue while it waits for a free GPU lane and while it renders. It must stay
+// well below the producer watchdog window (180 s) so neither an admission wait
+// nor a renderer without frame milestones can age into a false stall.
+const gpuLaneWaitHeartbeatInterval = 30 * time.Second
+
+// livenessQueue is the queue surface the render heartbeat needs. A tick is a
+// liveness timestamp even when the frame values are unchanged; the IPC
+// watchdog remains the authority on whether a render is actually stalled.
+type livenessQueue interface {
+	ReportProgress(ctx context.Context, id string, generation int64, framesDone, framesTotal int64) error
+}
+
+// runRenderLivenessHeartbeat reports the job's latest known frame position
+// every interval until ctx ends. It never invents frames: with no tracker
+// snapshot it reports 0/0, which the queue stores as a fresh liveness
+// timestamp. Reporting the snapshot (when present) keeps a renderer that does
+// emit frame lines from being reset to 0/0 by the liveness tick.
+func runRenderLivenessHeartbeat(ctx context.Context, q livenessQueue, jobID string, generation int64, interval time.Duration, snapshot func() (int64, int64)) {
+	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-ticker.C:
+			done, total := int64(0), int64(0)
+			if snapshot != nil {
+				done, total = snapshot()
+			}
+			if err := q.ReportProgress(ctx, jobID, generation, done, total); err != nil {
+				workerlog.ByJobID(jobID).Warnf("render liveness heartbeat: %v", err)
+			}
+		}
+	}
+}
+
 // closeJobLog seals a finished job's per-job log files (and drops the job's log
 // binding). A failure to close a diagnostic file is reported on the job's own
 // record and never fails the job.
@@ -208,13 +245,39 @@ func runPrepPool(ctx context.Context, q *queue.Client, proc *processor.Processor
 			// before RunGPU starts writing the job metrics; recording it here
 			// after the send races with the GPU lane on PreparedJob.Metrics.
 			laneWaitStart := time.Now()
+			// Admission is not a stall. The job is already RUNNING on the queue
+			// (the claim set started_at) while it waits here for a free GPU lane,
+			// and it has no frames to report. Publish a frames=0 liveness
+			// heartbeat until the rendezvous admits it, so the producer's
+			// progress watchdog measures the WAIT instead of the claim and does
+			// not abort a healthy queue. Once admitted the GPU-lane heartbeat
+			// takes over for the whole render; the IPC watchdog remains the
+			// authority on a genuinely stalled render.
+			heartbeatCtx, stopHeartbeat := context.WithCancel(jobCtx)
+			go func() {
+				ticker := time.NewTicker(gpuLaneWaitHeartbeatInterval)
+				defer ticker.Stop()
+				for {
+					select {
+					case <-heartbeatCtx.Done():
+						return
+					case <-ticker.C:
+						if err := q.ReportProgress(heartbeatCtx, job.ID, job.LeaseGeneration, 0, 0); err != nil {
+							workerlog.ByJobID(job.ID).Warnf("gpu lane wait heartbeat: %v", err)
+						}
+					}
+				}
+			}()
 			select {
 			case prepCh <- &preppedJob{job: job, prepared: prepared, laneWaitStarted: laneWaitStart}:
+				stopHeartbeat()
 				return nil
 			case <-jobCtx.Done():
+				stopHeartbeat()
 				cleanupPreparedWorkspace(prepared, job.ID)
 				return jobCtx.Err()
 			case <-ctx.Done():
+				stopHeartbeat()
 				cleanupPreparedWorkspace(prepared, job.ID)
 				return ctx.Err()
 			}
@@ -289,6 +352,21 @@ func runGPULane(ctx context.Context, q *queue.Client, proc *processor.Processor,
 				}
 			}()
 			gpuErr := withLeaseVoid(ctx, p.job, q, timings, func(jobCtx context.Context) error {
+				// The native Vulkan renderer emits no frame milestones, so the
+				// queue would otherwise see silence from admission until the
+				// artifact lands and kill a healthy long render at 180 s. Keep a
+				// liveness tick for the whole render, reporting the tracker's
+				// real position when it has one. A genuinely stuck daemon is
+				// still detected by the IPC watchdog's own progress window.
+				heartbeatCtx, stopHeartbeat := context.WithCancel(jobCtx)
+				defer stopHeartbeat()
+				go runRenderLivenessHeartbeat(heartbeatCtx, q, p.job.ID, p.job.LeaseGeneration, gpuLaneWaitHeartbeatInterval,
+					func() (int64, int64) {
+						if snap := proc.ProgressSnapshot(p.job.ID); snap != nil {
+							return snap.FramesDone, snap.FramesTotal
+						}
+						return 0, 0
+					})
 				return proc.RunGPU(jobCtx, p.prepared)
 			})
 			close(renderDone)
