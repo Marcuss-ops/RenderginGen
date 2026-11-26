@@ -113,6 +113,36 @@ func TestItemMetricsLogIncludesMeasuredFallbackZeroAndPositive(t *testing.T) {
 	}
 }
 
+// TestItemMetricsLogCoversSoftwareItems pins the OVL-01 gap found on the
+// 2026-11-26 r17b run: a software-backed item has no GPU upload counter, and
+// the log line must still be emitted (with the counter declared unmeasured)
+// instead of disappearing from the per-item report.
+func TestItemMetricsLogCoversSoftwareItems(t *testing.T) {
+	previousLogger := slog.Default()
+	previousOutput := log.Writer()
+	previousFlags := log.Flags()
+	var output bytes.Buffer
+	if err := workerlog.Init(workerlog.Options{Format: workerlog.FormatText, Writer: &output}); err != nil {
+		t.Fatalf("initialize captured worker logger: %v", err)
+	}
+	t.Cleanup(func() {
+		slog.SetDefault(previousLogger)
+		log.SetOutput(previousOutput)
+		log.SetFlags(previousFlags)
+	})
+
+	logChrononItemMetrics("ovl-software-item-test", map[string]float64{
+		metricnames.RenderMS:                           20068,
+		metricnames.ChrononSoftwareFallbackFramesDelta: 0,
+	})
+	got := output.String()
+	for _, want := range []string{"item_metrics render_ms=20068.0", "gpu_upload_bytes=not_reported", "software_fallback_frames_delta=0"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("software item metrics %q does not contain %q", got, want)
+		}
+	}
+}
+
 func TestMergeTelemetrySummaryMetricsIgnoresUndocumentedLeaves(t *testing.T) {
 	// Internal/undocumented leaves (strings, arrays, unlisted numbers) must
 	// never appear: the projection is an explicit contract, not a scrape.

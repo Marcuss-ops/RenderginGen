@@ -8,6 +8,7 @@
 package processor
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
@@ -15,6 +16,12 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/queue"
 )
+
+// ErrExecutionPolicyIncompatible marks a job whose durable execution policy
+// cannot be served for its plan. It is a typed sentinel so the rejection is
+// distinguishable from an infrastructure failure: the job can never run as
+// declared, and retrying it unchanged is pointless.
+var ErrExecutionPolicyIncompatible = errors.New("execution_policy incompatible")
 
 // FrameRange is the inclusive Chronon frame window of a chunk. Enabled is
 // load-bearing: a chunk covering exactly frame 0 has First=Last=0 and is
@@ -126,40 +133,104 @@ func ResolveExecutionPolicy(job *queue.Job, plan *overlay.Plan, cfg ProcessorCon
 
 	policy.VideoSourceRequired = planHasVideoSource(plan)
 	policy.CompositionRequired = planHasVisualOverlay(plan)
-	// A chain camera-pan keeps overlapping animated full-canvas image
-	// surfaces, which the native residency gate cannot materialize. Run only
-	// those plans through the software (libx264) lane so the rest of the
-	// worker keeps NVENC. The overlay compiler states the requirement as a
-	// plan capability; the policy never inspects individual layers. Final
-	// composites are excluded: they own the auto Vulkan contract and are
-	// validated below.
-	if !policy.FinalComposite && plan != nil && plan.Features.RequiresSoftwareEncode() {
+	executionPolicy := jobExecutionPolicy(job)
+	requiresSoftwareEncode := plan != nil && plan.Features.RequiresSoftwareEncode()
+	gpuLaneRequested := (policy.VideoSourceRequired || policy.CompositionRequired) &&
+		(cfg.StrictNativeBackend || chronon.StrictNativeRequired(cfg.Backend, cfg.HardwareEncoder))
+
+	// The job's durable execution policy decides the lane. It is resolved by
+	// the queue from the producer's require_gpu and returned on every claim,
+	// so the worker never reinterprets an omitted boolean: the three states
+	// below are the only answers.
+	switch {
+	case executionPolicy.RequiresGPU():
+		// GPU mandatory, no CPU fallback and no software retry. A chain
+		// camera-pan plan cannot execute on the native residency gate; the
+		// historical behaviour silently downgraded it, which would break the
+		// producer's guarantee, so a gpu_only job carrying such a plan fails
+		// closed instead.
+		if requiresSoftwareEncode {
+			return RenderExecutionPolicy{}, fmt.Errorf("processor: %w: job %s demands gpu_only but the plan requires the software encoder; refusing to downgrade", ErrExecutionPolicyIncompatible, jobLabel(job))
+		}
+		// Defense in depth for the claim filter: a software-configured worker
+		// must never serve a gpu_only job. That worker should not have claimed
+		// it (it does not advertise the GPU capability), but failing closed
+		// here turns a mis-advertised lane into an explicit error instead of a
+		// render that silently ran without a GPU.
+		if strings.EqualFold(cfg.Backend, "software") {
+			return RenderExecutionPolicy{}, fmt.Errorf("processor: %w: job %s demands gpu_only but this worker is configured for the software backend; route it to a GPU worker", ErrExecutionPolicyIncompatible, jobLabel(job))
+		}
+		policy.StrictNative = true
+		policy.GPURequired = true
+		policy.CPUFallbackAllowed = false
+		policy.SoftwareRetryAllowed = false
+	case executionPolicy == queue.ExecutionPolicyCPUOnly:
+		// The producer released the GPU demand: the job is routable on the
+		// software lane and never forces a device. A final composite owns the
+		// auto Vulkan contract, so it cannot be CPU-only.
+		if policy.FinalComposite {
+			return RenderExecutionPolicy{}, fmt.Errorf("processor: %w: job %s is a final composite and must run the full Vulkan graph; cpu_only is not valid for it", ErrExecutionPolicyIncompatible, jobLabel(job))
+		}
 		policy.Backend = "software"
 		policy.HardwareEncoder = chronon.HardwareEncoderNone
 		policy.EncoderBackend = "pipe"
 		policy.EncodePreset = ""
 		policy.StrictNative = false
-		policy.CPUFallbackAllowed = true
-	}
-	policy.GPURequired = (policy.VideoSourceRequired || policy.CompositionRequired) &&
-		(cfg.StrictNativeBackend || chronon.StrictNativeRequired(cfg.Backend, cfg.HardwareEncoder))
-	if policy.FinalComposite {
-		policy.GPURequired = true
-	}
-	if policy.Backend == "software" {
 		policy.GPURequired = false
+		policy.CPUFallbackAllowed = !policy.Segmented
+		policy.SoftwareRetryAllowed = false
+	default:
+		// gpu_preferred: the historical behaviour. A chain camera-pan keeps
+		// overlapping animated full-canvas image surfaces, which the native
+		// residency gate cannot materialize, so only those plans take the
+		// software (libx264) lane and the rest of the worker keeps NVENC. The
+		// overlay compiler states the requirement as a plan capability; the
+		// policy never inspects individual layers. Final composites are
+		// excluded: they own the auto Vulkan contract and are validated below.
+		if !policy.FinalComposite && requiresSoftwareEncode {
+			policy.Backend = "software"
+			policy.HardwareEncoder = chronon.HardwareEncoderNone
+			policy.EncoderBackend = "pipe"
+			policy.EncodePreset = ""
+			policy.StrictNative = false
+		}
+		policy.GPURequired = gpuLaneRequested
+		if policy.FinalComposite {
+			policy.GPURequired = true
+		}
+		if policy.Backend == "software" {
+			policy.GPURequired = false
+		}
+		// The wire fallback and the worker retry are distinct permissions. A
+		// strict-native job and a segmented session fail closed instead of
+		// renaming one output; a non-GPU job never enters the software retry
+		// lane. Both values live here so the request and the session cannot
+		// drift apart.
+		policy.CPUFallbackAllowed = !cfg.StrictNativeBackend && !policy.Segmented
+		policy.SoftwareRetryAllowed = policy.GPURequired && !cfg.StrictNativeBackend && !policy.Segmented
 	}
-	// The wire fallback and the worker retry are distinct permissions. A
-	// strict-native job and a segmented session fail closed instead of renaming
-	// one output; a non-GPU job never enters the software retry lane. Both
-	// values live here so the request and the session cannot drift apart.
-	policy.CPUFallbackAllowed = !cfg.StrictNativeBackend && !policy.Segmented
-	policy.SoftwareRetryAllowed = policy.GPURequired && !cfg.StrictNativeBackend && !policy.Segmented
 
 	if err := policy.Validate(); err != nil {
 		return RenderExecutionPolicy{}, err
 	}
 	return policy, nil
+}
+
+// jobExecutionPolicy reads the durable policy off the claimed job. An empty
+// value can only come from a row written before migration 032; it means the
+// historical GPU-preferred behaviour, which is also the column default.
+func jobExecutionPolicy(job *queue.Job) queue.ExecutionPolicy {
+	if job == nil || strings.TrimSpace(string(job.ExecutionPolicy)) == "" {
+		return queue.ExecutionPolicyGPUPreferred
+	}
+	return job.ExecutionPolicy
+}
+
+func jobLabel(job *queue.Job) string {
+	if job == nil || job.ID == "" {
+		return "<unknown>"
+	}
+	return job.ID
 }
 
 // Validate asserts the invariants the rest of the pipeline relies on.

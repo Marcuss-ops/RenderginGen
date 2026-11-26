@@ -7,10 +7,12 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
+// stubSemanticCompiler is the consumer-side test double for the compile seam.
 type stubSemanticCompiler struct {
-	called bool
-	result overlay.CompileResult
-	err    error
+	called        bool
+	resolveCalled bool
+	result        overlay.CompileResult
+	err           error
 }
 
 func (s *stubSemanticCompiler) CompileSemantic([]byte) (overlay.CompileResult, error) {
@@ -18,8 +20,13 @@ func (s *stubSemanticCompiler) CompileSemantic([]byte) (overlay.CompileResult, e
 	return s.result, s.err
 }
 
+func (s *stubSemanticCompiler) ResolveSemanticForPrepare([]byte) (*overlay.PreparedResolve, error) {
+	s.resolveCalled = true
+	return nil, s.err
+}
+
 // TestCompileSemanticUsesInjectedCompiler pins the consumer-side seam: the
-// prepare path must dispatch through Processor.compileSemantic, so an
+// one-shot compile must dispatch through Processor.compileSemantic, so an
 // orchestration test can drive it without the real lowering.
 func TestCompileSemanticUsesInjectedCompiler(t *testing.T) {
 	want := errors.New("stub compile failure")
@@ -40,26 +47,25 @@ func TestCompileSemanticFallsBackToOverlayCompiler(t *testing.T) {
 	}
 }
 
-// TestCompileSemanticForPrepareUsesTheOptionalSeam pins the pass-A dispatch:
-// a compiler that implements the prepare capability is called through it, so
-// the ordinary (baking) compile is not used for the discarded plan.
-func TestCompileSemanticForPrepareUsesTheOptionalSeam(t *testing.T) {
-	stub := &stubPrepareCompiler{stubSemanticCompiler: stubSemanticCompiler{err: errors.New("prepare stub")}}
+// TestResolveSemanticForPrepareUsesTheSeam pins the prepare dispatch: the
+// resolve half of the split compile goes through the injected compiler, so the
+// prepare path can be driven without the real lowering.
+func TestResolveSemanticForPrepareUsesTheSeam(t *testing.T) {
+	stub := &stubSemanticCompiler{err: errors.New("resolve stub")}
 	p := &Processor{compiler: stub}
-	if _, err := p.compileSemanticForPrepare([]byte(`{}`)); err == nil {
-		t.Fatal("prepare compile did not surface its error")
+	if _, err := p.resolveSemanticForPrepare([]byte(`{}`)); err == nil {
+		t.Fatal("resolve seam did not surface its error")
 	}
-	if !stub.prepareCalled || stub.called {
-		t.Fatalf("prepare seam called=%t ordinary called=%t, want prepare only", stub.prepareCalled, stub.called)
+	if !stub.resolveCalled || stub.called {
+		t.Fatalf("resolve seam called=%t one-shot called=%t, want resolve only", stub.resolveCalled, stub.called)
 	}
 }
 
-type stubPrepareCompiler struct {
-	stubSemanticCompiler
-	prepareCalled bool
-}
-
-func (s *stubPrepareCompiler) CompileSemanticForPrepare([]byte) (overlay.CompileResult, error) {
-	s.prepareCalled = true
-	return s.result, s.err
+// TestResolveSemanticForPrepareFallsBackToOverlayCompiler pins the nil branch of
+// the prepare seam: a struct-literal Processor resolves with the real compiler.
+func TestResolveSemanticForPrepareFallsBackToOverlayCompiler(t *testing.T) {
+	p := &Processor{}
+	if _, err := p.resolveSemanticForPrepare([]byte(`not json`)); err == nil {
+		t.Fatal("zero-value Processor must still resolve through the real compiler and reject invalid JSON")
+	}
 }

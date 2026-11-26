@@ -436,6 +436,13 @@ type Job struct {
 	// the software lane instead of failing when the device cannot satisfy it.
 	RequireGPU *bool `json:"require_gpu,omitempty"`
 
+	// ExecutionPolicy is the durable form of RequireGPU: the queue resolves it
+	// once on Submit (see ResolveExecutionPolicy), stores it on the row and
+	// returns it on every claim, so the worker never has to reinterpret an
+	// omitted boolean. Empty on a submit body means "derive from RequireGPU";
+	// an explicit value that contradicts RequireGPU is rejected.
+	ExecutionPolicy ExecutionPolicy `json:"execution_policy,omitempty"`
+
 	State       State     `json:"state"`
 	Worker      string    `json:"worker,omitempty"`
 	Attempts    int       `json:"attempts"`

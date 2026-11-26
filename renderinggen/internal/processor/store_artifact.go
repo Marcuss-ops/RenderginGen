@@ -445,11 +445,21 @@ func mergeTelemetrySummaryMetrics(dst map[string]float64, raw json.RawMessage) {
 // same documented Chronon projection already merged onto the artifact; this is
 // the worker-log carrier, not a second calculation.
 func logChrononItemMetrics(jobID string, metrics map[string]float64) {
-	upload, ok := metrics[metricnames.ChrononGPUUploadBytes]
-	if !ok {
+	// The GPU upload counter only exists for GPU-backed items. A software
+	// item (canvas/effect-stack fallback) still has a measured render_ms and
+	// must emit its line, with gpu_upload_bytes=not_reported: an absent field
+	// is not a zero, and skipping the line would hide a whole class of items
+	// from the per-item cost report (OVL-01: 25/26 metrics on the 2026-11-26
+	// r17b run, the missing one being item:015 on backend=software).
+	upload, hasUpload := metrics[metricnames.ChrononGPUUploadBytes]
+	renderMS := metrics[metricnames.RenderMS]
+	if !hasUpload && renderMS == 0 {
 		return
 	}
-	renderMS := metrics[metricnames.RenderMS]
+	uploadText := "not_reported"
+	if hasUpload {
+		uploadText = fmt.Sprintf("%.0f", upload)
+	}
 	meanMS, hasMean := metrics[metricnames.ChrononSummaryMeanFrameMS]
 	// PERFLIVE-01: the cumulative upload is device-scoped on the persistent
 	// daemon. Log the per-JOB delta next to it (and the fallback delta) so one
@@ -464,8 +474,8 @@ func logChrononItemMetrics(jobID string, metrics map[string]float64) {
 		fallback = fmt.Sprintf("%.0f", value)
 	}
 	if hasMean {
-		workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f gpu_upload_bytes_delta=%s software_fallback_frames_delta=%s mean_frame_ms=%.3f", renderMS, upload, delta, fallback, meanMS)
+		workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%s gpu_upload_bytes_delta=%s software_fallback_frames_delta=%s mean_frame_ms=%.3f", renderMS, uploadText, delta, fallback, meanMS)
 		return
 	}
-	workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%.0f gpu_upload_bytes_delta=%s software_fallback_frames_delta=%s mean_frame_ms=not_reported", renderMS, upload, delta, fallback)
+	workerlog.ByJobID(jobID).Infof("item_metrics render_ms=%.1f gpu_upload_bytes=%s gpu_upload_bytes_delta=%s software_fallback_frames_delta=%s mean_frame_ms=not_reported", renderMS, uploadText, delta, fallback)
 }

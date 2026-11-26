@@ -248,6 +248,11 @@ type Options struct {
 // silently redefining what the pipeline can rely on.
 type semanticCompiler interface {
 	CompileSemantic(raw []byte) (overlay.CompileResult, error)
+	// ResolveSemanticForPrepare is the first half of the same compile: it
+	// decodes and resolves the document without lowering a layer, so the
+	// prepare path can materialize the assets and probe their dimensions
+	// before paying the one lowering pass.
+	ResolveSemanticForPrepare(raw []byte) (*overlay.PreparedResolve, error)
 }
 
 // overlaySemanticCompiler adapts the package-level compiler to the seam and
@@ -260,8 +265,8 @@ func (c overlaySemanticCompiler) CompileSemantic(raw []byte) (overlay.CompileRes
 	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker})
 }
 
-func (c overlaySemanticCompiler) CompileSemanticWithAssetSizes(raw []byte, sizes map[string]overlay.ImageSize) (overlay.CompileResult, error) {
-	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{AssetSizes: sizes, CameraBaker: c.cameraBaker})
+func (c overlaySemanticCompiler) ResolveSemanticForPrepare(raw []byte) (*overlay.PreparedResolve, error) {
+	return overlay.ResolveSemanticForPrepare(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker})
 }
 
 // compileSemantic dispatches through the seam. A zero-value Processor (tests
@@ -274,44 +279,14 @@ func (p *Processor) compileSemantic(raw []byte) (overlay.CompileResult, error) {
 	return compiler.CompileSemantic(raw)
 }
 
-// prepareSemanticCompiler is the optional seam capability for the
-// preparatory pass. Its plan is discarded after asset refs and probe inputs
-// are read, so it must not pay the animated-camera bake.
-type prepareSemanticCompiler interface {
-	CompileSemanticForPrepare(raw []byte) (overlay.CompileResult, error)
-}
-
-func (c overlaySemanticCompiler) CompileSemanticForPrepare(raw []byte) (overlay.CompileResult, error) {
-	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker, SkipCameraBake: true})
-}
-
-// compileSemanticForPrepare dispatches the pass-A compile without camera
-// baking. A legacy test double without the optional method keeps working
-// through the ordinary compile.
-func (p *Processor) compileSemanticForPrepare(raw []byte) (overlay.CompileResult, error) {
-	if compiler, ok := p.compiler.(prepareSemanticCompiler); ok {
-		return compiler.CompileSemanticForPrepare(raw)
+// resolveSemanticForPrepare dispatches the resolve half through the seam. The
+// caller lowers the returned handle exactly once, after the assets exist.
+func (p *Processor) resolveSemanticForPrepare(raw []byte) (*overlay.PreparedResolve, error) {
+	compiler := p.compiler
+	if compiler == nil {
+		compiler = overlaySemanticCompiler{}
 	}
-	return p.compileSemantic(raw)
-}
-
-// sizedSemanticCompiler is the optional seam capability. A test double that
-// predates the sized compile keeps working through compileSemantic's blind
-// result; the production compiler implements it.
-type sizedSemanticCompiler interface {
-	CompileSemanticWithAssetSizes(raw []byte, sizes map[string]overlay.ImageSize) (overlay.CompileResult, error)
-}
-
-// compileSemanticWithAssetSizes is the sized compile: the plan is lowered with
-// the probed source dimensions, so its geometry is final when it is returned.
-func (p *Processor) compileSemanticWithAssetSizes(raw []byte, sizes map[string]overlay.ImageSize) (overlay.CompileResult, error) {
-	if compiler, ok := p.compiler.(sizedSemanticCompiler); ok {
-		return compiler.CompileSemanticWithAssetSizes(raw, sizes)
-	}
-	if p.compiler == nil {
-		return overlay.CompileSemanticWithAssetSizes(raw, sizes)
-	}
-	return p.compiler.CompileSemantic(raw)
+	return compiler.ResolveSemanticForPrepare(raw)
 }
 
 // New creates a job processor with the shipped defaults (Options{}).

@@ -253,6 +253,79 @@ func TestBuildChrononRequestParity(t *testing.T) {
 	}
 }
 
+// TestResolveExecutionPolicyHonoursDurablePolicy certifies the three-state
+// contract end to end at the worker: the claimed job's execution_policy is the
+// only input, gpu_only fails closed instead of silently downgrading a plan that
+// requires the software encoder, and cpu_only runs the software lane without
+// ever forcing a device.
+func TestResolveExecutionPolicyHonoursDurablePolicy(t *testing.T) {
+	source := overlay.Layer{ID: "source", Type: "video"}
+	baseConfig := ProcessorConfig{Backend: "vulkan", HardwareEncoder: "nvenc", EncoderBackend: "native"}
+	stripPlan := func() *overlay.Plan {
+		plan := policyTestPlan(overlay.Layer{ID: "chain:seg0:image", Type: "image", Asset: "assets/a.png"})
+		plan.Features.OverlappingFullCanvasStrip = true
+		return plan
+	}
+
+	t.Run("gpu_only demands the GPU and forbids every fallback", func(t *testing.T) {
+		job := policyTestJob("gpu-only")
+		job.ExecutionPolicy = queue.ExecutionPolicyGPUOnly
+		policy, err := ResolveExecutionPolicy(job, policyTestPlan(source), baseConfig)
+		if err != nil {
+			t.Fatalf("ResolveExecutionPolicy: %v", err)
+		}
+		if !policy.GPURequired || !policy.StrictNative || policy.CPUFallbackAllowed || policy.SoftwareRetryAllowed {
+			t.Fatalf("gpu_only policy = %+v, want strict-native GPU required with no fallback and no retry", policy)
+		}
+		if policy.Backend != baseConfig.Backend {
+			t.Fatalf("gpu_only backend = %q, want the declared %q", policy.Backend, baseConfig.Backend)
+		}
+	})
+
+	t.Run("gpu_only rejects a software-encoder plan instead of downgrading", func(t *testing.T) {
+		job := policyTestJob("gpu-only-strip")
+		job.ExecutionPolicy = queue.ExecutionPolicyGPUOnly
+		if _, err := ResolveExecutionPolicy(job, stripPlan(), baseConfig); !errors.Is(err, ErrExecutionPolicyIncompatible) {
+			t.Fatalf("gpu_only plan requiring the software encoder error = %v, want ErrExecutionPolicyIncompatible", err)
+		}
+	})
+
+	t.Run("cpu_only runs the software lane", func(t *testing.T) {
+		job := policyTestJob("cpu-only")
+		job.ExecutionPolicy = queue.ExecutionPolicyCPUOnly
+		policy, err := ResolveExecutionPolicy(job, policyTestPlan(source), baseConfig)
+		if err != nil {
+			t.Fatalf("ResolveExecutionPolicy: %v", err)
+		}
+		if policy.Backend != "software" || policy.HardwareEncoder != chronon.HardwareEncoderNone || policy.EncoderBackend != "pipe" {
+			t.Fatalf("cpu_only lane = %q/%q/%q, want software/none/pipe", policy.Backend, policy.HardwareEncoder, policy.EncoderBackend)
+		}
+		if policy.GPURequired || policy.SoftwareRetryAllowed {
+			t.Fatalf("cpu_only policy = %+v, want no GPU requirement and no software retry", policy)
+		}
+	})
+
+	t.Run("cpu_only is not a valid final composite", func(t *testing.T) {
+		job := policyTestJob("plan:final-composite:scene-1")
+		job.ExecutionPolicy = queue.ExecutionPolicyCPUOnly
+		if _, err := ResolveExecutionPolicy(job, policyTestPlan(source), baseConfig); !errors.Is(err, ErrExecutionPolicyIncompatible) {
+			t.Fatalf("cpu_only final composite error = %v, want ErrExecutionPolicyIncompatible", err)
+		}
+	})
+
+	t.Run("gpu_preferred keeps the historical software downgrade", func(t *testing.T) {
+		job := policyTestJob("preferred-strip")
+		job.ExecutionPolicy = queue.ExecutionPolicyGPUPreferred
+		policy, err := ResolveExecutionPolicy(job, stripPlan(), baseConfig)
+		if err != nil {
+			t.Fatalf("ResolveExecutionPolicy: %v", err)
+		}
+		if policy.Backend != "software" || policy.GPURequired {
+			t.Fatalf("gpu_preferred strip policy = %+v, want the software lane without a GPU requirement", policy)
+		}
+	})
+}
+
 // TestResolveExecutionPolicyRoutesStripPlansToSoftware pins the explicit
 // capability contract: the policy reads Plan.Features, not transient per-layer
 // metadata, so the compiler's statement that a plan keeps overlapping animated

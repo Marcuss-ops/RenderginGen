@@ -120,8 +120,12 @@ func (p *Processor) PrepareJob(ctx context.Context, job *queue.Job) (*PreparedJo
 	if !job.LeaseUntil.IsZero() {
 		leaseUntil = job.LeaseUntil.UTC().Format(time.RFC3339)
 	}
-	workerlog.ByJobID(job.ID).Statef("preparing", "type=%s attempts=%d lease_generation=%d lease_until=%s",
-		job.JobType, job.Attempts, job.LeaseGeneration, leaseUntil)
+	// execution_policy is the durable demand the queue returned on the claim
+	// (an empty value is a pre-032 row and reads as gpu_preferred). Logging it
+	// here is what makes the producer's require_gpu decision observable on the
+	// worker side of the contract.
+	workerlog.ByJobID(job.ID).Statef("preparing", "type=%s execution_policy=%s attempts=%d lease_generation=%d lease_until=%s",
+		job.JobType, jobExecutionPolicy(job), job.Attempts, job.LeaseGeneration, leaseUntil)
 
 	st := &prepareState{job: job, metrics: metrics, record: record, totalStart: totalStart}
 	// The stages are ordered and each one fails closed before the next spends

@@ -282,6 +282,49 @@ type Ownership struct {
 // server and the worker adapter — is gone.
 type Job = client.Job
 
+// ExecutionPolicy is the durable execution demand of a job. It is an ALIAS of
+// the wire type for the same reason as Job: one declaration, so the stored
+// value, the claim response and the worker cannot disagree.
+type ExecutionPolicy = client.ExecutionPolicy
+
+const (
+	ExecutionPolicyGPUOnly      = client.ExecutionPolicyGPUOnly
+	ExecutionPolicyGPUPreferred = client.ExecutionPolicyGPUPreferred
+	ExecutionPolicyCPUOnly      = client.ExecutionPolicyCPUOnly
+)
+
+// AllExecutionPolicies returns the canonical vocabulary; the SQL CHECK
+// constraint for render_jobs.execution_policy is pinned to it.
+func AllExecutionPolicies() []ExecutionPolicy { return client.AllExecutionPolicies() }
+
+// ApplyExecutionPolicy resolves the durable policy from the producer's two
+// spellings and writes it back onto the job. Both storage backends call it on
+// the submit path so a stored row and a claimed job can never disagree, and an
+// explicit policy that contradicts require_gpu is rejected here instead of
+// being reconciled by a guess.
+func ApplyExecutionPolicy(job *Job) error {
+	if job == nil {
+		return nil
+	}
+	policy, err := client.ResolveExecutionPolicy(job.RequireGPU, job.ExecutionPolicy)
+	if err != nil {
+		return err
+	}
+	job.ExecutionPolicy = policy
+	return nil
+}
+
+// DerivedExecutionPolicy is the policy a job actually carries: the stored
+// value when it is set, otherwise the one implied by the producer's tri-state
+// RequireGPU. Rows that predate the column read back as gpu_preferred, which is
+// exactly what an omitted RequireGPU has always meant.
+func DerivedExecutionPolicy(job Job) ExecutionPolicy {
+	if strings.TrimSpace(string(job.ExecutionPolicy)) == "" {
+		return client.DeriveExecutionPolicy(job.RequireGPU)
+	}
+	return ExecutionPolicy(strings.TrimSpace(string(job.ExecutionPolicy)))
+}
+
 // SameSubmitRequest reports whether two envelopes describe the same immutable
 // request identity. The operational queue ID and lifecycle fields (state,
 // lease, timestamps, artifact and progress) are deliberately excluded, so a
@@ -307,9 +350,13 @@ func SameSubmitRequest(a, b Job) bool {
 	if b.JobType == "" {
 		b.JobType = JobTypeRenderSegment
 	}
+	// The execution policy is part of the immutable request identity: two
+	// submits that disagree about GPU demand are different renders even when
+	// every other field matches, so a retry can never silently change lanes.
 	if a.Schema != b.Schema || a.Version != b.Version ||
 		a.IdempotencyKey != b.IdempotencyKey || a.JobType != b.JobType ||
 		a.PublicationPolicy != b.PublicationPolicy || a.DaemonAdmissionWaitMS != b.DaemonAdmissionWaitMS ||
+		DerivedExecutionPolicy(a) != DerivedExecutionPolicy(b) ||
 		a.ParentJobID != b.ParentJobID || a.ChunkIndex != b.ChunkIndex ||
 		!reflect.DeepEqual(a.FrameRange, b.FrameRange) ||
 		!reflect.DeepEqual(a.PreparedRenderPackage, b.PreparedRenderPackage) ||

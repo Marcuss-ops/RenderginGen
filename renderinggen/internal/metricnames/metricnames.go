@@ -245,20 +245,26 @@ const (
 // Ledger facts mirrored into the local artifact database (counts, bytes and
 // media facts the mirror projects as numbers).
 const (
-	OverlayItemCount     = "overlay_item_count"
-	OverlayRenderBatch   = "overlay_render_batch"
-	EntityCount          = "entity_count"
-	ImportantPhraseCount = "important_phrase_count"
-	ImportantWordCount   = "important_word_count"
-	ImageCount           = "image_count"
-	LightLeakCount       = "light_leak_count"
-	InputBytes           = "input_bytes"
-	OutputBytes          = "output_bytes"
-	FrameCount           = "frame_count"
-	DurationUS           = "duration_us"
-	Width                = "width"
-	Height               = "height"
-	FPS                  = "fps"
+	// OverlayFullCompileCount is the number of complete semantic compilations
+	// (resolve + lower) a prepare pass paid. It is 1 for an ordinary job and 0
+	// for a job that reused a PreparedRenderPackage, so a regression to the
+	// historical blind-compile + sized-recompile shape is visible per job
+	// instead of only in wall-clock time.
+	OverlayFullCompileCount = "overlay_full_compile_count"
+	OverlayItemCount        = "overlay_item_count"
+	OverlayRenderBatch      = "overlay_render_batch"
+	EntityCount             = "entity_count"
+	ImportantPhraseCount    = "important_phrase_count"
+	ImportantWordCount      = "important_word_count"
+	ImageCount              = "image_count"
+	LightLeakCount          = "light_leak_count"
+	InputBytes              = "input_bytes"
+	OutputBytes             = "output_bytes"
+	FrameCount              = "frame_count"
+	DurationUS              = "duration_us"
+	Width                   = "width"
+	Height                  = "height"
+	FPS                     = "fps"
 )
 
 // Chronon-owned telemetry is projected behind this prefix: the keys are the
@@ -328,7 +334,8 @@ var vocab = map[string]string{
 	ImportVerified:        UnitCount, ImportIdentityUS: UnitUS, ImportTotalUS: UnitUS,
 	L2CacheCorrupt: UnitCount,
 
-	OverlayItemCount: UnitCount, OverlayRenderBatch: UnitCount,
+	OverlayFullCompileCount: UnitCount,
+	OverlayItemCount:        UnitCount, OverlayRenderBatch: UnitCount,
 	EntityCount: UnitCount, ImportantPhraseCount: UnitCount, ImportantWordCount: UnitCount,
 	ImageCount: UnitCount, LightLeakCount: UnitCount, InputBytes: UnitBytes,
 	OutputBytes: UnitBytes, FrameCount: UnitCount, DurationUS: UnitUS,

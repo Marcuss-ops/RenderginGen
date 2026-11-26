@@ -4,9 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 )
 
@@ -31,6 +33,7 @@ type claimCandidate struct {
 	frameRange            []byte
 	frameRangeVal         *model.FrameRange
 	manifestVal           inputManifest
+	policy                model.ExecutionPolicy
 }
 
 // claimStateFilter validates the requested state against the same vocabulary
@@ -50,18 +53,23 @@ func claimStateFilter(state model.State) (string, error) {
 // statement runs: database/sql forbids another statement on the same
 // connection while rows are still open. Corrupt JSONB poisons the row in this
 // same transaction and is left out of the healthy window.
-func loadClaimCandidates(ctx context.Context, tx *sql.Tx, stateFilter string, now time.Time, limit int) ([]claimCandidate, int, error) {
+func loadClaimCandidates(ctx context.Context, tx *sql.Tx, stateFilter string, now time.Time, limit int, workerProvesGPU bool) ([]claimCandidate, int, error) {
+	// The GPU requirement is enforced by the query, not by the worker: a job
+	// that demands the GPU lane is invisible to a worker that cannot prove one,
+	// so it stays queued for a capable worker instead of being downgraded after
+	// the claim. Every other policy stays claimable by anybody.
 	rows, err := tx.QueryContext(ctx, `
-		SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, lease_generation, queued_at, artifact_id, parent_job_id, chunk_index, frame_range
+		SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema, job_schema_version, render_plan, input_manifest, attempt_count, lease_generation, queued_at, artifact_id, parent_job_id, chunk_index, frame_range, execution_policy
 		FROM render_jobs
 		WHERE `+stateFilter+`
 		  AND (not_before IS NULL OR not_before <= $1)
+		  AND (execution_policy <> $3 OR $4::boolean)
 		  AND NOT EXISTS (
 		      SELECT 1 FROM render_jobs AS child
 		      WHERE child.parent_job_id = render_jobs.id)
 		ORDER BY queued_at ASC
 		FOR UPDATE SKIP LOCKED
-		LIMIT $2`, now, limit)
+		LIMIT $2`, now, limit, string(model.ExecutionPolicyGPUOnly), workerProvesGPU)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -70,7 +78,7 @@ func loadClaimCandidates(ctx context.Context, tx *sql.Tx, stateFilter string, no
 	poisoned := 0
 	for rows.Next() {
 		var c claimCandidate
-		if err := rows.Scan(&c.id, &c.jobType, &c.publicationPolicy, &c.daemonAdmissionWaitMS, &c.schema, &c.version, &c.plan, &c.manifest, &c.attempts, &c.generation, &c.queuedAt, &c.artifactID, &c.parentJobID, &c.chunkIndex, &c.frameRange); err != nil {
+		if err := rows.Scan(&c.id, &c.jobType, &c.publicationPolicy, &c.daemonAdmissionWaitMS, &c.schema, &c.version, &c.plan, &c.manifest, &c.attempts, &c.generation, &c.queuedAt, &c.artifactID, &c.parentJobID, &c.chunkIndex, &c.frameRange, &c.policy); err != nil {
 			rows.Close()
 			return nil, 0, err
 		}
@@ -161,7 +169,30 @@ func claimCandidateJob(ctx context.Context, tx *sql.Tx, c claimCandidate, worker
 		StartedAt:             now,
 		LeaseUntil:            leaseUntil,
 		LeaseGeneration:       nextGeneration,
+		ExecutionPolicy:       c.policy,
 	}, nil
+}
+
+// claimingWorkerProvesGPU answers whether the claiming worker's registered
+// capability inventory names the GPU lane. An unregistered worker, or an
+// inventory recorded before the capability existed, is not proof: gpu_only
+// work is never handed out on a guess, it waits for a worker that can execute
+// it. The lookup runs in the claim transaction, so the answer is the inventory
+// the worker registered before the claim, not one refreshed after it.
+func claimingWorkerProvesGPU(ctx context.Context, tx *sql.Tx, workerID string) (bool, error) {
+	var raw []byte
+	err := tx.QueryRowContext(ctx, `SELECT capabilities FROM rendering_workers WHERE id = $1`, workerID).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	var capabilities []string
+	if err := json.Unmarshal(raw, &capabilities); err != nil {
+		return false, fmt.Errorf("worker %s capabilities: %w", workerID, err)
+	}
+	return client.HasCapability(capabilities, client.CapabilityGPU), nil
 }
 
 // attachClaimArtifacts rehydrates artifacts for jobs re-claimed from the

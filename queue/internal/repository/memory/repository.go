@@ -19,6 +19,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/Marcuss-ops/RenderingGen/queue/client"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/repository"
 	"sort"
@@ -274,6 +276,12 @@ func (s *Repository) claimCandidateLocked(id, workerID string, state model.State
 	if s.hasChildrenLocked(id) {
 		return nil, false
 	}
+	// The in-memory mirror of the postgres claim predicate: a GPU-only job is
+	// invisible to a worker whose registered inventory does not name the GPU
+	// lane, so it stays queued instead of being downgraded after the claim.
+	if model.DerivedExecutionPolicy(*job) == model.ExecutionPolicyGPUOnly && !s.workerProvesGPULocked(workerID) {
+		return nil, false
+	}
 	s.removeOrderLocked(id)
 	job.State = model.StateRunning
 	job.Worker = workerID
@@ -304,7 +312,20 @@ func (s *Repository) indexChildLocked(job model.Job) {
 	set[job.ID] = struct{}{}
 }
 
+// workerProvesGPULocked reports whether workerID's registered inventory names
+// the GPU lane. The caller holds s.mu. An unregistered worker is not proof.
+func (s *Repository) workerProvesGPULocked(workerID string) bool {
+	worker, ok := s.workers[workerID]
+	if !ok {
+		return false
+	}
+	return client.HasCapability(worker.Capabilities, client.CapabilityGPU)
+}
+
 func (s *Repository) SubmitIdempotent(_ context.Context, job model.Job) (*model.Job, bool, error) {
+	if err := model.ApplyExecutionPolicy(&job); err != nil {
+		return nil, false, err
+	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if job.ID == "" {
@@ -335,6 +356,9 @@ func (s *Repository) SubmitIdempotent(_ context.Context, job model.Job) (*model.
 
 // Submit enqueues a job. The ID is required and must be unique.
 func (s *Repository) Submit(_ context.Context, job model.Job) error {
+	if err := model.ApplyExecutionPolicy(&job); err != nil {
+		return err
+	}
 	if job.ID == "" {
 		return fmt.Errorf("job id is required")
 	}

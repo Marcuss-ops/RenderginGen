@@ -58,17 +58,18 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 			Backend: p.backend, ChrononVersion: p.chrononVersion,
 		}, nil
 	}
-	result, err := p.compileSemanticForPrepare(job.RenderPlan)
+	// Resolve once, materialize, probe, lower once: the stored plan bytes must
+	// describe the geometry a frame renders, not a blind first reading.
+	resolved, err := p.resolveSemanticForPrepare(job.RenderPlan)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	plan, compiledAssets := result.Plan, result.Assets
 	// One chunk contract, both entry points: the prepare path enforces the
 	// same plan-vs-frame-range bound as PrepareJob.
-	if err := validateFrameRange(job, plan); err != nil {
+	if err := validateFrameRange(job, resolved.PlanShell()); err != nil {
 		return queue.Artifact{}, err
 	}
-	assets, err := mergeAssets(job.Assets, compiledAssets)
+	assets, err := mergeAssets(job.Assets, resolved.Assets())
 	if err != nil {
 		return queue.Artifact{}, err
 	}
@@ -80,17 +81,15 @@ func (p *Processor) Prepare(ctx context.Context, job *queue.Job) (queue.Artifact
 	if err := ws.MaterializePaths(ctx, p.resolveAssetStreaming, assets); err != nil {
 		return queue.Artifact{}, err
 	}
-	// Second pass with the probed source sizes: the stored plan bytes must
-	// describe the geometry a frame renders, not the blind first reading.
-	sizes, err := probePlanImageSizes(ws.Root(), plan)
+	sizes, err := p.probePendingImageSizes(ws.Root(), resolved)
 	if err != nil {
 		return queue.Artifact{}, err
 	}
-	sized, err := p.compileSemanticWithAssetSizes(job.RenderPlan, sizes)
+	result, err := resolved.LowerAndSeal(sizes)
 	if err != nil {
-		return queue.Artifact{}, fmt.Errorf("processor: sized recompile after materialize: %w", err)
+		return queue.Artifact{}, fmt.Errorf("processor: lower prepared plan: %w", err)
 	}
-	plan = sized.Plan
+	plan := result.Plan
 	if err := validateFrameRange(job, plan); err != nil {
 		return queue.Artifact{}, err
 	}

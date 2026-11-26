@@ -107,6 +107,23 @@ const (
 
 // Client claims and reports jobs against a central queue, delegating the wire
 // contract to the queue's public client.
+// ExecutionPolicy is the durable three-state GPU demand the queue stores on a
+// job and returns on every claim. It is an ALIAS of the queue module's public
+// contract for the same reason as Job: the worker must not re-declare a
+// vocabulary the database already owns.
+type ExecutionPolicy = queueclient.ExecutionPolicy
+
+const (
+	ExecutionPolicyGPUOnly      = queueclient.ExecutionPolicyGPUOnly
+	ExecutionPolicyGPUPreferred = queueclient.ExecutionPolicyGPUPreferred
+	ExecutionPolicyCPUOnly      = queueclient.ExecutionPolicyCPUOnly
+)
+
+// CapabilityGPU is the capability a worker advertises when it can execute the
+// GPU lane; the queue's claim path requires it before handing out a gpu_only
+// job.
+const CapabilityGPU = queueclient.CapabilityGPU
+
 type Client struct {
 	workerID string
 	q        *queueclient.Client

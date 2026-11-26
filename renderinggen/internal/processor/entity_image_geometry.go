@@ -9,36 +9,32 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
 )
 
-// probePlanImageSizes is the I/O half of the sized compile: it reads the
-// decoded pixel size of every image layer that still awaits its source
-// geometry and returns them keyed by the plan's logical asset path.
+// probePendingImageSizes is the I/O half of the sized compile: it reads the
+// decoded pixel size of every image the resolved plan will lower into a layer
+// whose geometry derives from its source, and returns them keyed by the plan's
+// logical asset path.
+//
+// The probe answers from the RESOLVE, not from a compiled plan: the whole point
+// of the two-phase compile is that no layer exists yet when the bytes are
+// materialized. PendingImageAssets is the overlay-owned predicate for "this
+// image's size matters"; it lists exactly the assets the lower will consume.
 //
 // The processor owns the file access because it has already verified and
 // materialized the content-addressed bytes; overlay owns the geometry. The
 // returned map is ALWAYS non-nil, so an empty plan still selects the sized
-// compile and can never silently fall back to a guessed box.
-func probePlanImageSizes(root string, plan *overlay.Plan) (map[string]overlay.ImageSize, error) {
+// lower and can never silently fall back to a guessed box.
+func (p *Processor) probePendingImageSizes(root string, resolved *overlay.PreparedResolve) (map[string]overlay.ImageSize, error) {
 	sizes := make(map[string]overlay.ImageSize)
-	if plan == nil {
-		return sizes, nil
-	}
-	for i := range plan.Layers {
-		layer := &plan.Layers[i]
-		if layer.Type != "image" || (!layer.DeriveWidthFromAsset && !layer.EntityImage) {
-			continue
-		}
-		if layer.Asset == "" {
-			return nil, fmt.Errorf("processor: image layer %q needs source dimensions but declares no asset", layer.ID)
-		}
-		if _, probed := sizes[layer.Asset]; probed {
+	for _, asset := range resolved.PendingImageAssets() {
+		if _, probed := sizes[asset]; probed {
 			continue
 		}
 		sourceWidth, sourceHeight, err := entityImageDimensions(
-			filepath.Join(root, filepath.FromSlash(layer.Asset)))
+			filepath.Join(root, filepath.FromSlash(asset)))
 		if err != nil {
-			return nil, fmt.Errorf("processor: read image layer %q dimensions: %w", layer.ID, err)
+			return nil, fmt.Errorf("processor: read pending image %q dimensions: %w", asset, err)
 		}
-		sizes[layer.Asset] = overlay.ImageSize{Width: sourceWidth, Height: sourceHeight}
+		sizes[asset] = overlay.ImageSize{Width: sourceWidth, Height: sourceHeight}
 	}
 	return sizes, nil
 }

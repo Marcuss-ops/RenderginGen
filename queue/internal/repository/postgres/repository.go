@@ -205,10 +205,17 @@ type jobRow struct {
 	version  int
 	plan     []byte
 	manifest []byte
+	policy   model.ExecutionPolicy
 }
 
 func prepareJobRow(job model.Job) (jobRow, error) {
-	row := jobRow{schema: job.Schema, version: job.Version}
+	// The durable execution policy is resolved once here, on the single insert
+	// path every submit route shares, so Submit and SubmitBatch cannot store
+	// two different answers for the same producer declaration.
+	if err := model.ApplyExecutionPolicy(&job); err != nil {
+		return jobRow{}, err
+	}
+	row := jobRow{schema: job.Schema, version: job.Version, policy: job.ExecutionPolicy}
 	if row.schema == "" {
 		row.schema = model.JobSchemaV1
 	}
@@ -233,8 +240,8 @@ func prepareJobRow(job model.Job) (jobRow, error) {
 }
 
 const insertJobSQL = `
-		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before, publication_policy, daemon_admission_wait_ms)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14)
+		INSERT INTO render_jobs (id, job_type, job_schema, job_schema_version, render_plan, input_manifest, max_attempts, idempotency_key, parent_job_id, chunk_index, frame_range, not_before, publication_policy, daemon_admission_wait_ms, execution_policy)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, NULLIF($8, ''), NULLIF($9, ''), $10, $11, $12, $13, $14, $15)
 		ON CONFLICT (id) DO NOTHING`
 
 // insertJobRowOnly inserts one job row without its creation event.
@@ -251,7 +258,7 @@ func (r *Repository) insertJobRowOnly(ctx context.Context, tx *sql.Tx, job model
 		return err
 	}
 	res, err := tx.ExecContext(ctx, insertJobSQL,
-		job.ID, row.jobType, row.schema, row.version, row.plan, row.manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS)
+		job.ID, row.jobType, row.schema, row.version, row.plan, row.manifest, r.maxAttempts, job.IdempotencyKey, job.ParentJobID, job.ChunkIndex, job.FrameRange, job.NotBefore, job.PublicationPolicy, job.DaemonAdmissionWaitMS, string(row.policy))
 	if err != nil {
 		return mapJobInsertError(err, job.ID)
 	}
@@ -392,7 +399,7 @@ func (r *Repository) batchRequestMatches(ctx context.Context, jobs []model.Job) 
 	}
 	query := `SELECT id, job_type, publication_policy, daemon_admission_wait_ms, job_schema,
 		job_schema_version, render_plan, input_manifest, idempotency_key, parent_job_id,
-		chunk_index, frame_range, not_before FROM render_jobs WHERE id IN (` + strings.Join(placeholders, ",") + `)`
+		chunk_index, frame_range, not_before, execution_policy FROM render_jobs WHERE id IN (` + strings.Join(placeholders, ",") + `)`
 	rows, err := r.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return false, err
@@ -408,7 +415,7 @@ func (r *Repository) batchRequestMatches(ctx context.Context, jobs []model.Job) 
 		var notBefore sql.NullTime
 		if err := rows.Scan(&actual.ID, &actual.JobType, &actual.PublicationPolicy,
 			&actual.DaemonAdmissionWaitMS, &schema, &version, &plan, &manifest,
-			&idemKey, &parentID, &actual.ChunkIndex, &frameRange, &notBefore); err != nil {
+			&idemKey, &parentID, &actual.ChunkIndex, &frameRange, &notBefore, &actual.ExecutionPolicy); err != nil {
 			return false, err
 		}
 		actual.Schema = schema
@@ -594,7 +601,12 @@ func (r *Repository) claimN(ctx context.Context, workerID string, state model.St
 		return nil, 0, err
 	}
 
-	candidates, poisoned, err := loadClaimCandidates(ctx, tx, stateFilter, now, limit)
+	workerProvesGPU, err := claimingWorkerProvesGPU(ctx, tx, workerID)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	candidates, poisoned, err := loadClaimCandidates(ctx, tx, stateFilter, now, limit, workerProvesGPU)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -655,7 +667,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 		       input_manifest, attempt_count, lease_generation,
 		       current_worker_id, queued_at, started_at, completed_at,
 		       lease_until, error_message, artifact_id, idempotency_key,
-		       parent_job_id, chunk_index, frame_range, not_before,
+		       parent_job_id, chunk_index, frame_range, not_before, execution_policy,
 		       progress_frames_done, progress_total_frames, progress_last_frame_at, progress_worker
 		FROM render_jobs
 		WHERE id = $1`, id).Scan(
@@ -663,7 +675,7 @@ func (r *Repository) Get(ctx context.Context, id string) (*model.Job, error) {
 		&manifest, &job.Attempts, &job.LeaseGeneration,
 		&worker, &queuedAt, &startedAt, &completedAt,
 		&leaseUntil, &errorMsg, &artifactID, &idempotencyKey,
-		&parentJobID, &chunkIndex, &frameRange, &notBefore,
+		&parentJobID, &chunkIndex, &frameRange, &notBefore, &job.ExecutionPolicy,
 		&pFramesDone, &pTotalFrames, &pLastFrameAt, &pWorker)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, fmt.Errorf("job %s: %w", id, repository.ErrNotFound)

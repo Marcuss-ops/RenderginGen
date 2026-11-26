@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -171,6 +172,20 @@ func buildRenderers(cfg *config.Config) rendererSet {
 		log.Fatalf("chronon renderer capabilities: %v", err)
 	}
 	set.capabilities = declared.RendererCapabilities()
+	// Advertise the GPU lane itself, not only the certified effect ids. The
+	// queue refuses to hand a gpu_only job to a worker whose inventory cannot
+	// prove a GPU, and a host with Vulkan but no certified effect would
+	// otherwise advertise an empty inventory even though it can execute the
+	// lane. The capability comes from the same doctor verdict as the effects.
+	//
+	// Two proofs are required: the host must have a GPU lane (doctor verdict)
+	// AND this worker must actually be configured to serve it. A worker started
+	// on the software profile is a CPU lane by operator choice; advertising
+	// gpu would let the queue hand it gpu_only work it would then execute
+	// without a GPU, which is exactly the silent downgrade the policy forbids.
+	if declared.ProvidesGPULane() && !strings.EqualFold(cfg.Chronon.Backend, "software") {
+		set.capabilities = append(set.capabilities, queue.CapabilityGPU)
+	}
 
 	// CPU/I/O stages execute concurrently, and the renderer is allowed up to
 	// cfg.Worker.GPULanes concurrent GPU sessions (the config default of 2

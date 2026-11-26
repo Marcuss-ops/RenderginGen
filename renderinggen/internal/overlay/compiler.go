@@ -144,58 +144,37 @@ func CompileSemanticWithOptions(raw []byte, opts CompileOptions) (CompileResult,
 	return compileSemanticWithOptions(raw, opts)
 }
 
+// compileSemanticWithOptions is the one-shot compile: one resolve, one lower.
+// The prepare path calls the two phases separately (see prepare_pipeline.go) so
+// it can probe the materialized bytes between them and pay each stage once.
 func compileSemanticWithOptions(raw []byte, opts CompileOptions) (CompileResult, error) {
+	resolved, err := ResolveSemanticForPrepare(raw, opts)
+	if err != nil {
+		return CompileResult{}, err
+	}
+	return resolved.LowerAndSeal(nil)
+}
+
+// decodeSemanticPlanForCompile applies the documented error taxonomy to the ONE
+// strict decode: invalid JSON first, then the schema identity, then the
+// semantic decode. The probe runs on the error path only, so a successful
+// compile pays exactly one decode of the document.
+func decodeSemanticPlanForCompile(raw []byte) (semanticPlan, error) {
 	src, err := decodeSemanticPlan(raw)
 	if err != nil {
-		// Error path only: the historical probes (invalid-JSON check, then
-		// schema check) ran BEFORE the strict decode and their precedence is
-		// part of the observable contract. They are reproduced here so the
-		// success path pays exactly one decode of the document.
 		var probe struct {
 			SchemaVersion string `json:"schema_version"`
 		}
 		if perr := json.Unmarshal(raw, &probe); perr != nil {
-			return CompileResult{}, fmt.Errorf("overlay: decode plan: %w", perr)
+			return semanticPlan{}, fmt.Errorf("overlay: decode plan: %w", perr)
 		}
 		if probe.SchemaVersion != SemanticSchema {
-			return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
+			return semanticPlan{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", probe.SchemaVersion, SemanticSchema)
 		}
-		return CompileResult{}, fmt.Errorf("overlay: decode semantic plan: %w", err)
+		return semanticPlan{}, fmt.Errorf("overlay: decode semantic plan: %w", err)
 	}
 	if src.SchemaVersion != SemanticSchema {
-		return CompileResult{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", src.SchemaVersion, SemanticSchema)
+		return semanticPlan{}, fmt.Errorf("overlay: unsupported plan schema %q (semantic %q is the only accepted contract)", src.SchemaVersion, SemanticSchema)
 	}
-	plan, assets, stats, unknown, err := compileSemanticDecoded(&src, opts)
-	if err != nil {
-		return CompileResult{}, err
-	}
-	// Chronon decodes a text layer's style.background into box_style but never
-	// draws that box. Lower the plate to a native shape layer here so a
-	// payload's card_background is visible instead of silently dropped.
-	liftTextBackgroundPlates(plan)
-	// Text lowerers author selector/property keyframes from frame 0, while
-	// Chronon samples text animators on the composition clock. Translate once
-	// after every layer (and its lifted plate) exists, otherwise every chain
-	// card after the first opens with its typewriter selector already elapsed
-	// and renders fully revealed.
-	shiftTextAnimatorsToCompositionClock(plan)
-	if err := ValidateEntityCaptionCollisions(plan.Layers, plan.Canvas.Width, plan.Canvas.Height); err != nil {
-		return CompileResult{}, fmt.Errorf("overlay: %w", err)
-	}
-	// The metadata probe (top-level language) is the same field the strict
-	// decode already read; a separate lenient decode could never fail after
-	// the strict one succeeded, so its value is taken from the decoded plan.
-	prepared, err := buildPreparedPackage(plan, src.Language, assets)
-	if err != nil {
-		return CompileResult{}, err
-	}
-	hash, fontHash, burn, present := subtitleAssetFrom(src.Subtitles)
-	return CompileResult{
-		Plan: plan, Assets: assets, Stats: stats, Prepared: prepared,
-		UnknownTemplates: unknown,
-		Subtitle:         SubtitleRef{Hash: hash, FontHash: fontHash, Burn: burn, Present: present},
-		subtitleStyleRaw: src.Subtitles.styleMap(),
-		subtitleWidth:    src.Width,
-		subtitleHeight:   src.Height,
-	}, nil
+	return src, nil
 }

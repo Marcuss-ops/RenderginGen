@@ -25,6 +25,22 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/workspace"
 )
 
+// addCompileTime accumulates one half of the split semantic compile so the
+// single scene_compile ledger phase keeps describing it as a whole.
+func (st *prepareState) addCompileTime(start time.Time) {
+	st.compileDuration += time.Since(start)
+}
+
+// recordItemCounts books the cardinality counters from the ONE compile (or
+// resolve) pass that produced this job's stats, so the artifact metrics can
+// never drift from the layers that were emitted.
+func (st *prepareState) recordItemCounts() {
+	st.metrics[metricnames.OverlayItemCount] = float64(st.stats.SemanticItemCount)
+	if st.stats.SemanticItemCount > 1 {
+		st.metrics[metricnames.OverlayRenderBatch] = 1
+	}
+}
+
 // prepareState is the mutable working set of one PrepareJob pass. Every stage
 // takes it by pointer and mutates only its own fields, so a stage can be read
 // in isolation instead of following a 350-line function's locals.
@@ -37,11 +53,21 @@ type prepareState struct {
 	// compile
 	result           overlay.CompileResult
 	compiledSemantic bool
-	stats            overlay.Stats
-	plan             *overlay.Plan
-	compiledAssets   []overlay.Asset
-	preparedPackage  overlay.PreparedPackage
-	assets           []queue.AssetRef
+	// resolve is the un-lowered semantic plan of an ordinary job. It is
+	// lowered exactly once, after the assets are materialized and probed, so
+	// the document is never resolved twice and the plan is never compiled
+	// blind and then recompiled. A prepared-package job leaves it nil: its
+	// plan was compiled (with sizes) by render.prepare and is used verbatim.
+	resolve *overlay.PreparedResolve
+	// compileDuration accumulates the resolve and lower wall time, so the
+	// scene_compile ledger phase keeps describing the whole semantic compile
+	// after it was split in two.
+	compileDuration time.Duration
+	stats           overlay.Stats
+	plan            *overlay.Plan
+	compiledAssets  []overlay.Asset
+	preparedPackage overlay.PreparedPackage
+	assets          []queue.AssetRef
 
 	// workspace
 	ws           *workspace.Workspace
@@ -58,15 +84,17 @@ type prepareState struct {
 	segmentItemIDs        []string
 }
 
-// prepareCompile loads the immutable prepared package or runs the semantic
-// compiler, then gates the result before any workspace, asset download or GPU
-// lane is spent.
+// prepareCompile loads the immutable prepared package or RESOLVES the semantic
+// plan, then gates the result before any workspace, asset download or GPU lane
+// is spent. An ordinary job is only resolved here: lowering happens once, after
+// the bytes exist, in lowerPreparedPlan.
 func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error {
 	job := st.job
 	if job.PreparedRenderPackage != nil {
 		// A prepared package is the compiler's immutable output for the whole
-		// family. Verify its source identities before using it, then stage its
-		// content-addressed assets into this worker's own workspace.
+		// family: its plan was already compiled with the real image sizes by
+		// render.prepare. Verify its source identities and reuse it verbatim —
+		// recompiling it here discarded the package and cost a full compile.
 		packageStart := time.Now()
 		pkg, err := p.loadPreparedRenderPackage(ctx, job)
 		if err != nil {
@@ -86,43 +114,51 @@ func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error 
 			st.compiledAssets[i] = overlay.Asset{Hash: asset.Hash, LogicalPath: asset.LogicalPath}
 		}
 		st.record(metricnames.PrepareSceneCompileStem, packageStart)
+		// The package plan was compiled (with sizes) by render.prepare; reusing
+		// it is the whole point of the immutable package.
+		st.metrics[metricnames.OverlayFullCompileCount] = 0
 	} else {
-		// One compile pass produces the plan AND the ledger counters, so the
-		// artifact metrics can never drift from the layers that were emitted.
+		// Resolve once. The same pass classifies the template_ids and the
+		// audio policy, so the gates below run before a byte is downloaded.
 		compileStart := time.Now()
-		result, err := p.compileSemanticForPrepare(job.RenderPlan)
+		resolved, err := p.resolveSemanticForPrepare(job.RenderPlan)
 		if err != nil {
 			return err
 		}
-		st.record(metricnames.PrepareSceneCompileStem, compileStart)
+		st.addCompileTime(compileStart)
+		st.resolve = resolved
 		st.compiledSemantic = true
-		st.result = result
-		st.stats, st.plan, st.compiledAssets = result.Stats, result.Plan, result.Assets
-		st.preparedPackage = result.Prepared
 	}
-	if err := validateAudioMode(st.plan); err != nil {
+	gatePlan := st.plan
+	if st.resolve != nil {
+		gatePlan = st.resolve.PlanShell()
+	} else {
+		// A prepared package already carries the compiler's counters.
+		st.recordItemCounts()
+	}
+	if err := validateAudioMode(gatePlan); err != nil {
 		return fmt.Errorf("processor: %w", err)
-	}
-	st.metrics[metricnames.OverlayItemCount] = float64(st.stats.SemanticItemCount)
-	if st.stats.SemanticItemCount > 1 {
-		st.metrics[metricnames.OverlayRenderBatch] = 1
 	}
 	// UnknownTemplates is empty for every plan the compiler accepts: a non-empty
 	// template_id that resolves to no registry row and no legacy alias is
 	// REJECTED by resolveSemanticItems, not lowered as a preset-less primitive.
 	// This check is the belt to that suspenders, so a future relaxation of the
 	// compiler's gate can never become a rendered downgrade — a template_id the
-	// compile pass could not place is a prepare-boundary failure, before any
+	// resolve pass could not place is a prepare-boundary failure, before any
 	// workspace, download, font stage or GPU lane is spent.
-	if st.compiledSemantic && len(st.result.UnknownTemplates) > 0 {
-		st.metrics[metricnames.UnknownTemplates] = float64(len(st.result.UnknownTemplates))
-		return fmt.Errorf("processor: %d item template_id(s) resolved to no registry row and must not be rendered: %s",
-			len(st.result.UnknownTemplates), strings.Join(st.result.UnknownTemplates, ", "))
+	if st.resolve != nil {
+		if unknown := st.resolve.UnknownTemplates(); len(unknown) > 0 {
+			st.metrics[metricnames.UnknownTemplates] = float64(len(unknown))
+			return fmt.Errorf("processor: %d item template_id(s) resolved to no registry row and must not be rendered: %s",
+				len(unknown), strings.Join(unknown, ", "))
+		}
 	}
 	// The chunk contract is validated against the plan that will actually be
 	// rendered, before any asset is downloaded: an out-of-range chunk is a
-	// producer bug that must not burn a GPU lane and a lease to surface.
-	if err := validateFrameRange(job, st.plan); err != nil {
+	// producer bug that must not burn a GPU lane and a lease to surface. The
+	// sealed plan is validated again after lowering, where its duration is
+	// authoritative.
+	if err := validateFrameRange(job, gatePlan); err != nil {
 		return err
 	}
 	// The compile half is one declared phase pair (overlay_compile_us/_ms,
@@ -131,7 +167,11 @@ func (p *Processor) prepareCompile(ctx context.Context, st *prepareState) error 
 	// histogram, so overlay_compile can never be visible in the ledger but
 	// missing from `renderinggen_worker_phase_duration_seconds`.
 	st.record(metricnames.OverlayCompileStem, st.totalStart)
-	assets, err := mergeAssets(job.Assets, st.compiledAssets)
+	compiledAssets := st.compiledAssets
+	if st.resolve != nil {
+		compiledAssets = st.resolve.Assets()
+	}
+	assets, err := mergeAssets(job.Assets, compiledAssets)
 	if err != nil {
 		return err
 	}
@@ -163,7 +203,13 @@ func (p *Processor) prepareWorkspace(ctx context.Context, st *prepareState) (err
 	if err := p.materializePrepareAssets(ctx, ws, st); err != nil {
 		return err
 	}
-	if err := p.recompilePreparedPlan(ws, st); err != nil {
+	if err := p.lowerPreparedPlan(ws, st); err != nil {
+		return err
+	}
+	if err := p.normalizePreparedPlanAssets(ws, st); err != nil {
+		return err
+	}
+	if err := validateMapRasterAssets(ws.Root(), st.plan); err != nil {
 		return err
 	}
 	if err := p.prescalePreparedPlan(ctx, ws, st); err != nil {
@@ -217,23 +263,47 @@ func (p *Processor) materializePrepareAssets(ctx context.Context, ws *workspace.
 	return nil
 }
 
-func (p *Processor) recompilePreparedPlan(ws *workspace.Workspace, st *prepareState) error {
-	// The first compile ran before a single byte existed on disk, so any image
-	// whose box depends on its source aspect was left at its provisional
-	// geometry. Probe the real dimensions and lower the plan a second time.
-	sizes, err := probePlanImageSizes(ws.Root(), st.plan)
+// lowerPreparedPlan is the ONE lowering pass of an ordinary job. Every asset is
+// already materialized, so the images whose geometry derives from their source
+// are probed and the plan is lowered once with the real dimensions — the
+// historical blind compile plus sized recompile is gone.
+//
+// A prepared-package job has nothing to lower: its plan was compiled by
+// render.prepare and is reused verbatim, so the full compile count for it is
+// zero.
+func (p *Processor) lowerPreparedPlan(ws *workspace.Workspace, st *prepareState) error {
+	if st.resolve == nil {
+		return nil
+	}
+	sizes, err := p.probePendingImageSizes(ws.Root(), st.resolve)
 	if err != nil {
 		return err
 	}
-	sized, err := p.compileSemanticWithAssetSizes(st.job.RenderPlan, sizes)
+	lowerStart := time.Now()
+	result, err := st.resolve.LowerAndSeal(sizes)
+	st.addCompileTime(lowerStart)
 	if err != nil {
-		return fmt.Errorf("processor: sized recompile after materialize: %w", err)
+		return fmt.Errorf("processor: lower prepared plan: %w", err)
 	}
-	st.result = sized
-	st.plan = sized.Plan
-	st.stats = sized.Stats
-	st.preparedPackage = sized.Prepared
-	st.compiledAssets = sized.Assets
+	// The ledger's scene_compile phase covers the whole semantic compile, so
+	// it is recorded with the accumulated resolve+lower duration.
+	st.record(metricnames.PrepareSceneCompileStem, time.Now().Add(-st.compileDuration))
+	st.result = result
+	st.plan = result.Plan
+	st.stats = result.Stats
+	st.preparedPackage = result.Prepared
+	st.compiledAssets = result.Assets
+	st.metrics[metricnames.OverlayFullCompileCount] = 1
+	st.recordItemCounts()
+	// The sealed plan knows the duration the item end times produce, which the
+	// pre-materialize gate could not: re-validate the chunk contract here.
+	return validateFrameRange(st.job, st.plan)
+}
+
+// normalizePreparedPlanAssets makes the plan's image paths agree with the
+// materialized bytes. It runs after lowering (the paths exist only then) and
+// before the package is rebuilt, because a rename changes its asset manifest.
+func (p *Processor) normalizePreparedPlanAssets(ws *workspace.Workspace, st *prepareState) error {
 	renamed, err := normalizeMaterializedImagePaths(ws.Root(), st.plan)
 	if err != nil {
 		return err
@@ -247,7 +317,7 @@ func (p *Processor) recompilePreparedPlan(ws *workspace.Workspace, st *prepareSt
 	// The package is rebuilt once from the final plan; the renames and the
 	// subtitle burn both make the previous build stale.
 	st.packageStale = len(renamed) > 0
-	return validateMapRasterAssets(ws.Root(), st.plan)
+	return nil
 }
 
 func (p *Processor) prescalePreparedPlan(ctx context.Context, ws *workspace.Workspace, st *prepareState) error {

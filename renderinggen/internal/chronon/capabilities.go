@@ -61,11 +61,20 @@ type GPUEffect struct {
 
 const gpuEffectCapabilityPrefix = "overlay.effect."
 
+// ProvidesGPULane reports the one proof that a worker can execute the GPU
+// lane: a ready doctor verdict with Vulkan support. It is the same gate
+// RendererCapabilities uses, kept in one place so the worker's registration
+// and the effect inventory can never disagree about whether this host has a
+// GPU lane.
+func (caps *Capabilities) ProvidesGPULane() bool {
+	return caps != nil && caps.ready && caps.Vulkan
+}
+
 // RendererCapabilities returns the queue vocabulary for effects this
 // Chronon binary says it can execute natively. Unsupported rows are omitted so
 // an empty result remains a fail-closed inventory.
 func (caps *Capabilities) RendererCapabilities() []string {
-	if caps == nil || !caps.ready || !caps.Vulkan {
+	if !caps.ProvidesGPULane() {
 		return nil
 	}
 	out := make([]string, 0, len(caps.GPUEffects))
