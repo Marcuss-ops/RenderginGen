@@ -31,7 +31,11 @@ type contractCorpusFixture struct {
 }
 
 func TestOverlayContractCorpus(t *testing.T) {
-	root, err := filepath.Abs(filepath.Join("..", "..", "..", ".."))
+	// The corpus is vendored under the RenderingGen repository root so this
+	// test is hermetic: a standalone RenderingGen CI checkout must not need a
+	// sibling PipelineGen tree or a parent workspace manifest. The workspace
+	// copy is checked separately by TestContractCorpusMatchesWorkspaceSources.
+	root, err := filepath.Abs(filepath.Join("..", "..", ".."))
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -21,7 +21,7 @@ Ogni `panic(` è una delle due categorie:
 | `internal/motion/catalog.go:392` | INIT | un motion canonico non si registra | idem |
 | `internal/motion/catalog.go:404` | INIT | la retirement metadata non si applica | idem |
 | `internal/motion/catalog.go:409` | INIT | gli short-phrase styles non si registrano | idem |
-| `internal/overlay/maps_renderer_catalog.go:64` | INIT | il catalogo ChrononPlugin embedded non decodifica | `TestEmbeddedCatalogsInitialize` + `TestChrononPluginMapsCatalogOwnsTheMapVocabulary` |
+| `internal/overlay/mapcatalog/catalog.go:126` | INIT | il catalogo ChrononPlugin embedded non decodifica | `TestEmbeddedCatalogsInitialize` + `TestChrononPluginMapsCatalogOwnsTheMapVocabulary` |
 | `internal/overlay/geographic_tag_styles.go:20` | INIT | il catalogo embedded degli stili geografici non decodifica | `TestEmbeddedCatalogsInitialize` |
 | `internal/overlay/geographic_tag_styles.go:25` | INIT | preset senza nome nel catalogo embedded | idem |
 | `internal/overlay/geographic_tag_styles.go:28` | INIT | preset duplicato nel catalogo embedded | idem |

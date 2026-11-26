@@ -14,7 +14,7 @@ func TestProductionPanicsAreCatalogInitializers(t *testing.T) {
 	allowed := map[string]bool{
 		"renderinggen/internal/motion/catalog.go":                true,
 		"renderinggen/internal/overlay/geographic_tag_styles.go": true,
-		"renderinggen/internal/overlay/maps_renderer_catalog.go": true,
+		"renderinggen/internal/overlay/mapcatalog/catalog.go":    true,
 	}
 	root := RepoRoot()
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {

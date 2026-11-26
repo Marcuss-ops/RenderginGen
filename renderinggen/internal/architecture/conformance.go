@@ -263,9 +263,10 @@ func Rules() []rule {
 			note: "the lowercase org_default/gpe_default spellings are the LIVE legacy aliases, owned solely by " +
 				"overlay/registry.go's legacyTemplateAliases (the uppercase ORG_DEFAULT/GPE_DEFAULT spellings are dead); " +
 				"no other file in this repository may introduce the alias spelling — producers emit ORGANIZATION_DEFAULT/LOCATION_DEFAULT",
-			// exclude names the two files that OWN the alias vocabulary: the
-			// resolution table and the tests that pin it.
-			exclude: []string{"overlay/registry.go", "overlay/registry_test.go"},
+			// exclude names the files that OWN or legitimately CARRY the alias
+			// vocabulary: the resolution table, the tests that pin it, and the
+			// vendored producer corpus (wire fixtures are data, not code).
+			exclude: []string{"overlay/registry.go", "overlay/registry_test.go", "contracts/overlay-v2/fixtures/"},
 			textRe:  mustRe(`"(?:org|gpe)_default"`),
 		},
 		{

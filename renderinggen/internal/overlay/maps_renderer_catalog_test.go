@@ -61,7 +61,7 @@ func TestChrononPluginMapsCatalogMatchesSource(t *testing.T) {
 		t.Fatalf("parse ChrononPlugin map catalog %s: %v", source, err)
 	}
 	if !reflect.DeepEqual(chrononPluginMaps, fromSource) {
-		t.Fatalf("embedded map catalog is stale: copy %s into renderinggen/internal/overlay/catalog/%s",
+		t.Fatalf("embedded map catalog is stale: copy %s into renderinggen/internal/overlay/mapcatalog/catalog/%s",
 			source, chrononPluginMapsCatalogFileName)
 	}
 }

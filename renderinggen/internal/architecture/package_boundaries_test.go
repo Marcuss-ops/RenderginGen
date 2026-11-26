@@ -29,6 +29,25 @@ func TestOverlayRootFilesStayUnder800(t *testing.T) {
 	}
 }
 
+// TestMapcatalogSubpackageIsIndependent pins the overlay catalog extraction:
+// mapcatalog is a stdlib-only leaf. The overlay root imports it; it must never
+// import the overlay root back (or any other RenderingGen package).
+func TestMapcatalogSubpackageIsIndependent(t *testing.T) {
+	root := filepath.Join(RepoRoot(), "renderinggen", "internal", "overlay", "mapcatalog")
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".go") {
+			return err
+		}
+		if strings.Contains(readText(t, path), "github.com/Marcuss-ops/RenderingGen/renderinggen/internal/") {
+			t.Errorf("%s imports a RenderingGen internal package; mapcatalog must stay a stdlib-only leaf", path)
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 // TestPrescaleSubpackageIsIndependent pins the processor extraction boundary:
 // the subpackage may use storage, but it must never import the processor root
 // or the render-plan packages it is meant to be independent from.

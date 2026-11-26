@@ -39,7 +39,7 @@ siblings. Each rule maps to one deleted contract:
 | `template_alias_gpe_default` | the dead uppercase `GPE_DEFAULT` alias (canonical: `LOCATION_DEFAULT`) |
 | `entity_template_inference` | classifying an overlay item by comparing its `template_id` with a named literal (in `overlay/`, non-test sources) instead of going through `kind` and the template registry |
 | `semantic_stats_second_pass` | constructing `overlay.Stats` outside the single compile pass (only `overlay/stats.go` and `overlay/semantic_compile.go` may) |
-| `template_alias_lowercase` | the lowercase `org_default`/`gpe_default` spellings rendered anywhere but `overlay/registry.go`'s alias table and its tests |
+| `template_alias_lowercase` | the lowercase `org_default`/`gpe_default` spellings rendered anywhere but `overlay/registry.go`'s alias table, its tests, and the vendored producer corpus fixtures |
 | `partnn_filename` | `*_partNN.*` manual-splitting files (any scanned carrier, including shell) |
 | `legacy_layer_preset_field` | a bare `json:"preset"` slot on the render-plan layer |
 | `item_kind_literal_outside_registry` | a distinctive overlay item-kind spelling written literally anywhere in `overlay/` but `registry.go` (the Kind constants are the vocabulary; tests are exempt) |
@@ -85,8 +85,9 @@ The uppercase spellings `ORG_DEFAULT`/`GPE_DEFAULT` are dead and banned. The
 they are the live aliases PipelineGen still emits, resolved exactly once by
 `overlay/registry.go`'s `legacyTemplateAliases`. They must not be re-declared
 anywhere else, which is what `template_alias_lowercase` enforces (the alias
-table and its test are the only two excluded files, and an unknown template is
-reported on `CompileResult.UnknownTemplates` instead of degrading silently). Rules match the *unescaped* projection of each line, because
+table, its test, and the vendored producer corpus fixtures are the only
+exclusions, and an unknown template is reported on
+`CompileResult.UnknownTemplates` instead of degrading silently). Rules match the *unescaped* projection of each line, because
 a shell script embedding a JSON document (`\"chronon.render-plan\"`) otherwise
 hides the marker behind its backslash — `TestRulesCatchEscapedCarriers` is the
 regression for exactly that evasion.

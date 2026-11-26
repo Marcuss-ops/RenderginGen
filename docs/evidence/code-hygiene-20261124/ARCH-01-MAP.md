@@ -21,8 +21,9 @@ Data: 2026-11-24. Baseline: 90 file Go non-test, 54.870 righe; hotspot
 1. **`internal/mapgeom` — estratto ora.** Geometria piana pura: wrap
    antimeridiano, proiezione relativa, overlap di rettangoli, scala tipografica.
    Importa solo `geo` e `math`; `overlay` importa `mapgeom`, mai il contrario.
-2. `overlay/mapcatalog` (futuro): caricamento e validazione dei cataloghi map.
-   Dipenderebbe solo da `encoding/json` e dagli asset embedded.
+2. `overlay/mapcatalog` — **estratto il 2026-11-25.** Caricamento e
+   validazione del catalogo map renderer; dipende solo dalla standard library e
+   dagli asset embedded.
 3. `overlay/textspec` (futuro): specifica testo e geometria plate. Non deve
    importare `overlay` root; i tipi condivisi vanno prima estratti.
 4. `overlay/entitystyle` (futuro): tabella stili e alias. Dipenderebbe da
@@ -57,3 +58,23 @@ Nessun file non-test del package root supera 800 righe; il guard
 - Nessun file golden modificato: lo split è un move di dichiarazioni, non un
   cambio di piano.
 - `go test ./internal/overlay` esegue le suite golden già presenti.
+
+## Aggiornamento 2026-11-25 — mapcatalog e corpus ermetico
+
+- Estratto `internal/overlay/mapcatalog` (`catalog.go`): il root conserva solo
+  gli alias `chrononPluginMaps`, `certifiedMap*` e `loadChrononPluginMapsCatalog`.
+  Il sottopackage è standard-library-only; `TestMapcatalogSubpackageIsIndependent`
+  impedisce un import di ritorno verso `overlay`.
+- Il corpus overlay è stato vendored sotto
+  `RenderingGen/contracts/overlay-v2/`: `TestOverlayContractCorpus` ora è
+  ermetico e gira nel checkout standalone. `TestContractCorpusMatchesWorkspaceSources`
+  confronta byte e digest con il corpus del workspace quando i sibling sono
+  presenti, e skippa nel CI standalone.
+- Il digest `short_phrase_text` è stato riallineato a
+  `d89efe750f8adb1378f8fb4409931ab78e82e84990a1146f0f0f404caecfb979`
+  dopo il refresh del fixture producer `doc_14_dual_highlight_sequence`.
+- `template_alias_lowercase` esenta i fixture vendored: sono dati wire del
+  producer, non codice, e contengono legittimamente `gpe_default`.
+- Verifica: build, vet, `go test ./internal/overlay/mapcatalog`, `go test ./internal/overlay`,
+  `go test ./internal/architecture` e `contracts/overlay-v2/verify.sh` verdi; il dettaglio
+  è in `ARCH-03-MAPCATALOG-CORPUS.md`.
