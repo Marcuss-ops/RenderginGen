@@ -68,6 +68,10 @@ func main() {
 	// unset DSN then fails startup instead of silently running production
 	// traffic on a volatile queue that loses every job on restart.
 	backend := flag.String("backend", "auto", "job repository backend: auto | postgres | memory")
+	// The append-only render_events ledger had no retention path. 30 days keeps a
+	// month of job history for incident review while bounding growth; 0 disables
+	// the sweep explicitly.
+	renderEventsRetention := flag.Duration("render-events-retention", 30*24*time.Hour, "delete render_events rows older than this window; 0 disables the sweep")
 	flag.Parse()
 
 	if err := validateCapacity(*dbMaxOpenConns, *dbMaxIdleConns, *dbConnMaxLifetime, *dbConnMaxIdleTime, *dbConnectTimeout, *shutdownTimeout); err != nil {
@@ -124,6 +128,11 @@ func main() {
 		workerRepo = pgRepo
 		postgresDSN = dsn
 		log.Printf("using postgres job repository")
+		// Bound the append-only event ledger. The sweep is bound to the root
+		// context, so shutdown stops it instead of racing the process teardown.
+		if *renderEventsRetention > 0 {
+			go runRenderEventsRetention(ctx, db, *renderEventsRetention, log.Printf)
+		}
 	} else if selected == "memory" {
 		log.Printf("WARNING: using volatile in-memory job repository by explicit -backend=memory: all jobs are lost on restart")
 	} else {
