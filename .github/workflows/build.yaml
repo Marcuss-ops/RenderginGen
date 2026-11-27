@@ -21,6 +21,12 @@ jobs:
     defaults:
       run:
         working-directory: renderinggen
+    # The geographic catalog is a required input, declared here instead of
+    # discovered by walking parent directories. Without it every map compile
+    # fails with "set CHRONONTEMPLATE_CATALOG"; the path is the versioned
+    # fixture checked into this repository.
+    env:
+      CHRONONTEMPLATE_CATALOG: ${{ github.workspace }}/renderinggen/internal/geofeatures/testdata/catalog
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
@@ -28,6 +34,29 @@ jobs:
           go-version: "1.25"
       - name: gofmt
         run: test -z "$(gofmt -l .)" || { gofmt -l .; echo "run gofmt -w on the files above"; exit 1; }
+      # The processor/media suites spawn ffmpeg and ffprobe for real: canonical
+      # remux, decode verification and the import contract are not exercised by
+      # a stub. GitHub-hosted runners do not guarantee either binary, so the
+      # job installs them explicitly instead of letting the suite fail with
+      # `exec: "ffmpeg": executable file not found in $PATH`.
+      - name: Install media tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ffmpeg
+      # Fail before the suite with the missing input named, instead of midway
+      # through a package with a confusing exec/file-not-found error. The
+      # fixture paths are relative to this job's working-directory
+      # (renderinggen/), which is where the tests resolve them from.
+      - name: Preflight media tooling, fixtures and catalog
+        run: |
+          ffmpeg -version >/dev/null
+          ffprobe -version >/dev/null
+          test -f "$CHRONONTEMPLATE_CATALOG/ne_50m_admin_0_countries.geojson" \
+            || { echo "::error::geographic catalog missing at $CHRONONTEMPLATE_CATALOG" >&2; exit 1; }
+          for fixture in ../testdata/golden/background.mp4 ../testdata/golden/Pale-Olive.mp4 ../testdata/golden/assets/fonts/Poppins-Bold.ttf ../testdata/golden/SHA256SUMS; do
+            test -f "$fixture" || { echo "::error::golden fixture missing: $fixture" >&2; exit 1; }
+          done
+          echo "ffmpeg/ffprobe, golden fixtures and geographic catalog present"
       - run: go build ./...
       - run: go vet ./...
       # go vet cannot see an exported function that nobody calls, and internal/
@@ -63,6 +92,24 @@ jobs:
       # job; the CI shape is pinned by TestCIRunsRaceEnabledModuleTests and the
       # local owner by TestRuntimeCertificationHasAnOwner.
       - run: RENDERINGGEN_SKIP_GPU_E2E=1 go test -tags certification -count=1 ./internal/overlay/
+      # Anti-skip guard: these tests used to disappear from a clean checkout
+      # (missing fixtures/catalog) and the suite stayed green. They must run and
+      # PASS, so the log is checked by name and any SKIP is fatal. pipefail
+      # keeps a genuine test failure from being masked by tee.
+      - name: Fixture-backed tests must run, not skip
+        run: |
+          set -o pipefail
+          go test -count=1 -v \
+            -run 'TestGoldenFixturesMatchChecksumManifest|TestProbeFileCertifiesFirstFrameKeyframeFromOneInvocation|TestProbeFileKeyframeSurvivesASecondStream|TestDefaultRegistry' \
+            ./internal/overlay ./internal/media ./internal/geofeatures | tee /tmp/fixture-tests.log
+          if grep -q -- '--- SKIP' /tmp/fixture-tests.log; then
+            echo "::error::a fixture-backed test was skipped; the checkout is incomplete" >&2
+            exit 1
+          fi
+          for test in TestGoldenFixturesMatchChecksumManifest TestProbeFileCertifiesFirstFrameKeyframeFromOneInvocation TestProbeFileKeyframeSurvivesASecondStream; do
+            grep -q -- "--- PASS: $test" /tmp/fixture-tests.log \
+              || { echo "::error::expected test $test did not run" >&2; exit 1; }
+          done
       - run: go test -count=1 ./internal/architecture/...
 
   test-queue:

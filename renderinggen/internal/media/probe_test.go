@@ -15,8 +15,11 @@ import (
 func goldenFixture(t *testing.T, name string) string {
 	t.Helper()
 	path := filepath.Join("..", "..", "..", "testdata", "golden", name)
+	// Required fixture: the manifest in testdata/golden/SHA256SUMS makes it
+	// part of the checkout. Skipping when it is absent let a clean CI run go
+	// green without ever exercising the probe contract.
 	if _, err := os.Stat(path); err != nil {
-		t.Skipf("fixture %s unavailable: %v", name, err)
+		t.Fatalf("required fixture %s unavailable: %v (restore it from git; see testdata/golden/SHA256SUMS)", name, err)
 	}
 	return path
 }

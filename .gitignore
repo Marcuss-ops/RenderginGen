@@ -174,3 +174,34 @@ renderinggen/drive-upload
 # Vulkan framebuffer dumps are generated evidence, not source. Keep the
 # reviewed report/metadata tracked and the raw buffer on disk only.
 /evidence/**/*.raw
+
+# Canonical CI/regression fixtures under testdata/golden. The allowlist near
+# the top of this file cannot win against the broad media exclusions above:
+# in gitignore the LAST matching pattern decides, so the fixtures were silently
+# untracked and a clean CI checkout had no background.mp4 and dangling font
+# symlinks. These negations must stay AFTER the *.mp4/*.png/*.jpg block.
+# testdata/golden/assets/semantic (44 MB of generated map LODs) stays ignored.
+!/testdata/golden/background.mp4
+!/testdata/golden/background.jpg
+!/testdata/golden/apple.png
+!/testdata/golden/logo_pulse.png
+!/testdata/golden/overlay_chart.png
+!/testdata/golden/overlay_globe.png
+!/testdata/golden/gerard_butler.jpg
+!/testdata/golden/assets/
+!/testdata/golden/assets/fonts/
+!/testdata/golden/assets/fonts/*.ttf
+!/testdata/golden/fonts/
+!/testdata/golden/fonts/*
+# Pale-Olive.mp4 is the one fixture with an audio stream: probe_test.go uses
+# it to prove first-frame keyframe attribution survives a second stream. It is
+# 3 MB, and the alternative (skipping the test when it is absent) is what made
+# a clean checkout silently lose the assertion.
+!/testdata/golden/Pale-Olive.mp4
+# Flat font paths are compatibility symlinks into assets/fonts/.
+!/testdata/golden/*.ttf
+# Compatibility symlink to apple.png used by the certification harness.
+!/testdata/golden/assets/apple.png
+# Integrity manifest and provenance are reviewable evidence, not media.
+!/testdata/golden/SHA256SUMS
+!/testdata/golden/PROVENANCE.md
