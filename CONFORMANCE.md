@@ -281,6 +281,10 @@ Rules that follow from the table:
 - A rejected artifact is never `COMPLETED` and never receives a ledger row. An
   `unverifiable` outcome under a fail-open policy is recorded (metric
   `composition_prediction_unverifiable = 1`), not silently dropped.
+- The accepted artifact carries the same verdict in its `verification` block
+  (`policy`, `decode`, `composition`, `evidence`), persisted in
+  `render_artifacts.verification`; a consumer does not have to read the worker
+  log to tell certified from merely integrable.
 - A retry does not inherit evidence from the previous attempt: the policy is
   re-applied to the new artifact and summary.
 

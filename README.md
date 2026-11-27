@@ -914,8 +914,9 @@ worker enforces itself and which tier it asks Chronon to run.
 A plan with no authored overlay has no composition requirement: absence of the
 optional sidecar stays tolerated under every policy. `certify`/`strict` never
 convert "cannot verify" into "verified": the artifact fails with the reason
-instead. Every outcome is recorded on artifact metrics, so a rejected or
-fail-open decision is visible without reading the worker log.
+instead. Every outcome is recorded on artifact metrics and in the artifact's
+`verification` block (`policy`, `decode`, `composition`, `evidence`), so a
+rejected or fail-open decision is visible without reading the worker log.
 
 ### Runtime certification — local GPU lane
 
