@@ -81,6 +81,11 @@ func (p *Processor) storeArtifact(ctx context.Context, in storeArtifactInput) (q
 	if err != nil {
 		return queue.Artifact{}, err
 	}
+	// Record what was actually proven. This is the durable answer a consumer
+	// needs to distinguish "semantically certified" from "integrity-only but
+	// unverifiable"; it is written before the ledger row so the two cannot
+	// disagree about the same publication.
+	recordArtifactVerification(&artifact, in.plan, artifact.ChrononTelemetry, in.phaseMetrics, p.receiptVerifyLevel())
 	logChrononItemMetrics(in.jobID, in.phaseMetrics)
 	p.preserveRawTimingSidecar(ctx, &artifact, in.outputPath, in.jobID)
 	if err := p.publishArtifactBytes(ctx, in, hash, staged, tail, fileInfo); err != nil {
@@ -248,7 +253,10 @@ func (p *Processor) ingestChrononTelemetry(in storeArtifactInput, artifact *queu
 	if err != nil {
 		in.phaseMetrics[metricnames.ChrononTelemetryMissing] = 1
 		workerlog.ByJobID(in.jobID).Warnf("chronon telemetry sidecar unavailable: %v", err)
-		return nil, nil
+		// The absence of the optional sidecar is still a composition verdict.
+		// Under certify/strict an authored overlay without evidence must fail
+		// the job here too, not only when the sidecar was readable but empty.
+		return nil, verifyCompositionPrediction(in.plan, nil, in.phaseMetrics, p.receiptVerifyLevel(), in.jobID)
 	}
 	chrononTelemetry = raw
 	artifact.ChrononTelemetry = raw
@@ -272,6 +280,40 @@ func (p *Processor) ingestChrononTelemetry(in storeArtifactInput, artifact *queu
 // chronon_timing_size_bytes. Best-effort by design: a missing or unreadable
 // sidecar is a logged no-op (the rendered bytes and bounded telemetry remain
 // valid), matching the fail-open contract of the timing-sidecar ingest.
+// recordArtifactVerification writes the proof block the ledger stores. It is
+// deliberately derived from the SAME metrics the composition gate produced:
+// a new verdict must be added to the gate first, never inferred separately.
+func recordArtifactVerification(artifact *queue.Artifact, plan *overlay.Plan, raw json.RawMessage, metrics map[string]float64, level renderVerifyLevel) {
+	if artifact == nil {
+		return
+	}
+	verification := &queue.ArtifactVerification{Policy: string(level)}
+	switch level {
+	case renderVerifyFast:
+		verification.Decode = queue.VerificationDecodeNone
+	case renderVerifySample:
+		verification.Decode = queue.VerificationDecodeSampled
+	default:
+		verification.Decode = queue.VerificationDecodeFull
+	}
+	switch {
+	case !planHasVisualOverlay(plan):
+		verification.Composition = queue.VerificationCompositionNotRequired
+	case metrics[metricnames.CompositionPredictionUnverifiable] > 0:
+		verification.Composition = queue.VerificationCompositionUnverifiable
+	case metrics[metricnames.CompositionPredictionDivergence] > 0:
+		verification.Composition = queue.VerificationCompositionDivergent
+	default:
+		verification.Composition = queue.VerificationCompositionVerified
+	}
+	if len(raw) > 0 {
+		verification.Evidence = queue.VerificationEvidenceChrononSummary
+	} else {
+		verification.Evidence = queue.VerificationEvidenceNone
+	}
+	artifact.Verification = verification
+}
+
 func (p *Processor) preserveRawTimingSidecar(ctx context.Context, artifact *queue.Artifact, outputPath, jobID string) {
 	if p == nil || artifact == nil {
 		return

@@ -87,6 +87,23 @@ type Job = queueclient.Job
 type Artifact = queueclient.Artifact
 type BatchSegmentFacts = queueclient.BatchSegmentFacts
 type ArtifactProvenance = queueclient.ArtifactProvenance
+type ArtifactVerification = queueclient.ArtifactVerification
+
+// Verification vocabulary, re-exported so the worker records the same wire
+// values the ledger and consumers read.
+const (
+	VerificationDecodeNone    = queueclient.VerificationDecodeNone
+	VerificationDecodeSampled = queueclient.VerificationDecodeSampled
+	VerificationDecodeFull    = queueclient.VerificationDecodeFull
+
+	VerificationCompositionVerified     = queueclient.VerificationCompositionVerified
+	VerificationCompositionDivergent    = queueclient.VerificationCompositionDivergent
+	VerificationCompositionUnverifiable = queueclient.VerificationCompositionUnverifiable
+	VerificationCompositionNotRequired  = queueclient.VerificationCompositionNotRequired
+
+	VerificationEvidenceChrononSummary = queueclient.VerificationEvidenceChrononSummary
+	VerificationEvidenceNone           = queueclient.VerificationEvidenceNone
+)
 
 // OutputFacts is the complete structural certification carried on the
 // artifact (see queueclient.OutputFacts): one definition, so the worker and
