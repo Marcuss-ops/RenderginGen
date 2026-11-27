@@ -9,6 +9,19 @@ The wire contract is implemented in `internal/server` and mirrored 1:1 by the
 public client package (`client/`), which producers and workers import so they
 never reimplement the HTTP format.
 
+## Published Go client
+
+The public client is published as a standalone Go module from the repository's
+`queue/` subdirectory:
+
+```sh
+go get github.com/Marcuss-ops/RenderingGen/queue@v0.1.0
+```
+
+Import `github.com/Marcuss-ops/RenderingGen/queue/client`. Consumers do not
+need a sibling checkout or a local `replace` directive. CI verifies this from
+a temporary module outside the RenderingGen checkout.
+
 ## Conventions
 
 - All request and response bodies are JSON (`Content-Type: application/json`).

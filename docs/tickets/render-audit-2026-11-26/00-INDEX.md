@@ -1,7 +1,7 @@
 # RenderingGen architecture and code-quality audit — campaign record
 
-**Repository:** `Marcuss-ops/RenderginGen` (working tree)  
-**Branch:** `main`  
+**Repository:** `Marcuss-ops/RenderingGen` (renamed 2026-11-27; audit input used the historic spelling)
+**Source branch:** `main`
 **Audit input:** 26 November 2026 review of commit `e8fec015d28167b84ccd94ba6e002de43518fc6f`  
 **Campaign date:** 27 November 2026  
 **Scope:** the 15-item roadmap in the audit, applied to `RenderingGen/` (worker, queue, objectstore, contracts, deployment).
@@ -10,9 +10,8 @@
 
 Close every acceptance criterion that is reachable from this checkout. “Reachable” means
 the repository can enforce it without remote administration or by taking over a live
-production service. Remote-only actions (GitHub repository rename, pushing the workflow,
-publishing images, restarting installed systemd units) are recorded as external blockers,
-not claimed as done.
+production service. Remote-only actions are performed only where the ticket requires them; deployment of
+images and restart of the installed systemd unit remain outside this campaign.
 
 **Invariant enforced by this campaign:**
 
@@ -23,7 +22,7 @@ not claimed as done.
 
 | # | Priority | Checklist item | Status | Evidence |
 |---|----------|----------------|--------|----------|
-| 1 | P0 | Align repository and Go module identity | **Closed locally**; GitHub rename external | Canonical `github.com/Marcuss-ops/RenderingGen/...` imports; `make conformance` clean; `CONFORMANCE.md` explains the remote typo |
+| 1 | P0 | Align repository and Go module identity | **Closed** | Repository renamed to `Marcuss-ops/RenderingGen`; `queue/v0.1.0` resolves from GitHub; no local Queue replace; external consumer build passed |
 | 2 | P0 | Restore CI fixtures, fonts, FFmpeg and geographic catalogs | **Closed** | Checked-in golden fixtures/fonts; FFmpeg install step; CI compose catalog mount; clean-checkout suite green |
 | 3 | P0 | Run all conformance and certification gates | **Closed locally**; golden E2E CI job external | Every local gate green; real-engine software and Vulkan renders pass; golden E2E ports are occupied by the running stack |
 | 4 | P1 | Eliminate persisted-but-undelivered claim | **Closed** | Hydration moved inside the claim transaction; rollback test |
@@ -44,9 +43,10 @@ not claimed as done.
 ### P0-1 — Repository and module identity
 
 The module paths are canonical (`github.com/Marcuss-ops/RenderingGen/{renderinggen,queue,objectstore,client,...}`)
-and every local import uses them. The GitHub repository still carries the historical
-`RenderginGen` spelling; renaming it needs remote administration and a push, which this
-campaign does not perform.
+and every local import uses them. The GitHub repository was renamed to `RenderingGen`; the historic URL redirects.
+Queue v0.1.0 is published from the `queue/` module path, and RenderingGen consumes
+that version without a local replace. GitHub Actions run `module-standalone`
+`46029573918` passed from a temporary consumer directory on PR #1.
 
 The conformance rule `module_path_typo` was narrowed to module/import paths, so prose and
 legitimate `.git` clone URLs that still carry the historical lower-case spelling are not
@@ -354,14 +354,10 @@ explicitly where a local binary/DSN existed.
 
 ## External blockers (not claimed)
 
-1. **GitHub repository rename** `RenderginGen` → `RenderingGen`: requires remote admin and
-   a push. Module identity is already canonical.
-2. **Workflow execution / image publication**: requires a push to `main`. All workflow
-   commands were run locally in the same shape.
-3. **Golden E2E**: the CI job exists, but the local ports are occupied by the running
-   stack; stopping it is outside the authorized production-safety boundary.
-4. **Installed systemd unit**: the repository units are updated; the host unit was not
-   reinstalled or restarted. Deployment must install the updated unit together with the
-   new binary, because startup now validates the catalog path.
+1. **Golden E2E**: the CI job exists, but local ports are occupied by the running stack;
+   stopping it is outside the production-safety boundary.
+2. **Installed systemd unit**: repository units are updated; the host unit was not
+   reinstalled or restarted. Deployment must install the updated unit with the new
+   binary because startup validates the catalog path.
 
 No production queue or worker was started, stopped or modified during this campaign.
