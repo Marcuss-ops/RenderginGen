@@ -10,6 +10,7 @@ import (
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/migrate"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/testsupport"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -35,6 +36,7 @@ func openRepos(t *testing.T, lease time.Duration, maxAttempts, n int) []*Reposit
 			t.Fatal(err)
 		}
 		if i == 0 {
+			testsupport.SerializeDBTest(t, db)
 			if err := migrate.Apply(ctx, db); err != nil {
 				t.Fatal(err)
 			}

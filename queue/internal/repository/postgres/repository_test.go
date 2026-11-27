@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/migrate"
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/testsupport"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"os"
 	"sync"
@@ -48,6 +49,9 @@ func setupRepo(t *testing.T, lease time.Duration, maxAttempts int) (*Repository,
 	if err := db.PingContext(ctx); err != nil {
 		t.Fatal(err)
 	}
+	// `go test ./...` runs the postgres and migrate packages concurrently and
+	// they share this database; serialize the schema+truncate window.
+	testsupport.SerializeDBTest(t, db)
 	if err := migrate.Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}

@@ -8,6 +8,7 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/testsupport"
 	"github.com/Marcuss-ops/RenderingGen/queue/migrations"
 )
 
@@ -33,6 +34,9 @@ func TestApplyAgainstPostgres(t *testing.T) {
 	if err := db.PingContext(ctx); err != nil {
 		t.Fatalf("ping: %v", err)
 	}
+	// The postgres package shares this database and truncates the same tables;
+	// `go test ./...` runs both packages concurrently.
+	testsupport.SerializeDBTest(t, db)
 
 	if err := Apply(ctx, db); err != nil {
 		t.Fatalf("apply: %v", err)

@@ -52,6 +52,9 @@ func TestLeaseGenerationFencesStaleTransitions(t *testing.T) {
 		t.Fatalf("stale report changed the job: state=%s worker=%s", got.State, got.Worker)
 	}
 
+	if err := r.Rendered(ctx, job.ID, "w1", firstGeneration, model.Artifact{ArtifactHash: "stale-publication"}, "late publication"); err == nil {
+		t.Fatal("stale attempt was allowed to publish its artifact onto the re-claimed job")
+	}
 	if err := r.Renew(ctx, job.ID, "w1", firstGeneration); err == nil {
 		t.Fatal("stale attempt was allowed to renew the re-claimed job")
 	}

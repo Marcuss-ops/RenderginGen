@@ -217,7 +217,7 @@ func metricUnit(name string) string {
 }
 
 // getArtifact loads a single artifact by ID.
-func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, error) {
+func getArtifact(ctx context.Context, db artifactQuerier, id string) (*model.Artifact, error) {
 	row, err := queryArtifactRow(ctx, db, id)
 	if err != nil {
 		return nil, err
@@ -231,4 +231,49 @@ func getArtifact(ctx context.Context, db *sql.DB, id string) (*model.Artifact, e
 	}
 	loadArtifactTelemetry(ctx, db, row.jobID, a)
 	return a, nil
+}
+
+// getArtifacts hydrates every requested artifact in three statements total
+// (rows, metrics, telemetry) regardless of batch size. It is the claim path's
+// reader: the per-job version was an N+1 over the claim window, and the claim
+// window is exactly the place a batch is expected.
+func getArtifacts(ctx context.Context, db artifactQuerier, ids []string) (map[string]*model.Artifact, error) {
+	out := make(map[string]*model.Artifact, len(ids))
+	if len(ids) == 0 {
+		return out, nil
+	}
+	rows, err := queryArtifactRows(ctx, db, ids)
+	if err != nil {
+		return nil, err
+	}
+	jobIDs := make([]string, 0, len(rows))
+	seenJob := make(map[string]bool, len(rows))
+	for _, row := range rows {
+		if !seenJob[row.jobID] {
+			seenJob[row.jobID] = true
+			jobIDs = append(jobIDs, row.jobID)
+		}
+	}
+	metrics, err := loadArtifactMetricsByJob(ctx, db, jobIDs)
+	if err != nil {
+		return nil, err
+	}
+	telemetry, err := loadArtifactTelemetryByJob(ctx, db, jobIDs)
+	if err != nil {
+		return nil, err
+	}
+	for _, row := range rows {
+		a, err := row.toModel(row.artifact.ID)
+		if err != nil {
+			return nil, fmt.Errorf("artifact %s (job %s): %w", row.artifact.ID, row.jobID, err)
+		}
+		if loaded := metrics[row.jobID]; loaded != nil {
+			a.Metrics = loaded
+		}
+		if raw := telemetry[row.jobID]; len(raw) > 0 {
+			a.ChrononTelemetry = raw
+		}
+		out[a.ID] = a
+	}
+	return out, nil
 }

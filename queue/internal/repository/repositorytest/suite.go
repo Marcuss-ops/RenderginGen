@@ -107,6 +107,53 @@ func Run(t *testing.T, newRepository Factory) {
 		}
 	})
 
+	t.Run("rendered re-claim hydrates the published artifact", func(t *testing.T) {
+		repo := newRepository(t)
+		job := model.Job{
+			ID:         "contract-rendered",
+			RenderPlan: []byte(`{"schema":"chronon.render-plan.v2","version":2}`),
+		}
+		if err := repo.Submit(ctx, job); err != nil {
+			t.Fatalf("submit: %v", err)
+		}
+		claimed, _, err := repo.Claim(ctx, "contract-worker")
+		if err != nil || claimed == nil {
+			t.Fatalf("claim: job=%+v err=%v", claimed, err)
+		}
+		artifact := model.Artifact{
+			ID:               "contract-artifact",
+			Kind:             "overlay",
+			StorageKey:       "sha256:contract-rendered",
+			ArtifactHash:     "sha256:contract-rendered",
+			SizeBytes:        4096,
+			Metrics:          map[string]float64{"render_ms": 12.5},
+			ChrononTelemetry: []byte(`{"schema":"chronon3d.render-telemetry-summary.v1"}`),
+		}
+		if err := repo.Rendered(ctx, claimed.ID, "contract-worker", claimed.LeaseGeneration, artifact, "drive deferred"); err != nil {
+			t.Fatalf("rendered: %v", err)
+		}
+
+		retry, _, err := repo.ClaimState(ctx, "publisher", model.StateRendered)
+		if err != nil || retry == nil {
+			t.Fatalf("claim rendered: job=%+v err=%v", retry, err)
+		}
+		if retry.State != model.StateRunning || retry.LeaseGeneration <= claimed.LeaseGeneration {
+			t.Fatalf("retry = state %s generation %d, want running after generation %d", retry.State, retry.LeaseGeneration, claimed.LeaseGeneration)
+		}
+		if retry.Artifact == nil {
+			t.Fatal("rendered re-claim carries no artifact")
+		}
+		if retry.Artifact.ID != artifact.ID || retry.Artifact.ArtifactHash != artifact.ArtifactHash || retry.Artifact.SizeBytes != artifact.SizeBytes {
+			t.Fatalf("artifact = %+v, want id=%s hash=%s size=%d", retry.Artifact, artifact.ID, artifact.ArtifactHash, artifact.SizeBytes)
+		}
+		if retry.Artifact.Metrics["render_ms"] != 12.5 {
+			t.Fatalf("artifact metrics = %v, want render_ms=12.5", retry.Artifact.Metrics)
+		}
+		if len(retry.Artifact.ChrononTelemetry) == 0 {
+			t.Fatal("artifact telemetry was not hydrated on the rendered re-claim")
+		}
+	})
+
 	t.Run("fail either requeues or permanently fails the job", func(t *testing.T) {
 		repo := newRepository(t)
 		job := model.Job{

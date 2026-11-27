@@ -196,20 +196,38 @@ func claimingWorkerProvesGPU(ctx context.Context, tx *sql.Tx, workerID string) (
 }
 
 // attachClaimArtifacts rehydrates artifacts for jobs re-claimed from the
-// rendered state, after the claim transaction has committed. A failure here is
-// returned to the caller exactly as before.
-func attachClaimArtifacts(ctx context.Context, db *sql.DB, claimed []*model.Job, candidates []claimCandidate) error {
+// rendered state. It runs INSIDE the claim transaction: a failure rolls the
+// claim back, so a worker can never receive an error while the row it failed
+// to hydrate is already marked running and leased to it. Candidates are
+// indexed by job id and artifacts are read as ONE batch, so the whole step is
+// O(n) with three statements instead of O(n²) with 3n round trips.
+func attachClaimArtifacts(ctx context.Context, q artifactQuerier, claimed []*model.Job, candidates []claimCandidate) error {
+	byJobID := make(map[string]claimCandidate, len(candidates))
+	for _, c := range candidates {
+		byJobID[c.id] = c
+	}
+	ids := make([]string, 0, len(claimed))
 	for _, job := range claimed {
-		for _, c := range candidates {
-			if c.id != job.ID || !c.artifactID.Valid {
-				continue
-			}
-			artifact, err := getArtifact(ctx, db, c.artifactID.String)
-			if err != nil {
-				return fmt.Errorf("job %s artifact %s: %w", job.ID, c.artifactID.String, err)
-			}
-			job.Artifact = artifact
+		c, ok := byJobID[job.ID]
+		if !ok || !c.artifactID.Valid {
+			continue
 		}
+		ids = append(ids, c.artifactID.String)
+	}
+	artifacts, err := getArtifacts(ctx, q, ids)
+	if err != nil {
+		return fmt.Errorf("hydrate %d claimed artifacts: %w", len(ids), err)
+	}
+	for _, job := range claimed {
+		c, ok := byJobID[job.ID]
+		if !ok || !c.artifactID.Valid {
+			continue
+		}
+		artifact, ok := artifacts[c.artifactID.String]
+		if !ok {
+			return fmt.Errorf("job %s artifact %s: artifact row disappeared inside the claim transaction", job.ID, c.artifactID.String)
+		}
+		job.Artifact = artifact
 	}
 	return nil
 }

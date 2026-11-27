@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/migrate"
+	"github.com/Marcuss-ops/RenderingGen/queue/internal/testsupport"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
@@ -32,6 +33,10 @@ func retentionTestDB(t *testing.T) *sql.DB {
 	if err := migrate.Apply(ctx, db); err != nil {
 		t.Fatal(err)
 	}
+	// `go test ./...` runs packages in parallel and every queue integration
+	// test shares TEST_DATABASE_URL. Without the lock, another package's
+	// TRUNCATE can delete this test's events mid-assertion.
+	testsupport.SerializeDBTest(t, db)
 	if _, err := db.ExecContext(ctx, `TRUNCATE render_jobs CASCADE`); err != nil {
 		t.Fatal(err)
 	}

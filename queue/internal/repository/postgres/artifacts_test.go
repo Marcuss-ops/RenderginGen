@@ -2,8 +2,10 @@ package postgres
 
 import (
 	"context"
+	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -98,6 +100,114 @@ func TestArtifactPersistedOnComplete(t *testing.T) {
 	}
 	if jobArtifactID != "art-1" {
 		t.Fatalf("job not linked to artifact: got %q", jobArtifactID)
+	}
+}
+
+// TestClaimRollsBackWhenArtifactHydrationFails pins the atomicity contract of
+// a re-claim: the artifact read happens INSIDE the claim transaction, so a
+// corrupt artifact rolls the whole claim back. Before the fix the transaction
+// committed first, then hydration failed and the caller saw an error while the
+// row was already RUNNING and leased to it — the job was invisible until the
+// lease expired.
+func TestClaimRollsBackWhenArtifactHydrationFails(t *testing.T) {
+	r, db := setupRepo(t, 30*time.Second, 3)
+	ctx := context.Background()
+	if err := r.Submit(ctx, model.Job{ID: "job-1"}); err != nil {
+		t.Fatal(err)
+	}
+	claimed, _, err := r.Claim(ctx, "w1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := r.Rendered(ctx, "job-1", "w1", claimed.LeaseGeneration, model.Artifact{
+		ID: "art-1", Kind: "overlay", StorageKey: "overlay/job-1/out.mp4", ArtifactHash: "abc",
+	}, "recertified"); err != nil {
+		t.Fatal(err)
+	}
+	// A JSON scalar is valid JSONB but cannot decode into ArtifactProvenance.
+	if _, err := db.ExecContext(ctx, `UPDATE render_artifacts SET provenance = '"corrupt"'::jsonb WHERE id = 'art-1'`); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, _, err := r.ClaimState(ctx, "w2", model.StateRendered); err == nil {
+		t.Fatal("a corrupt artifact must fail the claim")
+	}
+
+	var state string
+	var worker sql.NullString
+	if err := db.QueryRowContext(ctx, `SELECT state, current_worker_id FROM render_jobs WHERE id = 'job-1'`).Scan(&state, &worker); err != nil {
+		t.Fatal(err)
+	}
+	if state != string(model.StateRendered) {
+		t.Fatalf("claim was not rolled back: state = %q, want %q", state, model.StateRendered)
+	}
+	if worker.Valid {
+		t.Fatalf("claim was not rolled back: current_worker_id = %q", worker.String)
+	}
+	var attempts int
+	if err := db.QueryRowContext(ctx, `SELECT count(*) FROM render_attempts WHERE job_id = 'job-1'`).Scan(&attempts); err != nil {
+		t.Fatal(err)
+	}
+	if attempts != 1 {
+		t.Fatalf("rolled-back claim created %d attempts, want only the original 1", attempts)
+	}
+}
+
+// TestClaimBatchHydratesEveryRenderedArtifact pins the batch read that replaced
+// the per-job N+1: every re-claimed job carries its artifact, metrics and
+// bounded telemetry, and the whole window is hydrated by a fixed number of
+// statements rather than three per job.
+func TestClaimBatchHydratesEveryRenderedArtifact(t *testing.T) {
+	r, _ := setupRepo(t, 30*time.Second, 3)
+	ctx := context.Background()
+
+	for i := 0; i < 3; i++ {
+		jobID := fmt.Sprintf("batch-rendered-%d", i)
+		if err := r.Submit(ctx, model.Job{ID: jobID}); err != nil {
+			t.Fatalf("Submit(%s): %v", jobID, err)
+		}
+		claimed, _, err := r.ClaimState(ctx, "renderer", model.StatePending)
+		if err != nil || claimed == nil {
+			t.Fatalf("ClaimState(pending, %s) = %+v, %v", jobID, claimed, err)
+		}
+		if claimed.ID != jobID {
+			t.Fatalf("claimed %s, want the pending %s", claimed.ID, jobID)
+		}
+		artifact := model.Artifact{
+			ID:           "artifact-" + jobID,
+			Kind:         "overlay",
+			StorageKey:   "sha-" + jobID,
+			ArtifactHash: "sha-" + jobID,
+			SizeBytes:    int64(100 + i),
+			Metrics:      map[string]float64{"render_ms": float64(10 + i)},
+			ChrononTelemetry: json.RawMessage(fmt.Sprintf(
+				`{"schema":"chronon3d.render-telemetry-summary.v1","job":%q}`, jobID)),
+		}
+		if err := r.Rendered(ctx, claimed.ID, "renderer", claimed.LeaseGeneration, artifact, "drive deferred"); err != nil {
+			t.Fatalf("Rendered(%s): %v", jobID, err)
+		}
+	}
+
+	jobs, _, err := r.ClaimBatch(ctx, "publisher", 3)
+	if err != nil {
+		t.Fatalf("ClaimBatch: %v", err)
+	}
+	if len(jobs) != 3 {
+		t.Fatalf("ClaimBatch returned %d jobs, want 3", len(jobs))
+	}
+	for _, job := range jobs {
+		if job.Artifact == nil {
+			t.Fatalf("job %s was re-claimed without its artifact", job.ID)
+		}
+		if want := "artifact-" + job.ID; job.Artifact.ID != want {
+			t.Errorf("job %s artifact = %q, want %q", job.ID, job.Artifact.ID, want)
+		}
+		if job.Artifact.Metrics["render_ms"] == 0 {
+			t.Errorf("job %s lost its processing metrics: %v", job.ID, job.Artifact.Metrics)
+		}
+		if len(job.Artifact.ChrononTelemetry) == 0 {
+			t.Errorf("job %s lost its bounded telemetry", job.ID)
+		}
 	}
 }
 

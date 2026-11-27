@@ -63,6 +63,52 @@ func TestClaimEnforcesExecutionPolicyOnPostgres(t *testing.T) {
 	}
 }
 
+// TestCapabilityDowngradeRevokesGPUAdmission pins that the claim reads the
+// worker's CURRENT registration, not a capability set cached at process start:
+// after the same worker re-registers without the GPU lane, gpu_only work is no
+// longer handed to it.
+func TestCapabilityDowngradeRevokesGPUAdmission(t *testing.T) {
+	r := newRepo(t, 30*time.Second, 3)
+	ctx := context.Background()
+
+	if err := r.Register(ctx, model.Worker{ID: "flapping-worker", Capabilities: []string{client.CapabilityGPU}}); err != nil {
+		t.Fatalf("Register(with GPU): %v", err)
+	}
+	if err := r.Submit(ctx, model.Job{ID: "before-downgrade", RequireGPU: boolPtr(true)}); err != nil {
+		t.Fatalf("Submit(before downgrade): %v", err)
+	}
+	first, _, err := r.Claim(ctx, "flapping-worker")
+	if err != nil || first == nil {
+		t.Fatalf("Claim(before downgrade) = %+v, %v", first, err)
+	}
+	if err := r.Fail(ctx, first.ID, "flapping-worker", first.LeaseGeneration, "release the lane"); err != nil {
+		t.Fatalf("Fail(release): %v", err)
+	}
+
+	// The worker's GPU lane disappeared (driver removed, profile downgraded);
+	// the next heartbeat/re-register must revoke admission immediately.
+	if err := r.Register(ctx, model.Worker{ID: "flapping-worker", Capabilities: []string{"gpu_effect:motion"}}); err != nil {
+		t.Fatalf("Register(after downgrade): %v", err)
+	}
+	if err := r.Submit(ctx, model.Job{ID: "after-downgrade", RequireGPU: boolPtr(true)}); err != nil {
+		t.Fatalf("Submit(after downgrade): %v", err)
+	}
+	second, _, err := r.Claim(ctx, "flapping-worker")
+	if err != nil {
+		t.Fatalf("Claim(after downgrade): %v", err)
+	}
+	if second != nil {
+		t.Fatalf("gpu_only job claimed after the capability downgrade: %+v", second)
+	}
+	pending, err := r.Get(ctx, "after-downgrade")
+	if err != nil {
+		t.Fatalf("Get(after downgrade): %v", err)
+	}
+	if pending.State != model.StatePending {
+		t.Fatalf("gpu_only job state = %s after the refused claim, want pending", pending.State)
+	}
+}
+
 // TestClaimAcceptsPreferredAndCPUOnlyOnPostgres certifies the gate is a
 // GPU-only rule: the other two policies stay claimable by a software worker,
 // and the defaulted row reads back as gpu_preferred rather than empty.

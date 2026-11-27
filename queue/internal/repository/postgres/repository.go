@@ -623,11 +623,15 @@ func (r *Repository) claimN(ctx context.Context, workerID string, state model.St
 		claimed = append(claimed, job)
 	}
 
-	if err := tx.Commit(); err != nil {
+	// Hydrate BEFORE committing. A re-claimed artifact read failure must roll
+	// the claim back: committing first and returning an error left the row
+	// RUNNING and leased to a worker that never received it, so the job waited
+	// for the lease to expire before it could be claimed again.
+	if err := attachClaimArtifacts(ctx, tx, claimed, candidates); err != nil {
 		return nil, 0, err
 	}
 
-	if err := attachClaimArtifacts(ctx, r.db, claimed, candidates); err != nil {
+	if err := tx.Commit(); err != nil {
 		return nil, 0, err
 	}
 	return claimed, r.lease, nil
