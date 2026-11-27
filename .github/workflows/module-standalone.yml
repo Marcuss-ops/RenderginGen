@@ -1,0 +1,35 @@
+name: module-standalone
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  queue-consumer:
+    name: Consume published Queue outside the checkout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.25"
+      - name: Check repository and module identity
+        run: scripts/ci/check-module-identity.sh
+      - name: Install and compile the published Queue module
+        shell: bash
+        run: |
+          set -euo pipefail
+          consumer_dir="$(mktemp -d)"
+          cd "$consumer_dir"
+          go mod init probe.example/queue-consumer
+          go get github.com/Marcuss-ops/RenderingGen/queue@v0.1.0
+          cat > main.go <<'GO'
+          package main
+
+          import _ "github.com/Marcuss-ops/RenderingGen/queue/client"
+
+          func main() {}
+          GO
+          go build ./...

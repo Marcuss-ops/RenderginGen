@@ -3,7 +3,7 @@ module github.com/Marcuss-ops/RenderingGen/renderinggen
 go 1.25.0
 
 require (
-	github.com/Marcuss-ops/RenderingGen/queue v0.0.0
+	github.com/Marcuss-ops/RenderingGen/queue v0.1.0
 	github.com/prometheus/client_golang v1.24.1
 	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sys v0.47.0
@@ -48,5 +48,3 @@ require (
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect
 )
-
-replace github.com/Marcuss-ops/RenderingGen/queue => ../queue

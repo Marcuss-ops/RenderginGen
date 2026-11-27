@@ -180,13 +180,9 @@ func Rules() []rule {
 		{
 			id:   "module_path_typo",
 			note: "the module path is github.com/Marcuss-ops/RenderingGen/... (capital R, capital G); a github.com/Marcuss-ops/RenderginGen/... import is a typo",
-			// Match the MODULE PATH, not the bare name or a clone URL. The
-			// published GitHub repository is spelled RenderginGen, so prose and
-			// `git clone .../RenderginGen.git` are correct (an audit ticket has
-			// to be able to quote the published name); only a Go import/module
-			// directive resolves through the path, and that path always carries
-			// a slash after the module root. That trailing slash is the
-			// difference between an import and the `.git` clone URL.
+			// Match the module/import path, including the trailing slash after
+			// the canonical module root. Prose may still quote the historical
+			// repository spelling while documenting the rename.
 			textRe: mustRe(`github\.com/Marcuss-ops/Rendergin` + `Gen/`),
 		},
 		{

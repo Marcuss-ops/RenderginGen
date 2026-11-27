@@ -234,21 +234,19 @@ machine-specific paths and the manual-splitting files have all been removed,
 so their ledger lines were ratcheted away. The rules stay in the gate so the
 deleted shapes cannot come back.
 
-### The published repository name is not a module-path exemption
+### Repository and module identity
 
-The published GitHub repository and the canonical Go module path still
-disagree by one letter (`RenderginGen` vs `RenderingGen`): the repository is
-published as `Marcuss-ops/RenderginGen`, while every import and `go.mod` uses
-the canonical `github.com/Marcuss-ops/RenderingGen/...`. Consumers therefore
-clone the published URL and resolve the module by its canonical path (the
-sibling `replace` or a published tag).
+The GitHub repository and Go modules now share the canonical root
+`Marcuss-ops/RenderingGen` / `github.com/Marcuss-ops/RenderingGen`. GitHub
+redirects the historical `RenderginGen` URL. The Queue module is published as
+`queue/v0.1.0`; `renderinggen/go.mod` consumes that version without a local
+`replace`.
 
-That is a naming decision, not a conformance carve-out. The `module_path_typo`
-rule matches module/import paths (`.../RenderginGen/...`) and deliberately does
-not flag prose or a `RenderginGen.git` clone URL, so the ledger stays empty and
-a genuine import typo still fails the gate. Renaming the remote repository is
-the external completion of P0-01 and requires repository-admin access; nothing
-in this tree is blocked on it.
+The `module_path_typo` rule still matches module/import paths
+(`.../RenderginGen/...`) and deliberately ignores prose that describes the
+historical spelling. The standalone module workflow installs Queue from a
+temporary directory outside this checkout, so a local replace cannot mask a
+publishing error.
 
 A rule with no ledger line and no violation is a *live* rule; a rule with no
 ledger line but a surviving occurrence fails the gate as a NEW violation. There
