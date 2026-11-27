@@ -10,8 +10,21 @@ Requires=renderinggen-queue.service chronon3d.service
 [Service]
 Type=simple
 User=pierone
-# No WorkingDirectory: the worker resolves every asset/plan path from its own
-# config, so the unit carries no machine-specific source checkout path.
+# The worker resolves every asset/plan path from its own config and renders
+# from the plan's own directory, so cwd is NOT how it finds data: no
+# machine-specific source checkout path belongs here. It still needs a
+# WRITABLE cwd, because `chronon3d_cli doctor` probes the output directory
+# relative to cwd (filesystem.output_writable) and refuses startup from an
+# unwritable one — without this a service starts in / and crash-loops on the
+# capability handshake. RuntimeDirectory gives a boot-created, user-owned
+# directory without hardcoding a host layout.
+RuntimeDirectory=renderinggen
+RuntimeDirectoryMode=0750
+WorkingDirectory=/run/renderinggen
+# The Natural Earth catalog is the one asset that is DATA rather than a config
+# path: it is staged at the deployment-owned location below and named
+# explicitly, because geofeatures no longer walks the working directory looking
+# for a sibling ChrononTemplate checkout.
 ExecStart=/usr/local/bin/renderinggen --config /etc/renderinggen/renderinggen.yaml
 Restart=on-failure
 RestartSec=2
@@ -29,6 +42,9 @@ LimitNOFILE=65536
 # stays at its throughput-friendly default and tuning one knob never hides
 # the other.
 Environment=GOGC=100 GOMEMLIMIT=4GiB
+# Required at startup: the worker validates the two Natural Earth documents
+# before claiming its first job (see README "Build & run").
+Environment=CHRONONTEMPLATE_CATALOG=/var/lib/renderinggen/catalog
 
 [Install]
 WantedBy=multi-user.target

@@ -22,12 +22,17 @@ services:
     environment:
       CHRONON_HOME: /opt/chronon3d
       CHRONON_DAEMON_BACKEND: software
+      # Startup validates the catalog explicitly. The golden canary does not
+      # render a map, but the worker must still boot: mount the checked-in
+      # Natural Earth fixture instead of relying on a sibling checkout.
+      CHRONONTEMPLATE_CATALOG: /var/lib/renderinggen/catalog
     tmpfs:
       - /dev/shm:size=2g,mode=1777
     shm_size: 2g
     volumes:
       - renderinggen-ci-cache:/var/lib/renderinggen/cache
       - ./worker-config-ci.yaml:/etc/renderinggen/config.yaml:ro
+      - ../../testdata/golden:/var/lib/renderinggen/catalog:ro
     depends_on:
       - queue
       - objectstore

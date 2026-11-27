@@ -39,6 +39,35 @@ Dialogue: 0,0:00:03.00,0:00:04.00,Default,,0,0,0,,Dopo
 	}
 }
 
+func TestBurnASSIntoPlanClampsCuesToCanvasDuration(t *testing.T) {
+	plan := &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: "j",
+		Canvas: Canvas{Width: 1920, Height: 1080, FPSNum: 24, FPSDen: 1, DurationFrames: 1248},
+		Layers: []Layer{{ID: "source", Type: "video", Source: "assets/source.mp4", DurationFrames: 1248}},
+		Output: Output{Path: "result.mp4", Format: "mp4", Codec: "h264"}}
+	ass := []byte(`[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 0,0:00:50.50,0:00:52.01,Default,,0,0,0,,Coda oltre il video
+Dialogue: 0,0:00:52.01,0:00:52.10,Default,,0,0,0,,Fuori dal video
+`)
+	style := &LayerStyle{FontSize: 52, Fill: "#FFFFFF"}
+	box := SubtitleStyleBox{Width: 1800, Height: 140, X: 60, Y: 758}
+
+	count, err := BurnASSIntoPlanTyped(plan, ass, "assets/fonts/Poppins-Bold.ttf", style, box)
+	if err != nil {
+		t.Fatalf("BurnASSIntoPlanTyped: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("cue count = %d, want 1 after dropping cue beyond canvas", count)
+	}
+	got := plan.Layers[1]
+	if got.StartFrame != 1212 || got.DurationFrames != 36 {
+		t.Fatalf("clamped cue = start %d duration %d, want start 1212 duration 36", got.StartFrame, got.DurationFrames)
+	}
+	if got.StartFrame+got.DurationFrames != plan.Canvas.DurationFrames {
+		t.Fatalf("cue ends at frame %d, want canvas boundary %d", got.StartFrame+got.DurationFrames, plan.Canvas.DurationFrames)
+	}
+}
+
 func TestBurnASSIntoPlanCreatesTimedGPUTextLayers(t *testing.T) {
 	plan := &Plan{Schema: "chronon.render-plan.v2", Version: 2, JobID: "j",
 		Canvas: Canvas{Width: 1920, Height: 1080, FPSNum: 30, FPSDen: 1, DurationFrames: 150},

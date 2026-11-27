@@ -179,6 +179,17 @@ func appendSubtitleLayers(plan *Plan, assBytes []byte, fontPath string, style *L
 		}
 	}
 	for i, cue := range cues {
+		if cue.StartFrame < 0 {
+			cue.StartFrame = 0
+		}
+		if plan.Canvas.DurationFrames > 0 {
+			if cue.StartFrame >= plan.Canvas.DurationFrames {
+				continue
+			}
+			if cue.EndFrame > plan.Canvas.DurationFrames {
+				cue.EndFrame = plan.Canvas.DurationFrames
+			}
+		}
 		if cue.Text == "" || cue.EndFrame <= cue.StartFrame {
 			continue
 		}

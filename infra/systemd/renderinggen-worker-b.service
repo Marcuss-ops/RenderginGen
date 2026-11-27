@@ -16,8 +16,14 @@ Requires=renderinggen-queue.service
 [Service]
 Type=simple
 User=pierone
-# No WorkingDirectory: the worker resolves every asset/plan path from its own
-# config, so the unit carries no machine-specific source checkout path.
+# No machine-specific source checkout path: the worker resolves every
+# asset/plan path from its own config and renders from the plan's directory.
+# It still needs a WRITABLE cwd for `chronon3d_cli doctor`
+# (filesystem.output_writable is probed relative to cwd); RuntimeDirectory
+# provides one that exists at boot and is owned by the service user.
+RuntimeDirectory=renderinggen-b
+RuntimeDirectoryMode=0750
+WorkingDirectory=/run/renderinggen-b
 ExecStart=/usr/local/bin/renderinggen --config /etc/renderinggen/renderinggen-b.yaml
 Restart=on-failure
 RestartSec=2
@@ -28,6 +34,9 @@ LimitNOFILE=65536
 # instead of an OOM kill; GOGC=100 stays at Go's default next to it. Raise
 # GOMEMLIMIT together with artifact_store.l1_max_bytes in renderinggen-b.yaml.
 Environment=GOGC=100 GOMEMLIMIT=4GiB
+# Same explicit Natural Earth catalog as worker A: the loader never searches
+# the source tree, so the deployment-owned copy must be named here.
+Environment=CHRONONTEMPLATE_CATALOG=/var/lib/renderinggen/catalog
 
 [Install]
 WantedBy=multi-user.target
