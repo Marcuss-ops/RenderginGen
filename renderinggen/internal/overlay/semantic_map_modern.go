@@ -37,15 +37,15 @@ import (
 // compileModernMap1Layers draws the editorial plate in back-to-front order:
 // paper, graticule, neighbouring borders, territory halo, territory fill and
 // outline, name, credit, and finally the optional logo.
-func compileModernMap1Layers(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+func compileModernMap1Layers(ri resolvedItem, src *semanticPlan, registry *assetRegistry, geoRegistry *geofeatures.Registry) ([]Layer, error) {
 	place := modernMapPlace(ri.Item)
 	if place == "" {
 		return nil, fmt.Errorf("overlay: ModernMap1 item %q requires params.map_place", ri.Item.ID)
 	}
-	features, err := geofeatures.DefaultRegistry()
-	if err != nil {
-		return nil, fmt.Errorf("overlay: ModernMap1 item %q: %w", ri.Item.ID, err)
+	if geoRegistry == nil {
+		return nil, fmt.Errorf("overlay: ModernMap1 item %q: no geographic registry was provided; set CompileOptions.GeoRegistry from the worker's validated catalog", ri.Item.ID)
 	}
+	features := geoRegistry
 	sample, feature, fit, err := tacticalfill.BuildWithFit(features, place, tacticalfill.Options{
 		Width: src.Width, Height: src.Height, Padding: 0.02,
 		Box: tacticalfill.Box{MinX: 0.06, MinY: 0.06, MaxX: 0.94, MaxY: 0.94},

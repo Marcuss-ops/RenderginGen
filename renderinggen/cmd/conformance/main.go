@@ -10,9 +10,11 @@
 // test framing, and it adds no code path the gate does not already exercise: it
 // calls the same ScanAll the test calls.
 //
-// It deliberately does NOT own the baselines. The ratchet baseline is consumed
-// and refreshed by the test (UPDATE_CONFORMANCE_BASELINE), because a baseline
-// that a standalone runner could rewrite is a gate that a runner could silence.
+// It deliberately does NOT own the baselines. It READS the committed ratchet
+// and applies it, so a known, accepted occurrence is not re-reported as a
+// failure; refreshing the ledger remains an explicit test action
+// (UPDATE_CONFORMANCE_BASELINE), because a baseline that a standalone runner
+// could rewrite is a gate that a runner could silence.
 package main
 
 import (
@@ -33,26 +35,35 @@ func main() {
 		fmt.Fprintf(os.Stderr, "conformance: scan: %v\n", err)
 		os.Exit(2)
 	}
+	baseline, err := architecture.LoadBaseline(architecture.BaselinePath())
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "conformance: load baseline: %v\n", err)
+		os.Exit(2)
+	}
+	newViolations, stale := baseline.Split(violations, architecture.AbsentSibling)
 	if *asJSON {
-		encoded, err := json.MarshalIndent(violations, "", "  ")
+		encoded, err := json.MarshalIndent(struct {
+			New   []architecture.Violation `json:"new"`
+			Stale []string                 `json:"stale"`
+		}{newViolations, stale}, "", "  ")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "conformance: encode: %v\n", err)
 			os.Exit(2)
 		}
 		fmt.Println(string(encoded))
 	} else {
-		report(violations)
+		report(newViolations, stale, len(violations)-len(newViolations))
 	}
-	if len(violations) > 0 {
+	if len(newViolations) > 0 || len(stale) > 0 {
 		os.Exit(1)
 	}
 }
 
-// report prints one line per violation plus the rule's note once per rule, so a
-// reader learns what the marker means without looking it up.
-func report(violations []architecture.Violation) {
-	if len(violations) == 0 {
-		fmt.Printf("conformance: clean (%d targets)\n", len(architecture.Targets()))
+// report prints one line per NEW violation plus the rule's note once per rule,
+// so a reader learns what the marker means without looking it up.
+func report(violations []architecture.Violation, stale []string, baselined int) {
+	if len(violations) == 0 && len(stale) == 0 {
+		fmt.Printf("conformance: clean (%d targets, %d baselined)\n", len(architecture.Targets()), baselined)
 		return
 	}
 	noted := map[string]bool{}
@@ -69,5 +80,8 @@ func report(violations []architecture.Violation) {
 			}
 		}
 	}
-	fmt.Fprintf(os.Stderr, "conformance: %d violation(s); the ratchet baseline is owned by `go test ./internal/architecture/...`\n", len(violations))
+	for _, entry := range stale {
+		fmt.Printf("stale baseline entry (remove it): %s\n", entry)
+	}
+	fmt.Fprintf(os.Stderr, "conformance: %d new violation(s), %d stale baseline entr(ies), %d baselined; refresh via `make refresh-conformance-baseline`\n", len(violations), len(stale), baselined)
 }

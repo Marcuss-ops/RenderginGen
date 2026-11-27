@@ -6,12 +6,17 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
+# Native worker A and the shared single-daemon profile run the post-R28 2-slot
+# contract (3 lanes + Ollama exhausted 16 GB). Worker B is its OWN daemon on its
+# own socket and deliberately keeps the historical 3-lane pipeline; it is a
+# separate profile, not a divergence from worker A.
 PROFILE_GROUPS = {
-    "native": [ROOT / "infra/native/renderinggen-native.yaml", ROOT / "infra/native/renderinggen-b.yaml", ROOT / "renderinggen/config.yaml"],
+    "native": [ROOT / "infra/native/renderinggen-native.yaml", ROOT / "infra/native/renderinggen-single.yaml", ROOT / "renderinggen/config.yaml"],
+    "native-b": [ROOT / "infra/native/renderinggen-b.yaml"],
     "docker": [ROOT / "infra/docker/worker-config.yaml", ROOT / "infra/docker/worker-config-b.yaml", ROOT / "infra/docker/worker-config-drive.yaml"],
     "ci": [ROOT / "infra/docker/worker-config-ci.yaml"],
 }
-EXPECTED = {"native": 3, "docker": 2, "ci": 1}
+EXPECTED = {"native": 2, "native-b": 3, "docker": 2, "ci": 1}
 
 
 def value_for(path: Path, key: str) -> int:
@@ -46,7 +51,7 @@ def main() -> int:
         print("GPU profile contract FAILED:", file=sys.stderr)
         print("\n".join(f" - {line}" for line in failures), file=sys.stderr)
         return 1
-    print(f"GPU profile contract OK: native={EXPECTED['native']}, Docker={EXPECTED['docker']}, CI={EXPECTED['ci']}; producer admission is a separate deployment setting")
+    print(f"GPU profile contract OK: native={EXPECTED['native']}, native-b={EXPECTED['native-b']}, Docker={EXPECTED['docker']}, CI={EXPECTED['ci']}; producer admission is a separate deployment setting")
     return 0
 
 

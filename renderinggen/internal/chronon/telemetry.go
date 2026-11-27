@@ -205,6 +205,7 @@ type NativeTelemetry struct {
 			EffectiveBackend     string `json:"effective_backend"`
 			EncoderBackend       string `json:"encoder_backend"`
 			FallbackNodes        *int64 `json:"software_fallback_nodes"`
+			FallbackFramesDelta  *int64 `json:"software_fallback_frames_delta"`
 			CPUReadbackFrames    *int64 `json:"cpu_readback_frames"`
 			SoftwareEncodeFrames *int64 `json:"software_encode_frames"`
 			VideoPipeFallback    *int64 `json:"video_pipe_fallback_frames"`

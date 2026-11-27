@@ -125,6 +125,41 @@ func TestDefaultRegistryLoadsFromTheConfiguredCatalog(t *testing.T) {
 	}
 }
 
+// TestDefaultRegistryRetriesAfterAFailedLoad pins the lifecycle contract: a
+// catalog mounted after startup is picked up on the next call. The former
+// sync.Once stored the load error for the life of the process, so a transient
+// missing mount required a restart.
+func TestDefaultRegistryRetriesAfterAFailedLoad(t *testing.T) {
+	resetDefaultRegistryForTest()
+	t.Cleanup(resetDefaultRegistryForTest)
+
+	t.Setenv("CHRONONTEMPLATE_CATALOG", filepath.Join(t.TempDir(), "not-mounted"))
+	if _, err := DefaultRegistry(); err == nil {
+		t.Fatal("a missing catalog directory must be reported")
+	}
+
+	t.Setenv("CHRONONTEMPLATE_CATALOG", filepath.Join("testdata", "catalog"))
+	registry, err := DefaultRegistry()
+	if err != nil {
+		t.Fatalf("the retry after the catalog became available must succeed: %v", err)
+	}
+	if _, err := registry.ByName("United Kingdom"); err != nil {
+		t.Fatalf("retried registry lacks the fixture country: %v", err)
+	}
+}
+
+// TestDefaultRegistryRequiresExplicitConfiguration pins that resolution never
+// inspects the working directory: absent CHRONONTEMPLATE_CATALOG is an error
+// naming the variable, even when a sibling catalog happens to be on disk.
+func TestDefaultRegistryRequiresExplicitConfiguration(t *testing.T) {
+	resetDefaultRegistryForTest()
+	t.Cleanup(resetDefaultRegistryForTest)
+	t.Setenv("CHRONONTEMPLATE_CATALOG", "")
+	if _, err := DefaultRegistry(); err == nil || !strings.Contains(err.Error(), "CHRONONTEMPLATE_CATALOG") {
+		t.Fatalf("err = %v, want an error naming CHRONONTEMPLATE_CATALOG", err)
+	}
+}
+
 // TestLoadNaturalEarthFromPinnedFixtures carries the semantics the full-dataset
 // assertions used to carry, but against data that ships with the test: the
 // hierarchy, the geometry summary, the scoped lookup and the child index are
@@ -132,9 +167,10 @@ func TestDefaultRegistryLoadsFromTheConfiguredCatalog(t *testing.T) {
 func TestLoadNaturalEarthFromPinnedFixtures(t *testing.T) {
 	registry := fixtureRegistry(t)
 
-	// world + four countries + one admin-1 region.
-	if got := len(registry.Features()); got != 6 {
-		t.Fatalf("loaded feature count = %d, want 6", got)
+	// world + seven countries (UK, India, Italy, Japan, France and the two
+	// Congo states used by the ambiguity test) + one admin-1 region.
+	if got := len(registry.Features()); got != 9 {
+		t.Fatalf("loaded feature count = %d, want 9", got)
 	}
 
 	uk, err := registry.ByName("United Kingdom")

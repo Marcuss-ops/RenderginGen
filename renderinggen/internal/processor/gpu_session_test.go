@@ -172,7 +172,7 @@ func TestCertifyAndHandoffUsesChunkWindowForNativeGate(t *testing.T) {
 		t.Fatalf("policy frame range = %+v, want [720,1439]", policy.FrameRange)
 	}
 	out := filepath.Join(t.TempDir(), "chunk.mp4")
-	sidecar := "{\"schema\": \"chronon3d.frame-timing.v2\", \"version\": 2, \"summary\": {\"render_loop_fps\": 25}, \"job\": {\"execution_path\": \"full_graph_native\", \"surface_handoff_path\": \"direct\", \"gpu\": {\"effective_backend\": \"vulkan\", \"encoder_backend\": \"nvenc\", \"software_fallback_nodes\": 0, \"cpu_readback_frames\": 0, \"software_encode_frames\": 0, \"video_pipe_fallback_frames\": 0, \"nvenc_frames\": 720, \"vulkan_frames\": 720}}}"
+	sidecar := "{\"schema\": \"chronon3d.frame-timing.v2\", \"version\": 2, \"summary\": {\"render_loop_fps\": 25}, \"job\": {\"execution_path\": \"full_graph_native\", \"surface_handoff_path\": \"direct\", \"gpu\": {\"effective_backend\": \"vulkan\", \"encoder_backend\": \"nvenc\", \"software_fallback_nodes\": 0, \"software_fallback_frames_delta\": 0, \"cpu_readback_frames\": 0, \"software_encode_frames\": 0, \"video_pipe_fallback_frames\": 0, \"nvenc_frames\": 720, \"vulkan_frames\": 720}}}"
 	if err := os.WriteFile(out+chronon.TimingSidecarSuffix, []byte(sidecar), 0o600); err != nil {
 		t.Fatal(err)
 	}

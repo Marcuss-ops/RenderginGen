@@ -271,11 +271,16 @@ func batchSegmentFacts(entries []SegmentArtifact) []queue.BatchSegmentFacts {
 	return facts
 }
 
-// countDecodedFrames is the full-decode counter behind the segment count gate,
-// wrapped in a variable so the gate's decision is testable without spawning
-// ffprobe for every case (the same seam receipt_verify.go uses for
-// validateDecode).
-var countDecodedFrames = media.CountDecodedFrames
+// decodeFrameCounter returns this processor's full-decode counter. The seam is
+// per-instance (NewWithOptions installs media.CountDecodedFrames), so a test
+// stub cannot race a concurrent processor or leak into another test, exactly
+// like the decode tools in receipt_verify.go.
+func (p *Processor) decodeFrameCounter() func(context.Context, string) (int, error) {
+	if p != nil && p.countDecodedFrames != nil {
+		return p.countDecodedFrames
+	}
+	return media.CountDecodedFrames
+}
 
 // segmentFrameCountIsCertified reports whether a receipt already proves the
 // segment's decoded frame count, so the gate must not pay a second full decode
@@ -354,7 +359,7 @@ func (p *Processor) verifySegmentOutput(ctx context.Context, jobID, itemID strin
 	// -count_frames scan skipped. Fast receipts and metadata-only probes do not
 	// prove how many frames actually decode, so they still pay it.
 	if !segmentFrameCountIsCertified(receipt, receiptErr, probed) {
-		count, err := countDecodedFrames(ctx, segment.OutputPath)
+		count, err := p.decodeFrameCounter()(ctx, segment.OutputPath)
 		if err != nil {
 			return SegmentArtifact{}, err
 		}

@@ -782,13 +782,37 @@ go build -o /usr/local/bin/renderinggen ./renderinggen/cmd/renderinggen
 
 Install the checked-in units/configs during host provisioning, then enable:
 
+The worker validates the Natural Earth catalog at startup. It is installed as
+deployment data under the path named by `CHRONONTEMPLATE_CATALOG` (the checked-in
+units use `/var/lib/renderinggen/catalog`); the loader no longer searches the
+working directory for a sibling ChrononTemplate checkout.
+
+A custom unit also needs a **writable** working directory. The worker itself
+resolves every asset and plan path from its config and renders from the plan's
+own directory, but `chronon3d_cli doctor` probes its output directory relative
+to the process cwd (`filesystem.output_writable`); with no `WorkingDirectory`
+the service starts in `/` and crash-loops on the capability handshake. The
+checked-in units therefore pair `RuntimeDirectory=` with a `WorkingDirectory=`
+pointing at it (`/run/renderinggen`), which exists at boot and is owned by the
+service user without naming a host-specific checkout.
+
 ```sh
 sudo install -D -m 0644 infra/systemd/*.service /etc/systemd/system/
 sudo install -D -m 0755 infra/systemd/renderinggen-queue-wrapper.sh /usr/local/libexec/renderinggen-queue-wrapper
 sudo install -D -m 0644 infra/native/renderinggen-native.yaml /etc/renderinggen/renderinggen.yaml
 sudo install -D -m 0644 infra/native/renderinggen-b.yaml /etc/renderinggen/renderinggen-b.yaml
+sudo install -d /var/lib/renderinggen/catalog
+sudo install -m 0644 ../ChrononTemplate/catalog/ne_50m_admin_0_countries.geojson \
+  ../ChrononTemplate/catalog/ne_10m_admin_1_gujarat.geojson /var/lib/renderinggen/catalog/
 sudo systemctl daemon-reload
 sudo systemctl enable --now renderinggen-queue.service renderinggen-worker.service
+```
+
+For a development run from the source tree, export the same variable before
+starting the worker or the map tests:
+
+```sh
+export CHRONONTEMPLATE_CATALOG=../ChrononTemplate/catalog
 ```
 
 Start infrastructure separately with `docker compose -f infra/docker/docker-compose.yaml up -d`.
@@ -871,6 +895,27 @@ make test-unit   # tutti i moduli, senza la certificazione runtime (gate veloce)
 # Suite reali (certificazione + golden render degli Apple style):
 CHRONON_BIN=/path/to/chronon3d_cli go test ./internal/overlay/ -count=1
 ```
+
+### Output verification policies
+
+`pipeline.receipt_verify` (or the `RENDERINGGEN_RECEIPT_VERIFY` alias) selects
+what the worker claims about a finished artifact. The policy is resolved in one
+authority (`internal/processor/receipt_verify.go`) and splits into what the
+worker enforces itself and which tier it asks Chronon to run.
+
+| Policy | Integrity it certifies | Composition it certifies |
+| --- | --- | --- |
+| `fast` (default) | Container/stream metadata only; no decode promised | Only if the telemetry sidecar is present; absence is recorded as `composition_prediction_unverifiable`, never fatal |
+| `normal` | One complete decode of the output, run by the worker after the render lane (skipped only when the receipt proves Chronon already decoded it) | Same as `fast`: divergence fails, absent evidence is recorded and tolerated |
+| `sample` | A deterministic sampled decode that escalates to the complete decode on any doubt; a sample failure alone never rejects | Same as `fast`/`normal` |
+| `certify` | Chronon's in-daemon complete decode (worker decode backstops a receipt that proves none) | Fail-closed: an authored overlay with an absent or undecodable summary is rejected, not certified |
+| `strict` | Same fail-closed rule as `certify`, with the worker's explicit spelling and the `fast` wire tier | Fail-closed on unverifiable evidence, exactly like `certify` |
+
+A plan with no authored overlay has no composition requirement: absence of the
+optional sidecar stays tolerated under every policy. `certify`/`strict` never
+convert "cannot verify" into "verified": the artifact fails with the reason
+instead. Every outcome is recorded on artifact metrics, so a rejected or
+fail-open decision is visible without reading the worker log.
 
 ### Runtime certification — local GPU lane
 

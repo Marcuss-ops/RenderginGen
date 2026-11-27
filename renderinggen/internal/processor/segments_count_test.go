@@ -102,9 +102,9 @@ func TestVerifySegmentOutputSkipsTheFullDecodeForACanonicalReceipt(t *testing.T)
 		t.Fatal("fixture was not canonicalized; the test cannot exercise the canonical receipt")
 	}
 
-	restore := countDecodedFrames
-	t.Cleanup(func() { countDecodedFrames = restore })
-	countDecodedFrames = func(context.Context, string) (int, error) {
+	// The gate's decode seam is processor-scoped: the stub below cannot race
+	// another processor or leak into another test.
+	proc.countDecodedFrames = func(context.Context, string) (int, error) {
 		t.Fatal("the canonical receipt certifies the frame count; a full -count_frames decode is waste")
 		return 0, nil
 	}

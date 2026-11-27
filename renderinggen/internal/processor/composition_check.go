@@ -72,27 +72,31 @@ func checkCompositionPrediction(predicted bool, facts chronon.ExecutionFacts) co
 // verifyCompositionPrediction runs the cross-check for a finalized artifact and
 // records the outcome on the artifact metrics.
 //
-// It returns an error only for the direction that can produce a wrong picture
-// (or, under certify/strict, for the direction that contradicts a claimed
-// proof). An empty or undecodable summary records an unverifiable metric and
-// returns nil at every level: the summary is an optional sidecar, and failing
-// a render because an optional sidecar is absent would trade a real artifact
-// for evidence about it. That fail-open is BY DESIGN and never silent
-// (metric + Warn with jobID); the strict gate lives on DIVERGENCE below, not
-// on absence. Pinned by TestVerifyCompositionPredictionUnverifiableIsRecordedNotFatal.
+// It returns an error for the direction that can produce a wrong picture, and
+// under certify/strict also when an authored overlay cannot be verified at all.
+// Those two levels claim proof of the composition contract, so an empty or
+// undecodable summary must not be silently certified: the artifact is rejected
+// with the reason instead. fast/normal/sample remain fail-open on an absent
+// optional sidecar (the rendered bytes are still valid), because they never
+// claim that proof. A plan with no authored overlay has no composition
+// requirement to verify, so absence stays fail-open even under certify/strict.
 func verifyCompositionPrediction(plan *overlay.Plan, raw json.RawMessage, metrics map[string]float64, level renderVerifyLevel, jobID string) error {
-	if len(raw) == 0 {
+	predicted := planHasVisualOverlay(plan)
+	unverifiable := func(reason string) error {
 		metrics[metricnames.CompositionPredictionUnverifiable] = 1
-		workerlog.ByJobID(jobID).Warnf("composition prediction not verifiable (empty summary, fail-open by design under policy=%s)", level)
+		if predicted && (level == renderVerifyCertify || level == renderVerifyStrict) {
+			return fmt.Errorf("processor: composition prediction unverifiable under policy %s: the plan declares an authored overlay but %s", level, reason)
+		}
+		workerlog.ByJobID(jobID).Warnf("composition prediction not verifiable (fail-open by design under policy=%s): %s", level, reason)
 		return nil
+	}
+	if len(raw) == 0 {
+		return unverifiable("the execution summary is empty")
 	}
 	facts, err := chronon.DecodeExecutionFacts(raw)
 	if err != nil {
-		metrics[metricnames.CompositionPredictionUnverifiable] = 1
-		workerlog.ByJobID(jobID).Warnf("composition prediction not verifiable (fail-open by design under policy=%s): %v", level, err)
-		return nil
+		return unverifiable(fmt.Sprintf("the execution summary could not be decoded: %v", err))
 	}
-	predicted := planHasVisualOverlay(plan)
 	divergence := checkCompositionPrediction(predicted, facts)
 	if divergence == divergenceNone {
 		return nil

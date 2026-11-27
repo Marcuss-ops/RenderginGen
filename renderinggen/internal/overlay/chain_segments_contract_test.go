@@ -119,7 +119,7 @@ func TestChainSegmentsAreDecodedOnceIntoTheItem(t *testing.T) {
 	if err != nil {
 		t.Fatalf("validate: %v", err)
 	}
-	resolved, err := resolvePlan(validated)
+	resolved, err := resolvePlan(validated, CompileOptions{})
 	if err != nil {
 		t.Fatalf("resolve: %v", err)
 	}

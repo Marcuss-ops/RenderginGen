@@ -55,6 +55,15 @@ func requireNativeVulkanTelemetry(outputPath string, expectedFrames int) error {
 		}
 		return fmt.Errorf("software_fallback_nodes=%d, want 0", *doc.Job.GPU.FallbackNodes)
 	}
+	// FullGraph Vulkan jobs publish a per-job fallback delta. DirectYUV has no
+	// Vulkan graph backend and therefore has no such counter; when the counter
+	// applies, require it and fail closed on any CPU fallback frame.
+	if !directYUV && doc.Job.GPU.FallbackFramesDelta == nil {
+		return fmt.Errorf("software_fallback_frames_delta missing, want 0")
+	}
+	if doc.Job.GPU.FallbackFramesDelta != nil && *doc.Job.GPU.FallbackFramesDelta != 0 {
+		return fmt.Errorf("software_fallback_frames_delta=%d, want 0", *doc.Job.GPU.FallbackFramesDelta)
+	}
 	if doc.Job.GPU.EncoderBackend != "nvenc" {
 		return fmt.Errorf("encoder_backend=%q, want nvenc", doc.Job.GPU.EncoderBackend)
 	}

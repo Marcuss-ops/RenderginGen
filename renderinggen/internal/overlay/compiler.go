@@ -23,6 +23,8 @@ package overlay
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 )
 
 // SemanticSchema is PipelineGen's semantic overlay contract. RenderingGen
@@ -124,7 +126,16 @@ func canonicalProfileColorSpace(profileID string) string {
 // uses CompileSemanticWithAssetSizes once it has probed the bytes, so the
 // emitted plan is already final.
 func CompileSemantic(raw []byte) (CompileResult, error) {
-	return compileSemanticWithOptions(raw, CompileOptions{})
+	return compileSemanticWithOptions(raw, legacyCompileOptions())
+}
+
+// legacyCompileOptions resolves the process-wide catalog for the option-less
+// entry points (CLI tools, batch preflight and tests). The worker never uses
+// this path: it loads the registry at boot and passes CompileOptions.GeoRegistry
+// explicitly, so a request cannot depend on a lazily resolved global.
+func legacyCompileOptions() CompileOptions {
+	registry, _ := geofeatures.DefaultRegistry()
+	return CompileOptions{GeoRegistry: registry}
 }
 
 // CompileSemanticWithAssetSizes is the SIZED compile: sizes maps every image's
@@ -133,7 +144,9 @@ func CompileSemantic(raw []byte) (CompileResult, error) {
 // lowering. A layer that awaits a size and has no entry fails the compile
 // closed; sizes == nil selects the blind compile.
 func CompileSemanticWithAssetSizes(raw []byte, sizes map[string]ImageSize) (CompileResult, error) {
-	return compileSemanticWithOptions(raw, CompileOptions{AssetSizes: sizes})
+	opts := legacyCompileOptions()
+	opts.AssetSizes = sizes
+	return compileSemanticWithOptions(raw, opts)
 }
 
 // CompileSemanticWithOptions is the dependency-explicit compile. The worker

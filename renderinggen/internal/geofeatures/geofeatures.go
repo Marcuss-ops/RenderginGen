@@ -24,9 +24,12 @@ import (
 const WorldID = "world"
 
 var (
-	defaultRegistryOnce sync.Once
-	defaultRegistry     *Registry
-	defaultRegistryErr  error
+	// defaultRegistryMu guards the cached registry. A successful load is cached
+	// for the process; a FAILED load is not, so a catalog mounted after startup
+	// is picked up on the next call instead of leaving the process permanently
+	// broken (the former sync.Once cached the error too).
+	defaultRegistryMu sync.Mutex
+	defaultRegistry   *Registry
 )
 
 // Level is the administrative level represented by a dataset.
@@ -125,47 +128,51 @@ func LoadNaturalEarth(countries io.Reader, admin1 ...io.Reader) (*Registry, erro
 	return registry, nil
 }
 
-// DefaultRegistry loads and caches the Natural Earth catalogs owned by
-// ChrononTemplate. CHRONONTEMPLATE_CATALOG may point directly at that catalog
-// directory; otherwise the loader searches the current directory and its
-// parents for ChrononTemplate/catalog. Missing data is reported, never fetched.
+// DefaultRegistry returns the process-wide Natural Earth registry loaded from
+// the directory named by CHRONONTEMPLATE_CATALOG.
+//
+// The directory is EXPLICIT configuration, never discovered: the loader used to
+// walk the current directory and its parents looking for a sibling
+// ChrononTemplate checkout, which made the result depend on where the process
+// happened to be started and silently worked on a developer machine while the
+// standalone CI checkout failed. The composition root is responsible for the
+// value; missing configuration is an error naming the variable.
+//
+// A successful load is cached. A failed load is NOT cached, so mounting the
+// catalog after startup and retrying succeeds instead of requiring a restart.
 func DefaultRegistry() (*Registry, error) {
-	defaultRegistryOnce.Do(func() {
-		catalogDir := strings.TrimSpace(os.Getenv("CHRONONTEMPLATE_CATALOG"))
-		if catalogDir == "" {
-			cwd, err := os.Getwd()
-			if err != nil {
-				defaultRegistryErr = fmt.Errorf("geofeatures: locate catalog: %w", err)
-				return
-			}
-			for dir := cwd; ; dir = filepath.Dir(dir) {
-				candidate := filepath.Join(dir, "ChrononTemplate", "catalog")
-				if info, err := os.Stat(filepath.Join(candidate, "ne_50m_admin_0_countries.geojson")); err == nil && !info.IsDir() {
-					catalogDir = candidate
-					break
-				}
-				parent := filepath.Dir(dir)
-				if parent == dir {
-					defaultRegistryErr = fmt.Errorf("geofeatures: Natural Earth catalog not found; set CHRONONTEMPLATE_CATALOG")
-					return
-				}
-			}
-		}
-		countryFile, err := os.Open(filepath.Join(catalogDir, "ne_50m_admin_0_countries.geojson"))
-		if err != nil {
-			defaultRegistryErr = fmt.Errorf("geofeatures: open Natural Earth country catalog: %w", err)
-			return
-		}
-		defer countryFile.Close()
-		admin1File, err := os.Open(filepath.Join(catalogDir, "ne_10m_admin_1_gujarat.geojson"))
-		if err != nil {
-			defaultRegistryErr = fmt.Errorf("geofeatures: open Natural Earth admin-1 catalog: %w", err)
-			return
-		}
-		defer admin1File.Close()
-		defaultRegistry, defaultRegistryErr = LoadNaturalEarth(countryFile, admin1File)
-	})
-	return defaultRegistry, defaultRegistryErr
+	defaultRegistryMu.Lock()
+	defer defaultRegistryMu.Unlock()
+	if defaultRegistry != nil {
+		return defaultRegistry, nil
+	}
+	catalogDir := strings.TrimSpace(os.Getenv("CHRONONTEMPLATE_CATALOG"))
+	if catalogDir == "" {
+		return nil, fmt.Errorf("geofeatures: Natural Earth catalog not configured; set CHRONONTEMPLATE_CATALOG to the directory containing ne_50m_admin_0_countries.geojson and ne_10m_admin_1_gujarat.geojson")
+	}
+	registry, err := LoadDir(catalogDir)
+	if err != nil {
+		return nil, err
+	}
+	defaultRegistry = registry
+	return registry, nil
+}
+
+// LoadDir loads the Natural Earth country and admin-1 catalogs from dir. It is
+// the explicit entry point used by DefaultRegistry and by callers (tests, the
+// map CLI) that own a specific catalog location.
+func LoadDir(dir string) (*Registry, error) {
+	countryFile, err := os.Open(filepath.Join(dir, "ne_50m_admin_0_countries.geojson"))
+	if err != nil {
+		return nil, fmt.Errorf("geofeatures: open Natural Earth country catalog: %w", err)
+	}
+	defer countryFile.Close()
+	admin1File, err := os.Open(filepath.Join(dir, "ne_10m_admin_1_gujarat.geojson"))
+	if err != nil {
+		return nil, fmt.Errorf("geofeatures: open Natural Earth admin-1 catalog: %w", err)
+	}
+	defer admin1File.Close()
+	return LoadNaturalEarth(countryFile, admin1File)
 }
 
 // ByID returns a copy of the feature with the exact canonical ID.

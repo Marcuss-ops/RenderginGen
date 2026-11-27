@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 )
 
 // CameraSampleBaker resolves the compiler's temporary scalar camera tracks into
@@ -37,6 +39,12 @@ type CompileOptions struct {
 	// the preparatory pass whose plan is discarded after its asset refs and
 	// probe inputs are read: baking there would duplicate the render pass.
 	SkipCameraBake bool
+	// GeoRegistry is the Natural Earth catalog used by fly_to_feature and
+	// ModernMap1 lowering. It is an explicit dependency, loaded and validated
+	// by the composition root: the compiler must not resolve a package global
+	// mid-request. A nil registry is accepted only for plans that need no
+	// geography; a map plan that needs it fails with an actionable error.
+	GeoRegistry *geofeatures.Registry
 }
 
 // bakeResolvedCameraSamples converts the compiler's temporary scalar camera

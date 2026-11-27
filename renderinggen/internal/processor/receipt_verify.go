@@ -121,16 +121,24 @@ func (p *Processor) chrononReceiptRequest() string {
 	return chronon.ReceiptVerifyFast
 }
 
-// validateDecode is the full-decode tool behind the worker's post-lane gate,
-// wrapped in a variable so the gate's decision logic is testable without
-// spawning ffmpeg per case. It resolves its binary through the same media
-// configuration as every other tool call (media.Configure).
-var validateDecode = media.ValidateDecode
+// decodeValidator returns the processor's full-decode tool. A processor built
+// by NewWithOptions carries the real media tool; a zero-value processor (tests)
+// falls back to it here. The seam is per-instance, so one test's stub cannot
+// race a concurrent processor or leak into another test.
+func (p *Processor) decodeValidator() func(context.Context, string) error {
+	if p != nil && p.validateDecode != nil {
+		return p.validateDecode
+	}
+	return media.ValidateDecode
+}
 
-// validateDecodeSampled is the sampled-decode tool behind the sample tier,
-// wrapped in a variable for the same reason: the escalation decision is
-// testable without spawning ffmpeg per case.
-var validateDecodeSampled = media.ValidateDecodeSampled
+// sampledDecodeValidator is the sample tier's counterpart to decodeValidator.
+func (p *Processor) sampledDecodeValidator() func(context.Context, string) error {
+	if p != nil && p.validateDecodeSampled != nil {
+		return p.validateDecodeSampled
+	}
+	return media.ValidateDecodeSampled
+}
 
 // enforceDecodableOutput makes good on the decode promise of the enforcement
 // policy, OFF the render lane: it runs in the post pool, inside FinalizeJob,
@@ -171,7 +179,7 @@ func (p *Processor) enforceDecodableOutput(ctx context.Context, outputPath strin
 	decodeUS := float64(0)
 	if policy == renderVerifySample {
 		start := time.Now()
-		sampleErr := validateDecodeSampled(ctx, outputPath)
+		sampleErr := p.sampledDecodeValidator()(ctx, outputPath)
 		decodeUS += float64(time.Since(start).Microseconds())
 		if sampleErr == nil {
 			if metrics != nil {
@@ -189,7 +197,7 @@ func (p *Processor) enforceDecodableOutput(ctx context.Context, outputPath strin
 		workerlog.ByJobID(jobID).Warnf("post-lane sampled decode failed (policy=%s), escalating to the complete decode: %v", policy, sampleErr)
 	}
 	start := time.Now()
-	err := validateDecode(ctx, outputPath)
+	err := p.decodeValidator()(ctx, outputPath)
 	decodeUS += float64(time.Since(start).Microseconds())
 	if metrics != nil {
 		metrics[metricnames.WorkerDecodeUS] = decodeUS

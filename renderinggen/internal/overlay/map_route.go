@@ -15,6 +15,35 @@ const (
 	mapRouteMaxSegmentDeg   = 2.0
 )
 
+// validateMapRouteEntries certifies the shared entry contract of a route list:
+// the count budget, unique single-line ids, stop counts, colour, width and a
+// valid geographic point for every stop. It is the ONE owner of those rules:
+// the raster map and the ModernMap1 plate used to carry byte-identical copies,
+// which is exactly how the two contracts drift apart. Callers add the rules
+// that are specific to their map type (raster routes additionally require a
+// camera_move/LOD window; the vector plate projects without one).
+func validateMapRouteEntries(itemID string, routes []SemanticMapRoute) error {
+	if len(routes) > maxMapRouteCount {
+		return fmt.Errorf("overlay: map item %q declares %d routes; the contract allows at most %d", itemID, len(routes), maxMapRouteCount)
+	}
+	seen := make(map[string]bool, len(routes))
+	for routeIndex, route := range routes {
+		if route.ID == "" || len(route.ID) > 128 || !isSingleLineVisibleText(route.ID) || seen[route.ID] {
+			return fmt.Errorf("overlay: map item %q route[%d] id must be unique, non-empty single-line text of at most 128 bytes", itemID, routeIndex)
+		}
+		seen[route.ID] = true
+		if len(route.Stops) < 2 || len(route.Stops) > maxMapRouteStops || !isHexColor(route.Color) || !finite(route.WidthPX) || route.WidthPX <= 0 || route.WidthPX > 64 {
+			return fmt.Errorf("overlay: map item %q route[%d] requires 2..%d stops, #RRGGBB color, and width_px in (0,64]", itemID, routeIndex, maxMapRouteStops)
+		}
+		for stopIndex, stop := range route.Stops {
+			if err := validateMapPoint(stop.Latitude, stop.Longitude); err != nil {
+				return fmt.Errorf("overlay: map item %q route[%d] stop[%d]: %w", itemID, routeIndex, stopIndex, err)
+			}
+		}
+	}
+	return nil
+}
+
 // mapRouteGeoSamples performs bounded spherical interpolation. Antipodal stops
 // have no unique shortest great circle, so they are rejected rather than
 // producing unstable coordinates.

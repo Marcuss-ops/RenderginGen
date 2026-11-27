@@ -228,12 +228,63 @@ Regenerate it with one documented command — `make refresh-conformance-baseline
 (the `UPDATE_CONFORMANCE_BASELINE=1` environment variable is that target's
 implementation, not a second procedure).
 
-**The ledger is currently empty.** Every rule above is enforced with zero
-exemptions: the legacy unversioned `chronon.render-plan` producers, the legacy
-v1 layer model, the machine-specific paths and the manual-splitting files have
-all been removed from the tree, so their ledger lines were ratcheted away.
-The rules stay in the gate so the deleted shapes cannot come back.
+The RenderingGen tree itself has **zero** exemptions: the legacy unversioned
+`chronon.render-plan` producers, the legacy v1 layer model, the
+machine-specific paths and the manual-splitting files have all been removed,
+so their ledger lines were ratcheted away. The rules stay in the gate so the
+deleted shapes cannot come back.
+
+### The published repository name is not a module-path exemption
+
+The published GitHub repository and the canonical Go module path still
+disagree by one letter (`RenderginGen` vs `RenderingGen`): the repository is
+published as `Marcuss-ops/RenderginGen`, while every import and `go.mod` uses
+the canonical `github.com/Marcuss-ops/RenderingGen/...`. Consumers therefore
+clone the published URL and resolve the module by its canonical path (the
+sibling `replace` or a published tag).
+
+That is a naming decision, not a conformance carve-out. The `module_path_typo`
+rule matches module/import paths (`.../RenderginGen/...`) and deliberately does
+not flag prose or a `RenderginGen.git` clone URL, so the ledger stays empty and
+a genuine import typo still fails the gate. Renaming the remote repository is
+the external completion of P0-01 and requires repository-admin access; nothing
+in this tree is blocked on it.
 
 A rule with no ledger line and no violation is a *live* rule; a rule with no
 ledger line but a surviving occurrence fails the gate as a NEW violation. There
 is no third state.
+
+## Output verification contract (`fast` … `strict`)
+
+The verification policy is a promise about what was **proven**, not a quality
+label. `pipeline.receipt_verify` (or `RENDERINGGEN_RECEIPT_VERIFY`) is resolved
+once in `internal/processor/receipt_verify.go`; the same value is sent to
+Chronon, recorded in the receipt (`verification.resolved_policy`) and enforced
+by the worker. A policy cannot mean different things at those three points.
+
+| Policy | File integrity | Decode promised | Composition with an authored overlay | Evidence absent |
+|---|---|---|---|---|
+| fast | metadata/container | none | not promised | tolerated, recorded as `composition_prediction_unverifiable` |
+| sample | container + sampled decode | sampled, escalates to full on doubt | not promised | tolerated |
+| normal | container + worker full decode | complete (skipped only when the receipt proves Chronon already decoded) | not promised | tolerated |
+| certify | container + Chronon in-daemon full decode, worker backstop | complete | **required** | **fails the job** |
+| strict | same as `certify` | complete | **required** | **fails the job** |
+
+Rules that follow from the table:
+
+- `strict` is a **worker-only spelling**: toward Chronon the policy travels as
+  `certify`, and the receipt records the resolved policy. The worker must not
+  treat the two as different wire tiers.
+- A plan with no authored visual overlay has `composition = not_required`:
+  absence of the summary is tolerated under every policy, including
+  `certify`/`strict`.
+- A rejected artifact is never `COMPLETED` and never receives a ledger row. An
+  `unverifiable` outcome under a fail-open policy is recorded (metric
+  `composition_prediction_unverifiable = 1`), not silently dropped.
+- A retry does not inherit evidence from the previous attempt: the policy is
+  re-applied to the new artifact and summary.
+
+The worker-side matrix is exercised by
+`TestVerifyCompositionPredictionUnverifiableDependsOnPolicy`; the policy table
+in this section is pinned by
+`TestConformanceDocumentsTheVerificationContract`.

@@ -85,7 +85,7 @@ func compileSemanticDecoded(src *semanticPlan, opts CompileOptions) (*Plan, []As
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
-	resolved, err := resolvePlan(validated)
+	resolved, err := resolvePlan(validated, opts)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err
 	}
@@ -100,8 +100,11 @@ func compileSemanticDecoded(src *semanticPlan, opts CompileOptions) (*Plan, []As
 // resolveSemanticItems validates the plan's items once and lowers each to its
 // canonical resolvedItem. This is the only place an item's kind, preset and
 // timing are decided.
-func resolveMapFeatureMoves(src *semanticPlan) error {
-	registry, registryErr := geofeatures.DefaultRegistry()
+func resolveMapFeatureMoves(src *semanticPlan, registry *geofeatures.Registry) error {
+	var registryErr error
+	if registry == nil {
+		registryErr = fmt.Errorf("no geographic registry was provided; set CompileOptions.GeoRegistry from the worker's validated catalog")
+	}
 	for index := range src.Items {
 		item := &src.Items[index]
 		if item.Map == nil || item.Map.FlyToFeature == nil {
@@ -393,10 +396,10 @@ func resolveItemMap(item semanticItem, kind ItemKind, src *semanticPlan, envelop
 // is the only discriminator; there is exactly one compiler per kind class and
 // one compatibility path for legacy entity_card items that still carry an
 // image asset.
-func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry, geoRegistry *geofeatures.Registry) ([]Layer, error) {
 	switch {
 	case isChainKind(ri.Kind):
-		return compileChainItem(ri, src, registry)
+		return compileChainItem(ri, src, registry, geoRegistry)
 	case isGroupKind(ri.Kind):
 		layers, err := compileEntityGroup(ri, src, registry)
 		if err != nil {
@@ -450,7 +453,7 @@ func compileItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([
 		return []Layer{layer}, nil
 	case isMapKind(ri.Kind):
 		if isModernMap1(ri.Item) {
-			return compileModernMap1Layers(ri, src, registry)
+			return compileModernMap1Layers(ri, src, registry, geoRegistry)
 		}
 		if ri.Map == nil {
 			return nil, fmt.Errorf("overlay: map item %q was not resolved before compile", ri.Item.ID)

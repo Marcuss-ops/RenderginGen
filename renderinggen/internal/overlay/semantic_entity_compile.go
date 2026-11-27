@@ -9,6 +9,7 @@ import (
 	"math"
 	"strings"
 
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/motion"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/numeric"
 )
@@ -283,12 +284,12 @@ func compileEntityGroup(ri resolvedItem, src *semanticPlan, registry *assetRegis
 // before the single camera authority is applied. Extracted from
 // compileSemanticDecoded so that function stays a list of plan stages.
 
-func appendResolvedItemLayers(plan *Plan, resolved []resolvedItem, src *semanticPlan, registry *assetRegistry, cameras *cameraControllerSet, stats *Stats) error {
+func appendResolvedItemLayers(plan *Plan, resolved []resolvedItem, src *semanticPlan, registry *assetRegistry, geoRegistry *geofeatures.Registry, cameras *cameraControllerSet, stats *Stats) error {
 	for _, ri := range resolved {
 		if err := cameras.observe(ri, src); err != nil {
 			return err
 		}
-		layers, err := compileItem(ri, src, registry)
+		layers, err := compileItem(ri, src, registry, geoRegistry)
 		if err != nil {
 			return err
 		}

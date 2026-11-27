@@ -204,10 +204,13 @@ func TestVerifyCompositionPredictionAgreementIsSilent(t *testing.T) {
 	}
 }
 
-// TestVerifyCompositionPredictionUnverifiableIsRecordedNotFatal pins the
-// fail-open half: the summary is an optional sidecar, so an absent or
-// undecodable one is recorded as unverifiable and never fails a valid artifact.
-func TestVerifyCompositionPredictionUnverifiableIsRecordedNotFatal(t *testing.T) {
+// TestVerifyCompositionPredictionUnverifiableDependsOnPolicy pins the contract
+// split: fast/normal/sample never claim proof, so an absent optional sidecar is
+// recorded and tolerated; certify/strict claim proof of the composition
+// contract, so an authored overlay that cannot be verified fails closed instead
+// of being certified on no evidence. A plan with no authored overlay has no
+// composition requirement, so absence stays tolerated even there.
+func TestVerifyCompositionPredictionUnverifiableDependsOnPolicy(t *testing.T) {
 	cases := map[string]json.RawMessage{
 		"absent":       nil,
 		"empty":        {},
@@ -217,16 +220,35 @@ func TestVerifyCompositionPredictionUnverifiableIsRecordedNotFatal(t *testing.T)
 	for name, raw := range cases {
 		name, raw := name, raw
 		t.Run(name, func(t *testing.T) {
-			for _, level := range []renderVerifyLevel{renderVerifyFast, renderVerifyCertify} {
+			for _, level := range []renderVerifyLevel{renderVerifyFast, renderVerifyNormal, renderVerifySample} {
 				metrics := map[string]float64{}
 				if err := verifyCompositionPrediction(overlayPlan(), raw, metrics, level, "job-1"); err != nil {
-					t.Fatalf("policy %s: an optional sidecar must not fail the artifact: %v", level, err)
+					t.Fatalf("policy %s promises no proof and must not fail the artifact: %v", level, err)
 				}
 				if metrics[metricnames.CompositionPredictionUnverifiable] != 1 {
 					t.Errorf("policy %s: metrics = %v, want %s=1", level, metrics, metricnames.CompositionPredictionUnverifiable)
 				}
 				if metrics[metricnames.CompositionPredictionDivergence] != 0 {
 					t.Errorf("policy %s: an unverifiable check must not report a divergence: %v", level, metrics)
+				}
+			}
+			for _, level := range []renderVerifyLevel{renderVerifyCertify, renderVerifyStrict} {
+				metrics := map[string]float64{}
+				err := verifyCompositionPrediction(overlayPlan(), raw, metrics, level, "job-1")
+				if err == nil {
+					t.Fatalf("policy %s claims proof; an authored overlay with no evidence must fail closed", level)
+				}
+				if !strings.Contains(err.Error(), "unverifiable") {
+					t.Errorf("policy %s: error = %q, want it to name the unverifiable evidence", level, err)
+				}
+				if metrics[metricnames.CompositionPredictionUnverifiable] != 1 {
+					t.Errorf("policy %s: metrics = %v, want %s=1", level, metrics, metricnames.CompositionPredictionUnverifiable)
+				}
+				// A plan with no authored overlay has nothing to certify, so the
+				// same absence stays tolerant.
+				plain := map[string]float64{}
+				if err := verifyCompositionPrediction(plainPlan(), raw, plain, level, "job-1"); err != nil {
+					t.Errorf("policy %s: a plan without an authored overlay has no composition proof to lose: %v", level, err)
 				}
 			}
 		})

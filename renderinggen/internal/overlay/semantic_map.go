@@ -148,23 +148,8 @@ func validateMapContract(item semanticItem, kind ItemKind, canvasWidth, canvasHe
 	if err := validateMapLODs(item, canvasWidth, canvasHeight); err != nil {
 		return err
 	}
-	if len(m.Routes) > maxMapRouteCount {
-		return fmt.Errorf("overlay: map item %q declares %d routes; the contract allows at most %d", item.ID, len(m.Routes), maxMapRouteCount)
-	}
-	seenRouteIDs := make(map[string]bool, len(m.Routes))
-	for routeIndex, route := range m.Routes {
-		if route.ID == "" || len(route.ID) > 128 || !isSingleLineVisibleText(route.ID) || seenRouteIDs[route.ID] {
-			return fmt.Errorf("overlay: map item %q route[%d] id must be unique, non-empty single-line text of at most 128 bytes", item.ID, routeIndex)
-		}
-		seenRouteIDs[route.ID] = true
-		if len(route.Stops) < 2 || len(route.Stops) > maxMapRouteStops || !isHexColor(route.Color) || !finite(route.WidthPX) || route.WidthPX <= 0 || route.WidthPX > 64 {
-			return fmt.Errorf("overlay: map item %q route[%d] requires 2..%d stops, #RRGGBB color, and width_px in (0,64]", item.ID, routeIndex, maxMapRouteStops)
-		}
-		for stopIndex, stop := range route.Stops {
-			if err := validateMapPoint(stop.Latitude, stop.Longitude); err != nil {
-				return fmt.Errorf("overlay: map item %q route[%d] stop[%d]: %w", item.ID, routeIndex, stopIndex, err)
-			}
-		}
+	if err := validateMapRouteEntries(item.ID, m.Routes); err != nil {
+		return err
 	}
 	if m.CameraMove == nil && len(m.Routes) > 0 {
 		return fmt.Errorf("overlay: map item %q routes require a certified camera_move/LOD coverage window", item.ID)

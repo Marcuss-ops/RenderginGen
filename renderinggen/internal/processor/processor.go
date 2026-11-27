@@ -22,6 +22,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/artifactdb"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/metricnames"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/overlay"
@@ -50,8 +51,20 @@ type Processor struct {
 	// unexported on purpose: only this package dispatches compile work, and a
 	// test in this package can inject a stub without widening the public API.
 	// nil falls back to the real overlay compiler.
-	compiler        semanticCompiler
-	assetPrefetcher chronon.AssetPrefetcher
+	compiler semanticCompiler
+	// validateDecode / validateDecodeSampled are the decode tools behind the
+	// post-lane verification gate. They are PROCESSOR-scoped, not package
+	// variables: a test that swapped a package variable while another processor
+	// was using the gate could race or leak a stub into a concurrent test. nil
+	// falls back to the real media tools, which is the production default.
+	validateDecode        func(context.Context, string) error
+	validateDecodeSampled func(context.Context, string) error
+	// countDecodedFrames is the full-decode counter behind the segment count
+	// gate. It is processor-scoped for the same reason as the decode tools:
+	// a package variable swapped by one test could race a concurrent processor.
+	countDecodedFrames func(context.Context, string) (int, error)
+	assetPrefetcher    chronon.AssetPrefetcher
+
 	// prefetchInflight bounds cache warm-up concurrency for THIS processor.
 	// NewWithOptions installs the shipped bound (prefetchMaxInflight); a
 	// zero-value Processor gets the same default lazily. It is processor-scoped
@@ -240,6 +253,12 @@ type Options struct {
 	// worker injects the native CM3D CameraRig runner here; nil selects the
 	// in-process reference evaluator (tools and tests).
 	CameraBaker overlay.CameraSampleBaker
+
+	// GeoRegistry is the Natural Earth catalog every map compile receives. The
+	// worker loads and validates it at boot (see bootstrap) and passes it here;
+	// nil asks NewWithOptions for the process catalog, which keeps tools and
+	// tests working without changing the worker's explicit dependency.
+	GeoRegistry *geofeatures.Registry
 }
 
 // semanticCompiler is the consumer-side contract PrepareJob needs from the
@@ -259,14 +278,19 @@ type semanticCompiler interface {
 // carries the worker's camera baker as an explicit per-compile dependency.
 type overlaySemanticCompiler struct {
 	cameraBaker overlay.CameraSampleBaker
+	geoRegistry *geofeatures.Registry
 }
 
 func (c overlaySemanticCompiler) CompileSemantic(raw []byte) (overlay.CompileResult, error) {
-	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker})
+	return overlay.CompileSemanticWithOptions(raw, overlay.CompileOptions{
+		CameraBaker: c.cameraBaker, GeoRegistry: c.geoRegistry,
+	})
 }
 
 func (c overlaySemanticCompiler) ResolveSemanticForPrepare(raw []byte) (*overlay.PreparedResolve, error) {
-	return overlay.ResolveSemanticForPrepare(raw, overlay.CompileOptions{CameraBaker: c.cameraBaker})
+	return overlay.ResolveSemanticForPrepare(raw, overlay.CompileOptions{
+		CameraBaker: c.cameraBaker, GeoRegistry: c.geoRegistry,
+	})
 }
 
 // compileSemantic dispatches through the seam. A zero-value Processor (tests
@@ -296,6 +320,12 @@ func New(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Clie
 
 // NewWithOptions creates a job processor with an explicit configuration.
 func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *storage.Client, renderer chronon.Renderer, opts Options) *Processor {
+	// The catalog is a dependency of map plans, not a per-job lookup. Resolve
+	// the process catalog once here for callers that did not inject one; the
+	// worker always injects the registry it validated at boot.
+	if opts.GeoRegistry == nil {
+		opts.GeoRegistry, _ = geofeatures.DefaultRegistry()
+	}
 	return &Processor{
 		jobsRoot:                  jobsRoot,
 		backend:                   backend,
@@ -304,7 +334,10 @@ func NewWithOptions(jobsRoot, backend, chrononVersion, storeURL string, store *s
 		store:                     store,
 		renderer:                  renderer,
 		softwareRenderer:          opts.SoftwareRenderer,
-		compiler:                  overlaySemanticCompiler{cameraBaker: opts.CameraBaker},
+		compiler:                  overlaySemanticCompiler{cameraBaker: opts.CameraBaker, geoRegistry: opts.GeoRegistry},
+		validateDecode:            media.ValidateDecode,
+		validateDecodeSampled:     media.ValidateDecodeSampled,
+		countDecodedFrames:        media.CountDecodedFrames,
 		assetPrefetcher:           opts.AssetPrefetcher,
 		prefetchInflight:          make(chan struct{}, prefetchMaxInflight),
 		phaseHook:                 opts.PhaseHook,

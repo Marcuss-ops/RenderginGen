@@ -61,9 +61,16 @@ func (p *Processor) storeArtifact(ctx context.Context, in storeArtifactInput) (q
 		return queue.Artifact{}, err
 	}
 	recordReceiptMetrics(in)
-	if err := p.publishArtifactBytes(ctx, in, hash, staged, tail, fileInfo); err != nil {
-		return queue.Artifact{}, err
-	}
+	// Certification runs BEFORE the bytes are published. Segment attachment and
+	// the composition cross-check can still reject the artifact, and publishing
+	// first left an object in the store for a job that then failed. The ledger
+	// row is still the last step, so an object without a row is an orphan (safe
+	// for CAS garbage collection), never a reusable result.
+	//
+	// A STAGED upload is the exception the stream itself creates: its bytes were
+	// already installed while the render was finishing. It keeps the same
+	// safety property because nothing can consume the object without the ledger
+	// row written below.
 	artifact := p.newStoredArtifact(in, hash, fileInfo)
 	if err := attachBatchSegments(&artifact, in); err != nil {
 		return queue.Artifact{}, err
@@ -76,6 +83,9 @@ func (p *Processor) storeArtifact(ctx context.Context, in storeArtifactInput) (q
 	}
 	logChrononItemMetrics(in.jobID, in.phaseMetrics)
 	p.preserveRawTimingSidecar(ctx, &artifact, in.outputPath, in.jobID)
+	if err := p.publishArtifactBytes(ctx, in, hash, staged, tail, fileInfo); err != nil {
+		return queue.Artifact{}, err
+	}
 	if artifact, err = p.recordArtifact(ctx, in.jobID, artifact, in.probe, in.stats, in.inputBytes, chrononTelemetry); err != nil {
 		return queue.Artifact{}, err
 	}

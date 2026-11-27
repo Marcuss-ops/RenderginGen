@@ -48,7 +48,7 @@ func ResolveSemanticForPrepare(raw []byte, opts CompileOptions) (*PreparedResolv
 	if err != nil {
 		return nil, err
 	}
-	resolved, err := resolvePlan(validated)
+	resolved, err := resolvePlan(validated, opts)
 	if err != nil {
 		return nil, err
 	}

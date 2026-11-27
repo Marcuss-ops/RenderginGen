@@ -22,6 +22,7 @@ import (
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/chronon"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/config"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/drive"
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/gpu"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/health"
 	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/media"
@@ -58,6 +59,19 @@ func loadWorkerConfig(ctx context.Context, configPath string) *config.Config {
 	// the bare "ffprobe"/"ffmpeg" PATH lookup, which is what the pre-settings
 	// worker did unconditionally.
 	media.Configure(media.Binaries{FFprobe: cfg.Media.FFprobeBinary, FFmpeg: cfg.Media.FFmpegBinary})
+
+	// Geographic catalog: load and validate it at the composition root, before
+	// the first claim. The loader deliberately does not search the working
+	// directory for a sibling ChrononTemplate checkout (that made the worker
+	// depend on where it was started and worked only on machines with the
+	// source tree). A missing/partial catalog now stops the worker at startup
+	// with an error naming CHRONONTEMPLATE_CATALOG instead of failing the first
+	// fly-to map job minutes later.
+	registry, err := geofeatures.DefaultRegistry()
+	if err != nil {
+		log.Fatalf("geofeatures catalog: %v", err)
+	}
+	log.Printf("geofeatures catalog loaded: %d features from CHRONONTEMPLATE_CATALOG", len(registry.Features()))
 
 	// Reap workspaces left behind by a crashed worker run: without this the
 	// jobs root (often /dev/shm, i.e. RAM) grows unboundedly. Active
@@ -251,6 +265,14 @@ func buildWorkerPipeline(ctx context.Context, cfg *config.Config, renderers rend
 
 	// The processor owns the per-job pipeline (validate -> workspace ->
 	// materialize -> plan.json -> render -> hash -> publish).
+	// The catalog was validated by loadWorkerConfig before the first claim.
+	// Re-read the cached registry (no second filesystem load) and inject it so
+	// the compiler never resolves a package global mid-request.
+	geoRegistry, err := geofeatures.DefaultRegistry()
+	if err != nil {
+		log.Fatalf("geofeatures catalog: %v", err)
+	}
+
 	proc := processor.NewWithOptions(
 		cfg.Workspace.Root,
 		cfg.Chronon.Backend,
@@ -259,6 +281,7 @@ func buildWorkerPipeline(ctx context.Context, cfg *config.Config, renderers rend
 		store,
 		renderers.renderer,
 		processor.Options{
+			GeoRegistry:               geoRegistry,
 			AssetPrefetcher:           renderers.prefetcher,
 			CameraBaker:               camerabake.FromEnv(),
 			SoftwareRenderer:          renderers.software,

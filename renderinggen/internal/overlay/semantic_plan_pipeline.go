@@ -19,6 +19,8 @@ package overlay
 
 import (
 	"fmt"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 )
 
 type canvasSpec struct {
@@ -43,11 +45,14 @@ type validatedPlan struct {
 // resolvedPlan is everything lowering needs: the constructed concrete plan,
 // the resolved items, the asset registry and the camera authority.
 type resolvedPlan struct {
-	Plan             *Plan
-	Document         semanticPlan
-	Items            []resolvedItem
-	Registry         *assetRegistry
-	Cameras          cameraControllerSet
+	Plan     *Plan
+	Document semanticPlan
+	Items    []resolvedItem
+	Registry *assetRegistry
+	Cameras  cameraControllerSet
+	// GeoRegistry is the catalog the resolve received, carried to lowering so
+	// ModernMap1 reads the same registry this plan was resolved against.
+	GeoRegistry      *geofeatures.Registry
 	PendingSFX       []pendingSFXClip
 	Duration         int64
 	SourceLayerIndex int
@@ -89,7 +94,7 @@ func validateSemanticPlan(src *semanticPlan) (validatedPlan, error) {
 // compatibility shim: each enforces a published v2 rule that lowering depends
 // on. Plan-level animation_policies is retired at decode, so the composite
 // group pin is the only motion-selector floor left.
-func applyDocumentContracts(src *semanticPlan) error {
+func applyDocumentContracts(src *semanticPlan, geoRegistry *geofeatures.Registry) error {
 	if src == nil {
 		return fmt.Errorf("overlay: validated plan lost its source document")
 	}
@@ -110,15 +115,15 @@ func applyDocumentContracts(src *semanticPlan) error {
 	if err := validateDeprecatedMotions(src); err != nil {
 		return err
 	}
-	return resolveMapFeatureMoves(src)
+	return resolveMapFeatureMoves(src, geoRegistry)
 }
 
 // resolvePlan applies the document contracts and builds the concrete plan's
 // non-item layers, then resolves every item once. Asset registration order is
 // the historical order.
-func resolvePlan(validated validatedPlan) (resolvedPlan, error) {
+func resolvePlan(validated validatedPlan, opts CompileOptions) (resolvedPlan, error) {
 	src := validated.Source
-	if err := applyDocumentContracts(src); err != nil {
+	if err := applyDocumentContracts(src, opts.GeoRegistry); err != nil {
 		return resolvedPlan{}, err
 	}
 	plan := newResolvedPlanShell(src)
@@ -169,7 +174,8 @@ func resolvePlan(validated validatedPlan) (resolvedPlan, error) {
 	}
 	return resolvedPlan{
 		Plan: plan, Document: *src, Items: resolved, Registry: registry,
-		Cameras: cameras, PendingSFX: pendingSFX, Duration: plan.Canvas.DurationFrames,
+		GeoRegistry: opts.GeoRegistry,
+		Cameras:     cameras, PendingSFX: pendingSFX, Duration: plan.Canvas.DurationFrames,
 		SourceLayerIndex: sourceLayerIndex, Unknown: unknown,
 	}, nil
 }
@@ -288,7 +294,7 @@ func lowerPlan(resolved resolvedPlan) (*Plan, Stats, error) {
 	plan := resolved.Plan
 	src := &resolved.Document
 	var stats Stats
-	if err := appendResolvedItemLayers(plan, resolved.Items, src, resolved.Registry, &resolved.Cameras, &stats); err != nil {
+	if err := appendResolvedItemLayers(plan, resolved.Items, src, resolved.Registry, resolved.GeoRegistry, &resolved.Cameras, &stats); err != nil {
 		return nil, zeroStats(), err
 	}
 	if err := appendFullFrameStages(plan, src); err != nil {

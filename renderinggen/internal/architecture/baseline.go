@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -13,6 +14,13 @@ import (
 type Baseline struct {
 	path    string
 	entries map[string]bool // "rule|file"
+}
+
+// BaselinePath is the committed ledger. The test owns writing it; the
+// standalone conformance command reads the same file so it reports NEW
+// violations instead of re-reporting every entry the ratchet already accepted.
+func BaselinePath() string {
+	return filepath.Join(PackageDir(), "testdata", "conformance-baseline.txt")
 }
 
 // Key is the stable baseline identity for a violation (per rule, per file).

@@ -108,7 +108,7 @@ func TestDocumentContractsPinGroupMotionInPlace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := resolvePlan(validated)
+	resolved, err := resolvePlan(validated, CompileOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -131,7 +131,7 @@ func TestDocumentContractsPinGroupMotionInPlace(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	replayed, err := resolvePlan(replayValidated)
+	replayed, err := resolvePlan(replayValidated, CompileOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -170,7 +170,7 @@ func TestStagePipelineMatchesCompileSemanticDecoded(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resolved, err := resolvePlan(validated)
+	resolved, err := resolvePlan(validated, CompileOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}

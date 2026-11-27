@@ -110,34 +110,19 @@ func writeTierReceipt(t *testing.T, outputPath, resolvedPolicy, decodeCheck stri
 	}
 }
 
-// stubValidateDecode replaces the worker's decode tool for one test and
-// returns a call counter. The seam is what makes the gate's DECISION — who
-// decodes, and when — testable without spawning ffmpeg per case.
-func stubValidateDecode(t *testing.T, err error) *int {
-	t.Helper()
-	original := validateDecode
-	t.Cleanup(func() { validateDecode = original })
-	calls := 0
-	validateDecode = func(context.Context, string) error {
-		calls++
-		return err
+// processorWithStubs builds a processor whose decode tools are instance-scoped
+// stubs, returning the full-decode and sampled-decode call counters. The seam
+// makes the gate's DECISION — who decodes, and when — testable without spawning
+// ffmpeg per case, and it cannot race another processor or leak into another
+// test the way a mutable package variable could.
+func processorWithStubs(policy renderVerifyLevel, fullErr, sampleErr error) (*Processor, *int, *int) {
+	fullCalls, sampleCalls := 0, 0
+	p := &Processor{
+		receiptVerify:         policy,
+		validateDecode:        func(context.Context, string) error { fullCalls++; return fullErr },
+		validateDecodeSampled: func(context.Context, string) error { sampleCalls++; return sampleErr },
 	}
-	return &calls
-}
-
-// stubValidateDecodeSampled replaces the worker's sampled decode tool for one
-// test and returns a call counter — the seam that makes the sample tier's
-// escalation decision testable without spawning ffmpeg per case.
-func stubValidateDecodeSampled(t *testing.T, err error) *int {
-	t.Helper()
-	original := validateDecodeSampled
-	t.Cleanup(func() { validateDecodeSampled = original })
-	calls := 0
-	validateDecodeSampled = func(context.Context, string) error {
-		calls++
-		return err
-	}
-	return &calls
+	return p, &fullCalls, &sampleCalls
 }
 
 // TestChrononReceiptRequestDefersTheDecodeUnderNormal pins the wire mapping:
@@ -170,9 +155,8 @@ func TestWorkerDecodeGateRunsWhenTheReceiptProvesNoDecode(t *testing.T) {
 	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
 	receipt, receiptErr := readReceipt(t, path)
 
-	calls := stubValidateDecode(t, nil)
+	p, calls, _ := processorWithStubs(renderVerifyLevel("normal"), nil, nil)
 	metrics := map[string]float64{}
-	p := &Processor{receiptVerify: renderVerifyLevel("normal")}
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, metrics); err != nil {
 		t.Fatalf("artifact must pass when the worker decode passes: %v", err)
 	}
@@ -193,8 +177,7 @@ func TestWorkerDecodeGateSkipsADecodeTheReceiptProves(t *testing.T) {
 		writeTierReceipt(t, path, chronon.ReceiptVerifyNormal, "pass")
 		receipt, receiptErr := readReceipt(t, path)
 
-		calls := stubValidateDecode(t, nil)
-		p := &Processor{receiptVerify: policy}
+		p, calls, _ := processorWithStubs(policy, nil, nil)
 		if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err != nil {
 			t.Fatalf("policy %s: %v", policy, err)
 		}
@@ -212,8 +195,7 @@ func TestWorkerDecodeGateIsNotPromisedUnderFastOrStrict(t *testing.T) {
 		writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
 		receipt, receiptErr := readReceipt(t, path)
 
-		calls := stubValidateDecode(t, nil)
-		p := &Processor{receiptVerify: policy}
+		p, calls, _ := processorWithStubs(policy, nil, nil)
 		if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err != nil {
 			t.Fatalf("policy %s: %v", policy, err)
 		}
@@ -230,8 +212,7 @@ func TestWorkerDecodeFailureRejectsTheArtifact(t *testing.T) {
 	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
 	receipt, receiptErr := readReceipt(t, path)
 
-	stubValidateDecode(t, fmt.Errorf("ffmpeg: corrupt tail frames"))
-	p := &Processor{receiptVerify: renderVerifyLevel("normal")}
+	p, _, _ := processorWithStubs(renderVerifyLevel("normal"), fmt.Errorf("ffmpeg: corrupt tail frames"), nil)
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err == nil {
 		t.Fatal("a decode failure must reject the artifact before it is stored or published")
 	}
@@ -245,10 +226,8 @@ func TestSamplePolicyRunsTheSampledDecodeAndSkipsTheCompleteDecode(t *testing.T)
 	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
 	receipt, receiptErr := readReceipt(t, path)
 
-	sampleCalls := stubValidateDecodeSampled(t, nil)
-	fullCalls := stubValidateDecode(t, nil)
+	p, fullCalls, sampleCalls := processorWithStubs(renderVerifySample, nil, nil)
 	metrics := map[string]float64{}
-	p := &Processor{receiptVerify: renderVerifySample}
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, metrics); err != nil {
 		t.Fatalf("artifact must pass when the sampled decode passes: %v", err)
 	}
@@ -277,10 +256,8 @@ func TestSamplePolicyEscalatesToTheCompleteDecodeWhenTheSampleFails(t *testing.T
 	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
 	receipt, receiptErr := readReceipt(t, path)
 
-	sampleCalls := stubValidateDecodeSampled(t, fmt.Errorf("ffmpeg: damaged packet run"))
-	fullCalls := stubValidateDecode(t, nil)
+	p, fullCalls, sampleCalls := processorWithStubs(renderVerifySample, nil, fmt.Errorf("ffmpeg: damaged packet run"))
 	metrics := map[string]float64{}
-	p := &Processor{receiptVerify: renderVerifySample}
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, metrics); err != nil {
 		t.Fatalf("a failing sample must escalate, not reject: %v", err)
 	}
@@ -305,9 +282,7 @@ func TestSamplePolicyRejectsOnlyWhenTheEscalatedDecodeFails(t *testing.T) {
 	writeTierReceipt(t, path, chronon.ReceiptVerifyFast, "skip")
 	receipt, receiptErr := readReceipt(t, path)
 
-	stubValidateDecodeSampled(t, fmt.Errorf("ffmpeg: damaged packet run"))
-	stubValidateDecode(t, fmt.Errorf("ffmpeg: corrupt tail frames"))
-	p := &Processor{receiptVerify: renderVerifySample}
+	p, _, _ := processorWithStubs(renderVerifySample, fmt.Errorf("ffmpeg: corrupt tail frames"), fmt.Errorf("ffmpeg: damaged packet run"))
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err == nil {
 		t.Fatal("a bitstream that fails the complete decode must be rejected")
 	}
@@ -321,9 +296,7 @@ func TestSamplePolicySkipsAnyDecodeTheReceiptProves(t *testing.T) {
 	writeTierReceipt(t, path, chronon.ReceiptVerifyNormal, "pass")
 	receipt, receiptErr := readReceipt(t, path)
 
-	sampleCalls := stubValidateDecodeSampled(t, nil)
-	fullCalls := stubValidateDecode(t, nil)
-	p := &Processor{receiptVerify: renderVerifySample}
+	p, fullCalls, sampleCalls := processorWithStubs(renderVerifySample, nil, nil)
 	if _, err := p.verifyArtifactReceipt(context.Background(), path, receipt, receiptErr, map[string]float64{}); err != nil {
 		t.Fatalf("policy sample: %v", err)
 	}

@@ -27,11 +27,13 @@ package overlay
 import (
 	"fmt"
 	"strings"
+
+	"github.com/Marcuss-ops/RenderingGen/renderinggen/internal/geofeatures"
 )
 
 // compileChainItem validates the chain container (wire format, map contract,
 // camera-pan shape) and dispatches it to its one choreography.
-func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry) ([]Layer, error) {
+func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistry, geoRegistry *geofeatures.Registry) ([]Layer, error) {
 	segments, err := chainSegmentsFor(ri.Item, ri.Params)
 	if err != nil {
 		return nil, err
@@ -60,9 +62,9 @@ func compileChainItem(ri resolvedItem, src *semanticPlan, registry *assetRegistr
 		}
 	}
 	if panMode {
-		return compilePanChain(ri, src, registry, segments, panSpec)
+		return compilePanChain(ri, src, registry, geoRegistry, segments, panSpec)
 	}
-	return compileHandoffChain(ri, src, registry, segments)
+	return compileHandoffChain(ri, src, registry, geoRegistry, segments)
 }
 
 // resolveChainSegment rebuilds one segment as the standalone semantic item it
@@ -169,7 +171,7 @@ func resolveChainSegment(ri resolvedItem, src *semanticPlan, registry *assetRegi
 // compileHandoffChain lowers N independent segment entrances into the same
 // pass. Every segment after the first receives the fly-under dip + fade, which
 // the daemon executes natively (NativeBlend) or on the CPU fallback.
-func compileHandoffChain(ri resolvedItem, src *semanticPlan, registry *assetRegistry, segments []chainSegment) ([]Layer, error) {
+func compileHandoffChain(ri resolvedItem, src *semanticPlan, registry *assetRegistry, geoRegistry *geofeatures.Registry, segments []chainSegment) ([]Layer, error) {
 	out := make([]Layer, 0, len(segments))
 	for n, seg := range segments {
 		segRI, segKind, err := resolveChainSegment(ri, src, registry, seg, n, false)
@@ -179,7 +181,7 @@ func compileHandoffChain(ri resolvedItem, src *semanticPlan, registry *assetRegi
 		// Lower through the same dispatcher as standalone items (map and
 		// entity branches included); segment kinds are never chains, so
 		// this recurses at most one level.
-		layers, err := compileItem(segRI, src, registry)
+		layers, err := compileItem(segRI, src, registry, geoRegistry)
 		if err != nil {
 			return nil, fmt.Errorf("overlay: chain item %q segment %d: %w", ri.Item.ID, n, err)
 		}
@@ -229,7 +231,7 @@ func chainHandoffFadeFrames(fpsNum, fpsDen, segFrames int64) int64 {
 // compilePanChain lowers the chain as ONE camera-pan strip. Segments must be
 // single-asset image segments; each member's arrival is its own segment start,
 // so the strip reaches the centre exactly when that segment begins.
-func compilePanChain(ri resolvedItem, src *semanticPlan, registry *assetRegistry, segments []chainSegment, panSpec cameraPanSpec) ([]Layer, error) {
+func compilePanChain(ri resolvedItem, src *semanticPlan, registry *assetRegistry, geoRegistry *geofeatures.Registry, segments []chainSegment, panSpec cameraPanSpec) ([]Layer, error) {
 	// One canvas step per member keeps the strip glued to the same
 	// constant-speed move in every direction (panStripArrivals owns the
 	// spacing and the single-asset admission of each member).
@@ -270,7 +272,7 @@ func compilePanChain(ri resolvedItem, src *semanticPlan, registry *assetRegistry
 		// Lower through the same dispatcher as standalone items (map and
 		// entity branches included); segment kinds are never chains, so
 		// this recurses at most one level.
-		layers, err := compileItem(segRI, &blind, registry)
+		layers, err := compileItem(segRI, &blind, registry, geoRegistry)
 		if err != nil {
 			return nil, fmt.Errorf("overlay: chain item %q segment %d: %w", ri.Item.ID, n, err)
 		}
