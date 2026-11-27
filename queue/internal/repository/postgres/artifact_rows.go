@@ -7,6 +7,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	"github.com/Marcuss-ops/RenderingGen/queue/internal/model"
@@ -19,7 +20,8 @@ const artifactColumns = `
 	       a.width, a.height, a.fps_num, a.fps_den, a.frame_count, a.duration_us,
 	       a.profile_id, a.copy_eligible, a.codec, a.codec_profile, a.closed_gop,
 	       a.first_frame_keyframe, a.backend, a.chronon_version,
-	       a.drive_file_id, a.drive_link, a.container, a.pixel_format, a.audio_streams`
+	       a.drive_file_id, a.drive_link, a.container, a.pixel_format, a.audio_streams,
+	       a.verification`
 
 // parentJobsFrom is the shared FROM/WHERE of the two parent-scoped listings.
 // Only the job columns and the ORDER BY differ between ByParent and Children.
@@ -53,6 +55,7 @@ type artifactScan struct {
 	profileID, codec, codecProfile, backend, chrononVersion sql.NullString
 	driveFileID, driveLink, container, pixelFormat          sql.NullString
 	copyEligible, closedGOP, firstFrameKeyframe             sql.NullBool
+	verification                                            []byte
 }
 
 // destinations returns the scan targets in artifactColumns order.
@@ -63,6 +66,7 @@ func (a *artifactScan) destinations() []any {
 		&a.profileID, &a.copyEligible, &a.codec, &a.codecProfile, &a.closedGOP,
 		&a.firstFrameKeyframe, &a.backend, &a.chrononVersion,
 		&a.driveFileID, &a.driveLink, &a.container, &a.pixelFormat, &a.audioStreams,
+		&a.verification,
 	}
 }
 
@@ -71,6 +75,13 @@ func (a *artifactScan) destinations() []any {
 func (a *artifactScan) artifact() *model.Artifact {
 	if !a.id.Valid {
 		return nil
+	}
+	var verification *model.ArtifactVerification
+	if len(a.verification) > 0 {
+		var value model.ArtifactVerification
+		if err := json.Unmarshal(a.verification, &value); err == nil {
+			verification = &value
+		}
 	}
 	return &model.Artifact{
 		ID:                 a.id.String,
@@ -99,5 +110,6 @@ func (a *artifactScan) artifact() *model.Artifact {
 		Container:          a.container.String,
 		PixelFormat:        a.pixelFormat.String,
 		AudioStreams:       int(a.audioStreams.Int64),
+		Verification:       verification,
 	}
 }

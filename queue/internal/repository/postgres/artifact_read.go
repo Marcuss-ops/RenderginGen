@@ -21,7 +21,7 @@ type artifactRow struct {
 	chrononTimingKey, chrononTimingURL          sql.NullString
 	chrononTimingSHA, chrononTimingContentType  sql.NullString
 	audioStreams                                sql.NullInt64
-	outputFacts, provenance                     []byte
+	outputFacts, provenance, verification       []byte
 	sizeBytes, chrononTimingSize                sql.NullInt64
 	width, height, fpsNum, fpsDen               sql.NullInt64
 	frameCount, durationUS                      sql.NullInt64
@@ -47,7 +47,7 @@ const artifactReadColumns = `id, job_id, kind, storage_key, artifact_url, sha256
 	       profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
 	       backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams,
 	       chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
-	       chronon_timing_size_bytes, chronon_timing_content_type, output_facts, provenance`
+	       chronon_timing_size_bytes, chronon_timing_content_type, output_facts, provenance, verification`
 
 // rowScanner is the scan surface shared by *sql.Row and *sql.Rows.
 type rowScanner interface {
@@ -62,7 +62,7 @@ func scanArtifactRow(s rowScanner) (*artifactRow, error) {
 		&row.profileID, &row.copyEligible, &row.codec, &row.codecProfile, &row.closedGOP, &row.firstFrameKey,
 		&row.backend, &row.chrononVersion, &row.driveFileID, &row.driveLink, &row.container, &row.pixelFmt, &row.audioStreams,
 		&row.chrononTimingKey, &row.chrononTimingURL, &row.chrononTimingSHA,
-		&row.chrononTimingSize, &row.chrononTimingContentType, &row.outputFacts, &row.provenance)
+		&row.chrononTimingSize, &row.chrononTimingContentType, &row.outputFacts, &row.provenance, &row.verification)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +131,13 @@ func (row *artifactRow) toModel(id string) (*model.Artifact, error) {
 			return nil, fmt.Errorf("decode artifact provenance %s: %w", id, err)
 		}
 		a.Provenance = &value
+	}
+	if len(row.verification) > 0 {
+		var value model.ArtifactVerification
+		if err := json.Unmarshal(row.verification, &value); err != nil {
+			return nil, fmt.Errorf("decode artifact verification %s: %w", id, err)
+		}
+		a.Verification = &value
 	}
 	a.ChrononTimingStorageKey = row.chrononTimingKey.String
 	a.ChrononTimingURL = row.chrononTimingURL.String

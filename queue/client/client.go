@@ -304,6 +304,41 @@ type ArtifactProvenance struct {
 
 // Artifact is the metadata of a rendered or imported artifact, including the copy-only
 // certification (codec, profile, GOP/keyframe flags) VeloxEditing relies on.
+// ArtifactVerification is the durable answer to "what was proven about this
+// artifact?". It is a fact recorded by the producer, not a quality score: a
+// consumer that needs semantic certification must check composition, not only
+// the presence of the artifact.
+type ArtifactVerification struct {
+	// Policy is the worker's resolved verification policy (fast, sample,
+	// normal, certify, strict).
+	Policy string `json:"policy"`
+	// Decode is how much of the output was decoded: none, sampled or full.
+	Decode string `json:"decode"`
+	// Composition is verified, divergent, unverifiable or not_required.
+	Composition string `json:"composition"`
+	// Evidence names what backed the composition verdict: chronon_summary,
+	// receipt, worker_decode or none.
+	Evidence string `json:"evidence"`
+}
+
+// Verification vocabulary. They are wire values consumed by the ledger and by
+// producers, so they are constants rather than free-form strings.
+const (
+	VerificationDecodeNone    = "none"
+	VerificationDecodeSampled = "sampled"
+	VerificationDecodeFull    = "full"
+
+	VerificationCompositionVerified     = "verified"
+	VerificationCompositionDivergent    = "divergent"
+	VerificationCompositionUnverifiable = "unverifiable"
+	VerificationCompositionNotRequired  = "not_required"
+
+	VerificationEvidenceChrononSummary = "chronon_summary"
+	VerificationEvidenceReceipt        = "receipt"
+	VerificationEvidenceWorkerDecode   = "worker_decode"
+	VerificationEvidenceNone           = "none"
+)
+
 type Artifact struct {
 	ID                 string             `json:"id,omitempty"`
 	Kind               string             `json:"kind,omitempty"`
@@ -337,16 +372,22 @@ type Artifact struct {
 	// profile fetchable for post-mortem without ever inlining the array into
 	// the queue document. Absent when the sidecar file did not exist or could
 	// not be preserved (fail-open).
-	ChrononTimingStorageKey  string `json:"chronon_timing_storage_key,omitempty"`
-	ChrononTimingURL         string `json:"chronon_timing_url,omitempty"`
-	ChrononTimingSHA256      string `json:"chronon_timing_sha256,omitempty"`
-	ChrononTimingSizeBytes   int64  `json:"chronon_timing_size_bytes,omitempty"`
-	ChrononTimingContentType string `json:"chronon_timing_content_type,omitempty"`
-	DriveFileID              string `json:"drive_file_id,omitempty"`
-	DriveLink                string `json:"drive_link,omitempty"`
-	Container                string `json:"container,omitempty"`
-	PixelFormat              string `json:"pixel_format,omitempty"`
-	AudioStreams             int    `json:"audio_streams,omitempty"`
+	ChrononTimingStorageKey string `json:"chronon_timing_storage_key,omitempty"`
+	ChrononTimingURL        string `json:"chronon_timing_url,omitempty"`
+	ChrononTimingSHA256     string `json:"chronon_timing_sha256,omitempty"`
+	// Verification is what the worker actually proved about this artifact:
+	// the policy it ran, how much of the file it decoded, whether the authored
+	// composition was verified, and which evidence backed that verdict. It is
+	// omitempty so artifacts written before the block existed stay valid, and
+	// a consumer can tell "not recorded" from "not required".
+	Verification             *ArtifactVerification `json:"verification,omitempty"`
+	ChrononTimingSizeBytes   int64                 `json:"chronon_timing_size_bytes,omitempty"`
+	ChrononTimingContentType string                `json:"chronon_timing_content_type,omitempty"`
+	DriveFileID              string                `json:"drive_file_id,omitempty"`
+	DriveLink                string                `json:"drive_link,omitempty"`
+	Container                string                `json:"container,omitempty"`
+	PixelFormat              string                `json:"pixel_format,omitempty"`
+	AudioStreams             int                   `json:"audio_streams,omitempty"`
 	// OutputFacts is the complete structural certification (see OutputFacts).
 	// Nil when the boundary did not certify the full fact set.
 	OutputFacts *OutputFacts `json:"output_facts,omitempty"`

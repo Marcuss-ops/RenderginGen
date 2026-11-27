@@ -34,6 +34,10 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 	if err != nil {
 		return fmt.Errorf("artifact %s provenance: %w", a.ID, err)
 	}
+	verification, err := jsonVerification(a.Verification)
+	if err != nil {
+		return fmt.Errorf("artifact %s verification: %w", a.ID, err)
+	}
 
 	_, err = tx.ExecContext(ctx, `
 		INSERT INTO render_artifacts
@@ -42,9 +46,9 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		     profile_id, copy_eligible, codec, codec_profile, closed_gop, first_frame_keyframe,
 		     backend, chronon_version, drive_file_id, drive_link, container, pixel_format, audio_streams,
 		     chronon_timing_storage_key, chronon_timing_url, chronon_timing_sha256,
-		     chronon_timing_size_bytes, chronon_timing_content_type, output_facts, provenance)
+		     chronon_timing_size_bytes, chronon_timing_content_type, output_facts, provenance, verification)
 		VALUES
-		    ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33::jsonb,$34::jsonb)
+		    ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33::jsonb,$34::jsonb,$35::jsonb)
 		ON CONFLICT (id) DO UPDATE SET
 		    drive_file_id = EXCLUDED.drive_file_id,
 		    drive_link    = EXCLUDED.drive_link`,
@@ -55,7 +59,7 @@ func insertArtifact(ctx context.Context, tx *sql.Tx, jobID string, a model.Artif
 		nullIfEmpty(a.Backend), nullIfEmpty(a.ChrononVersion), nullIfEmpty(a.DriveFileID), nullIfEmpty(a.DriveLink),
 		nullIfEmpty(a.Container), nullIfEmpty(a.PixelFormat), a.AudioStreams,
 		nullIfEmpty(a.ChrononTimingStorageKey), nullIfEmpty(a.ChrononTimingURL), nullIfEmpty(a.ChrononTimingSHA256),
-		a.ChrononTimingSizeBytes, nullIfEmpty(a.ChrononTimingContentType), facts, provenance)
+		a.ChrononTimingSizeBytes, nullIfEmpty(a.ChrononTimingContentType), facts, provenance, verification)
 	if err != nil {
 		return err
 	}
@@ -75,6 +79,20 @@ func jsonFacts(facts *model.OutputFacts) (any, error) {
 		return nil, nil
 	}
 	raw, err := json.Marshal(facts)
+	if err != nil {
+		return nil, err
+	}
+	return string(raw), nil
+}
+
+// jsonVerification serializes the proof block. nil stays NULL (an artifact
+// written before the block existed), never an empty object that would read as
+// "nothing was proven".
+func jsonVerification(verification *model.ArtifactVerification) (any, error) {
+	if verification == nil {
+		return nil, nil
+	}
+	raw, err := json.Marshal(verification)
 	if err != nil {
 		return nil, err
 	}

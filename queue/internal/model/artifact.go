@@ -24,3 +24,26 @@ type OutputFacts = client.OutputFacts
 // (see client.ArtifactProvenance): how artifact bytes entered the certified
 // artifact store, persisted as the render_artifacts.provenance JSONB column.
 type ArtifactProvenance = client.ArtifactProvenance
+
+// ArtifactVerification is an alias of the wire contract's proof block (see
+// client.ArtifactVerification): what the worker actually proved about this
+// artifact, persisted as the render_artifacts.verification JSONB column.
+type ArtifactVerification = client.ArtifactVerification
+
+// Verification vocabulary, re-exported so queue internals record the same wire
+// values consumers read.
+const (
+	VerificationDecodeNone    = client.VerificationDecodeNone
+	VerificationDecodeSampled = client.VerificationDecodeSampled
+	VerificationDecodeFull    = client.VerificationDecodeFull
+
+	VerificationCompositionVerified     = client.VerificationCompositionVerified
+	VerificationCompositionDivergent    = client.VerificationCompositionDivergent
+	VerificationCompositionUnverifiable = client.VerificationCompositionUnverifiable
+	VerificationCompositionNotRequired  = client.VerificationCompositionNotRequired
+
+	VerificationEvidenceChrononSummary = client.VerificationEvidenceChrononSummary
+	VerificationEvidenceReceipt        = client.VerificationEvidenceReceipt
+	VerificationEvidenceWorkerDecode   = client.VerificationEvidenceWorkerDecode
+	VerificationEvidenceNone           = client.VerificationEvidenceNone
+)
