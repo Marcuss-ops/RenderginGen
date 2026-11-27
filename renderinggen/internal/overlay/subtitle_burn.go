@@ -6,6 +6,7 @@ package overlay
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -227,7 +228,15 @@ func parseASSCues(raw []byte, fpsNum, fpsDen int) ([]assCue, error) {
 		return nil, fmt.Errorf("overlay: invalid subtitle fps")
 	}
 	var cues []assCue
-	scanner := bufio.NewScanner(strings.NewReader(string(raw)))
+	scanner := bufio.NewScanner(bytes.NewReader(raw))
+	// ASS dialogue rows can be long when they include karaoke or inline
+	// formatting data. Scanner's 64 KiB default would reject an otherwise
+	// valid subtitle asset, so allow a token as large as the source document.
+	maxTokenSize := len(raw)
+	if maxTokenSize < 64*1024 {
+		maxTokenSize = 64 * 1024
+	}
+	scanner.Buffer(make([]byte, 64*1024), maxTokenSize)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
 		if !strings.HasPrefix(strings.ToLower(line), "dialogue:") {
