@@ -10,7 +10,7 @@ consume it, and how unreferenced bytes are collected.
 |---|---|---|---|---|
 | `staged` | uploaded by the streaming path while the render finishes | no | `renderinggen` (`stagedUpload`) | **no** |
 | `verified` | present; hash, segments and composition policy accepted | no | `renderinggen/internal/processor` (`storeArtifact`) | **no** |
-| `ledgered` | present | yes (`render_artifacts`) | `queue.Complete` / `renderinggen`'s `recordArtifact` + caller | **yes** |
+| `ledgered` | present | yes (`render_artifacts`) | Queue `Complete` called by the worker finalizer | **yes** |
 | `orphan` | present | **no** | any crash/failure between `verified` and `ledgered` | **no** |
 
 The only condition that makes an artifact consumable is the ledger row. The
@@ -25,12 +25,15 @@ ledger row owns the result.
 3. `ingestChrononTelemetry` — may reject;
 4. `preserveRawTimingSidecar` — best effort;
 5. `publishArtifactBytes` — installs the bytes (skipped when staging already did);
-6. `recordArtifact` — worker-local mirror;
+6. `recordArtifact` — best-effort worker-local mirror;
 7. the caller writes the queue ledger row (`queue.Complete`).
 
-Steps 2–6 run before publication, so a job rejected by certification never
-reaches the store. A staged upload is the only case where bytes arrive before
-step 5; it is safe because step 7 is still the only consumption gate.
+The certification gates (steps 2–4) run before publication, so a job rejected
+by certification never reaches the store unless it used streaming staging. A
+staged upload is the only case where bytes arrive before step 5; it is safe
+because step 7 is still the only consumption gate. The local mirror is written
+after publication and is diagnostic only; a mirror write failure is
+non-fatal.
 
 ### Failures and what they leave
 
@@ -38,7 +41,7 @@ step 5; it is safe because step 7 is still the only consumption gate.
 |---|---|---|---|---|
 | composition/segment/telemetry rejected | none (staged upload is aborted by `FinalizeJob`) | none | failed | new attempt, new bytes |
 | publication failed | none or a partial staging file | none | failed | hash-then-PUT fallback or new attempt |
-| `recordArtifact` failed | present | none | failed | object is an orphan |
+| worker-local mirror write failed | present | queue completion proceeds | can complete | metric records the mirror failure |
 | `queue.Complete` failed after publication | present | none | not `COMPLETED` | object is an orphan until the retry reuses the address |
 
 A retry that publishes the same bytes reuses the same address; the row is then

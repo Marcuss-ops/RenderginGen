@@ -22,6 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           consumer_dir="$(mktemp -d)"
+          trap 'rm -rf "$consumer_dir"' EXIT
           cd "$consumer_dir"
           go mod init probe.example/queue-consumer
           go get github.com/Marcuss-ops/RenderingGen/queue@v0.1.0
