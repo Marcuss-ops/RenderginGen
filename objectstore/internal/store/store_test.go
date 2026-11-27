@@ -205,7 +205,7 @@ func TestStoreExposesNoUnverifiedWritePath(t *testing.T) {
 	}
 	sort.Strings(methods)
 
-	want := []string{"Capabilities", "Get", "Open", "Put", "PutReader", "Scan", "StagingAbort", "StagingFinalize", "StagingWrite", "Verify"}
+	want := []string{"Capabilities", "CollectGarbage", "Get", "Open", "Put", "PutReader", "Scan", "StagingAbort", "StagingFinalize", "StagingWrite", "Verify"}
 	if !reflect.DeepEqual(methods, want) {
 		t.Fatalf("exported *store.Store methods = %v, want %v; a NEW method must be classified as read-only, or verify the content address if it installs bytes", methods, want)
 	}
@@ -222,8 +222,12 @@ func TestStoreExposesNoUnverifiedWritePath(t *testing.T) {
 	// write method that installs nothing under a content address, and
 	// StagingAbort only discards pending bytes.
 	stagingPending := map[string]bool{"StagingWrite": true, "StagingAbort": true}
+	// CollectGarbage removes unreferenced objects; it never installs bytes
+	// under an address, so it cannot reopen the unverified-write hole. Its
+	// reference protection is pinned separately by gc_test.go.
+	collectors := map[string]bool{"CollectGarbage": true}
 	for _, name := range methods {
-		if installers[name] || stagingPending[name] {
+		if installers[name] || stagingPending[name] || collectors[name] {
 			continue
 		}
 		if strings.Contains(strings.ToLower(name), "put") || strings.Contains(strings.ToLower(name), "write") || strings.Contains(strings.ToLower(name), "store") {

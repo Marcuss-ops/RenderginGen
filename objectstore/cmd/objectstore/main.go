@@ -58,6 +58,13 @@ func publicReadMiddleware(token, signingSecret string, next http.Handler) http.H
 	})
 }
 
+func gcMode(del bool) string {
+	if del {
+		return "delete"
+	}
+	return "dry-run"
+}
+
 func main() {
 	defaultAddr := os.Getenv("OBJECTSTORE_ADDR")
 	if defaultAddr == "" {
@@ -67,6 +74,14 @@ func main() {
 	dataDir := flag.String("data-dir", "/var/lib/objectstore", "data directory")
 	verifyAll := flag.Bool("verify-all", false,
 		"verify every stored object against its content address, report staging leftovers, and exit non-zero on any violation (read-only; does not serve)")
+	collectGarbage := flag.Bool("gc", false,
+		"report objects not referenced by -referenced (dry run unless -delete is set; does not serve)")
+	referencedKeys := flag.String("referenced", "",
+		"with -gc: file listing the content addresses the queue ledger still references, one per line")
+	gcDelete := flag.Bool("delete", false,
+		"with -gc: actually delete unreferenced objects older than -min-age (without it the pass is a dry run)")
+	gcMinAge := flag.Duration("min-age", 24*time.Hour,
+		"with -gc -delete: only delete objects unreferenced and untouched for at least this long")
 	flag.Parse()
 
 	// Publish the process identity before anything can fail, so /health answers
@@ -110,6 +125,39 @@ func main() {
 		if !report.Clean() {
 			log.Fatalf("integrity scan found %d violation(s) and %d staging leftover(s): the store is holding bytes that do not match their addresses",
 				len(report.Failures), len(report.Staging))
+		}
+		return
+	}
+	// Orphan collection. The queue owns the ledger, so it exports the
+	// referenced addresses; this process only answers "which stored bytes are
+	// not in that set?". The dry run is the default because deleting a CAS
+	// object is irreversible and a published artifact can still be referenced
+	// by a job whose row was written after the export.
+	if *collectGarbage {
+		if strings.TrimSpace(*referencedKeys) == "" {
+			log.Fatal("objectstore gc: -referenced <file> is required; collect without the ledger would delete every object")
+		}
+		referenced, err := store.LoadReferencedKeys(*referencedKeys)
+		if err != nil {
+			log.Fatalf("objectstore gc: read referenced keys: %v", err)
+		}
+		report, err := st.CollectGarbage(store.GCOptions{
+			Referenced: referenced,
+			Delete:     *gcDelete,
+			MinAge:     *gcMinAge,
+		})
+		if err != nil {
+			log.Fatalf("objectstore gc: %v", err)
+		}
+		log.Printf("gc scan: data-dir=%s mode=%s referenced=%d scanned=%d kept-young=%d orphans=%d orphan-bytes=%d staging=%d deleted=%d deleted-bytes=%d",
+			*dataDir, gcMode(*gcDelete), len(referenced), report.Scanned, report.KeptYoung,
+			len(report.Orphans), report.OrphanBytes, len(report.Staging), report.Deleted, report.DeletedSize)
+		for _, orphan := range report.Orphans {
+			log.Printf("GC ORPHAN key=%s path=%s bytes=%d modified=%s reason=%s",
+				orphan.Key, orphan.Path, orphan.SizeBytes, orphan.ModTime.UTC().Format(time.RFC3339), orphan.Reason)
+		}
+		for _, staging := range report.Staging {
+			log.Printf("GC STAGING path=%s bytes=%d modified=%s", staging.Path, staging.SizeBytes, staging.ModTime.UTC().Format(time.RFC3339))
 		}
 		return
 	}
