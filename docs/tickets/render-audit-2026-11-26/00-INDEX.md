@@ -45,7 +45,8 @@ images and restart of the installed systemd unit remain outside this campaign.
 The module paths are canonical (`github.com/Marcuss-ops/RenderingGen/{renderinggen,queue,objectstore,client,...}`)
 and every local import uses them. The GitHub repository was renamed to `RenderingGen`; the historic URL redirects.
 Queue v0.1.0 is published from the `queue/` module path, and RenderingGen consumes
-that version without a local replace.
+that version without a local replace. GitHub Actions run `module-standalone`
+`46029573918` passed from a temporary consumer directory on PR #1.
 
 The conformance rule `module_path_typo` was narrowed to module/import paths, so prose and
 legitimate `.git` clone URLs that still carry the historical lower-case spelling are not
@@ -353,11 +354,9 @@ explicitly where a local binary/DSN existed.
 
 ## External blockers (not claimed)
 
-1. **Standalone module CI**: the external consumer build passed locally; the workflow
-   is added and awaits its first GitHub Actions run after push.
-2. **Golden E2E**: the CI job exists, but local ports are occupied by the running stack;
+1. **Golden E2E**: the CI job exists, but local ports are occupied by the running stack;
    stopping it is outside the production-safety boundary.
-3. **Installed systemd unit**: repository units are updated; the host unit was not
+2. **Installed systemd unit**: repository units are updated; the host unit was not
    reinstalled or restarted. Deployment must install the updated unit with the new
    binary because startup validates the catalog path.
 
