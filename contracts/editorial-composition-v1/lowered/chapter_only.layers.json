@@ -1,0 +1,31 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_chapter_only_06",
+  "scene_id": "scene_06",
+  "window": {
+    "start_us": 41000000,
+    "duration_us": 4000000
+  },
+  "layers": [
+    {
+      "layer_id": "chapter:comp_chapter_only_06",
+      "role": "chapter",
+      "start_us": 41000000,
+      "duration_us": 4000000,
+      "z": 40,
+      "chapter": {
+        "mode": "chapter_only",
+        "style_family": "editorial_minimal",
+        "duration_ms": 4000,
+        "grounding": "authored",
+        "titles": [
+          {
+            "scene_id": "scene_06",
+            "title": "Parte seconda",
+            "chapter_number": 2
+          }
+        ]
+      }
+    }
+  ]
+}

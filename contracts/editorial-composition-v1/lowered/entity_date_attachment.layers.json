@@ -1,0 +1,63 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_entity_date_07",
+  "scene_id": "scene_07",
+  "window": {
+    "start_us": 45000000,
+    "duration_us": 8000000
+  },
+  "layers": [
+    {
+      "layer_id": "entity_trump",
+      "member_id": "entity_trump",
+      "role": "image",
+      "start_us": 45000000,
+      "duration_us": 8000000,
+      "z": 0,
+      "motion_id": "image_focus_reveal",
+      "asset": {
+        "asset_id": "asset_entity_portrait",
+        "sha256": "714778075af1a59132fe02cd73f9ed41e1927530bca2a4b34c6cb7c2ec657116",
+        "media_type": "image/jpeg"
+      },
+      "text": "Donald Trump"
+    },
+    {
+      "layer_id": "entity_trump#caption_outlet",
+      "member_id": "entity_trump",
+      "role": "caption",
+      "start_us": 45000000,
+      "duration_us": 8000000,
+      "z": 10,
+      "motion_id": "text_word_rise",
+      "parent_layer_id": "entity_trump",
+      "text": "Trump Media",
+      "position": "below"
+    },
+    {
+      "layer_id": "entity_trump#date_year",
+      "member_id": "entity_trump",
+      "role": "date",
+      "start_us": 45000000,
+      "duration_us": 8000000,
+      "z": 10,
+      "motion_id": "date_didone_era_settle",
+      "parent_layer_id": "entity_trump",
+      "text": "2025",
+      "position": "auto",
+      "date_value": "2025"
+    },
+    {
+      "layer_id": "entity_trump#metric_share",
+      "member_id": "entity_trump",
+      "role": "metric",
+      "start_us": 45000000,
+      "duration_us": 8000000,
+      "z": 10,
+      "motion_id": "metric_odometer_vertical",
+      "parent_layer_id": "entity_trump",
+      "text": "57",
+      "position": "badge"
+    }
+  ]
+}

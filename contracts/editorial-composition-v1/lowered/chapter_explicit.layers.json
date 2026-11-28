@@ -1,0 +1,42 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_chapter_explicit_05",
+  "scene_id": "scene_05",
+  "window": {
+    "start_us": 33000000,
+    "duration_us": 8000000
+  },
+  "layers": [
+    {
+      "layer_id": "chapter:comp_chapter_explicit_05",
+      "role": "chapter",
+      "start_us": 33000000,
+      "duration_us": 3500000,
+      "z": 40,
+      "chapter": {
+        "mode": "explicit",
+        "style_family": "documentary",
+        "duration_ms": 3500,
+        "grounding": "authored",
+        "titles": [
+          {
+            "scene_id": "scene_05",
+            "title": "La storia di Donald Trump",
+            "chapter_number": 1
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": "phrase_chapter",
+      "member_id": "phrase_chapter",
+      "role": "phrase",
+      "start_us": 36500000,
+      "duration_us": 3500000,
+      "z": 12,
+      "motion_id": "doc_04_archival_source_highlight",
+      "text": "Tutto comincia a New York",
+      "lane": "long"
+    }
+  ]
+}

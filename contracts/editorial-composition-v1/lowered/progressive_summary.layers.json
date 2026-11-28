@@ -1,0 +1,47 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_progressive_summary_04",
+  "scene_id": "scene_04",
+  "window": {
+    "start_us": 23000000,
+    "duration_us": 10000000
+  },
+  "layers": [
+    {
+      "layer_id": "summary_local",
+      "member_id": "summary_local",
+      "role": "summary",
+      "start_us": 23000000,
+      "duration_us": 10000000,
+      "z": 12,
+      "summary": {
+        "member_id": "summary_local",
+        "kind": "summary",
+        "start_us": 23000000,
+        "duration_us": 10000000,
+        "z": 2,
+        "reveal": "progressive",
+        "points": [
+          {
+            "text": "Le accuse sono cadute",
+            "start_us": 23000000,
+            "duration_us": 3000000,
+            "motion_id": "short_phrase_editorial_focus_resolve"
+          },
+          {
+            "text": "Il processo si è chiuso",
+            "start_us": 26000000,
+            "duration_us": 3000000,
+            "motion_id": "short_phrase_editorial_contrast_sweep"
+          },
+          {
+            "text": "La corsa è ricominciata",
+            "start_us": 29000000,
+            "duration_us": 4000000,
+            "motion_id": "short_phrase_editorial_focus_resolve"
+          }
+        ]
+      }
+    }
+  ]
+}

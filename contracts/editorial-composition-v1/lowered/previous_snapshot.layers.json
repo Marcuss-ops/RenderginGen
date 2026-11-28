@@ -1,0 +1,41 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_independent_artifact_02",
+  "scene_id": "scene_02",
+  "window": {
+    "start_us": 9000000,
+    "duration_us": 6000000
+  },
+  "background": {
+    "mode": "previous_snapshot",
+    "snapshot": {
+      "asset_id": "asset_snapshot_prev",
+      "sha256": "bf100aceb86fbd488a4d7ddea2dcea2ae0f8a70aa2d0e3a4376b42492339cac4"
+    }
+  },
+  "layers": [
+    {
+      "layer_id": "background:comp_independent_artifact_02",
+      "role": "background",
+      "start_us": 9000000,
+      "duration_us": 6000000,
+      "z": -100,
+      "persistent": true,
+      "asset": {
+        "asset_id": "asset_snapshot_prev",
+        "sha256": "bf100aceb86fbd488a4d7ddea2dcea2ae0f8a70aa2d0e3a4376b42492339cac4"
+      }
+    },
+    {
+      "layer_id": "phrase_snapshot",
+      "member_id": "phrase_snapshot",
+      "role": "phrase",
+      "start_us": 9300000,
+      "duration_us": 2500000,
+      "z": 12,
+      "motion_id": "short_phrase_editorial_contrast_sweep",
+      "text": "Lo stesso contesto",
+      "lane": "short"
+    }
+  ]
+}

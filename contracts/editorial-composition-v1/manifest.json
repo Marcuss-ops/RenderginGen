@@ -1,0 +1,126 @@
+{
+  "schema_version": "editorial-composition-corpus.v1",
+  "description": "Cross-boundary corpus for the editorial composition contract. Every compiled fixture is a valid editorial_composition.v1 whose lowered editorial_layers.v1 document is pinned byte for byte; every rejected fixture pins the exact contract code and message fragment.",
+  "capabilities": "contracts/editorial-composition-v1/capabilities/motion_capabilities.json",
+  "fixtures": [
+    {
+      "id": "persistent_background",
+      "source": "contracts/editorial-composition-v1/fixtures/persistent_background.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/persistent_background.layers.json",
+      "layers": 4
+    },
+    {
+      "id": "previous_snapshot",
+      "source": "contracts/editorial-composition-v1/fixtures/previous_snapshot.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/previous_snapshot.layers.json",
+      "layers": 2
+    },
+    {
+      "id": "linked_phrases",
+      "source": "contracts/editorial-composition-v1/fixtures/linked_phrases.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/linked_phrases.layers.json",
+      "layers": 2
+    },
+    {
+      "id": "progressive_summary",
+      "source": "contracts/editorial-composition-v1/fixtures/progressive_summary.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/progressive_summary.layers.json",
+      "layers": 1
+    },
+    {
+      "id": "chapter_explicit",
+      "source": "contracts/editorial-composition-v1/fixtures/chapter_explicit.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/chapter_explicit.layers.json",
+      "layers": 2
+    },
+    {
+      "id": "chapter_only",
+      "source": "contracts/editorial-composition-v1/fixtures/chapter_only.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/chapter_only.layers.json",
+      "layers": 1
+    },
+    {
+      "id": "entity_date_attachment",
+      "source": "contracts/editorial-composition-v1/fixtures/entity_date_attachment.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/entity_date_attachment.layers.json",
+      "layers": 4
+    },
+    {
+      "id": "chart_typed_points",
+      "source": "contracts/editorial-composition-v1/fixtures/chart_typed_points.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/chart_typed_points.layers.json",
+      "layers": 1
+    },
+    {
+      "id": "map_photo_callout",
+      "source": "contracts/editorial-composition-v1/fixtures/map_photo_callout.composition.json",
+      "expect": "compiled",
+      "lowered": "contracts/editorial-composition-v1/lowered/map_photo_callout.layers.json",
+      "layers": 2
+    },
+    {
+      "id": "short_phrase_not_chain_capable",
+      "source": "contracts/editorial-composition-v1/fixtures/short_phrase_not_chain_capable.composition.json",
+      "expect": "rejected",
+      "code": "motion_not_chain_capable",
+      "error_contains": "short_phrase_burst"
+    },
+    {
+      "id": "date_orphan_attachment",
+      "source": "contracts/editorial-composition-v1/fixtures/date_orphan_attachment.composition.json",
+      "expect": "rejected",
+      "code": "attachment_value_invalid",
+      "error_contains": "recentemente"
+    },
+    {
+      "id": "chart_point_missing_unit",
+      "source": "contracts/editorial-composition-v1/fixtures/chart_point_missing_unit.composition.json",
+      "expect": "rejected",
+      "code": "chart_unit_missing",
+      "error_contains": "unit"
+    },
+    {
+      "id": "map_callout_unverified_asset",
+      "source": "contracts/editorial-composition-v1/fixtures/map_callout_unverified_asset.composition.json",
+      "expect": "rejected",
+      "code": "map_callout_asset_unverified",
+      "error_contains": "asset"
+    },
+    {
+      "id": "background_inherit_without_source",
+      "source": "contracts/editorial-composition-v1/fixtures/background_inherit_without_source.composition.json",
+      "expect": "rejected",
+      "code": "background_source_missing",
+      "error_contains": "source_member_id"
+    },
+    {
+      "id": "chapter_explicit_without_titles",
+      "source": "contracts/editorial-composition-v1/fixtures/chapter_explicit_without_titles.composition.json",
+      "expect": "rejected",
+      "code": "chapter_titles_missing",
+      "error_contains": "titles"
+    },
+    {
+      "id": "duplicate_date_overlay",
+      "source": "contracts/editorial-composition-v1/fixtures/duplicate_date_overlay.composition.json",
+      "expect": "rejected",
+      "code": "duplicate_date_overlay",
+      "error_contains": "attached"
+    },
+    {
+      "id": "unknown_field",
+      "source": "contracts/editorial-composition-v1/fixtures/unknown_field.composition.json",
+      "expect": "rejected",
+      "code": "unknown_field",
+      "error_contains": "future_contract_field"
+    }
+  ]
+}

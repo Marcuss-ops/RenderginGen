@@ -1,0 +1,77 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_map_callout_09",
+  "scene_id": "scene_09",
+  "window": {
+    "start_us": 62000000,
+    "duration_us": 9000000
+  },
+  "layers": [
+    {
+      "layer_id": "map_milan",
+      "member_id": "map_milan",
+      "role": "map",
+      "start_us": 62000000,
+      "duration_us": 9000000,
+      "z": 0,
+      "motion_id": "map_image_dark_map_italy_radar_lock",
+      "text": "modern",
+      "map": {
+        "member_id": "map_milan",
+        "kind": "map",
+        "start_us": 62000000,
+        "duration_us": 9000000,
+        "motion_id": "map_image_dark_map_italy_radar_lock",
+        "map_type": "modern",
+        "pins": [
+          {
+            "pin_id": "milano",
+            "label": "Milano",
+            "latitude": 45.4642,
+            "longitude": 9.19,
+            "lod": "city",
+            "callout": {
+              "kind": "photo",
+              "asset": {
+                "asset_id": "asset_milan_photo",
+                "sha256": "3e16851e27ec725add78e73689b67c1b309cc960438709aa0919cd88cd69533b",
+                "media_type": "image/jpeg"
+              },
+              "connector": "leader_line",
+              "placement": "auto",
+              "choreography": "image_scale_reveal",
+              "evidence": {
+                "text": "da Milano",
+                "start_us": 62500000,
+                "duration_us": 800000
+              }
+            }
+          },
+          {
+            "pin_id": "venezia",
+            "label": "Venezia",
+            "latitude": 45.4408,
+            "longitude": 12.3155,
+            "lod": "city"
+          }
+        ]
+      }
+    },
+    {
+      "layer_id": "map_milan#pin:milano",
+      "member_id": "map_milan",
+      "role": "map_callout",
+      "start_us": 62000000,
+      "duration_us": 9000000,
+      "z": 10,
+      "motion_id": "image_scale_reveal",
+      "anchor_pin_id": "milano",
+      "asset": {
+        "asset_id": "asset_milan_photo",
+        "sha256": "3e16851e27ec725add78e73689b67c1b309cc960438709aa0919cd88cd69533b",
+        "media_type": "image/jpeg"
+      },
+      "position": "auto"
+    }
+  ]
+}

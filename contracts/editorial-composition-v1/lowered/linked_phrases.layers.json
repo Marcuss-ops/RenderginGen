@@ -1,0 +1,39 @@
+{
+  "schema_version": "editorial_layers.v1",
+  "composition_id": "comp_linked_phrases_03",
+  "scene_id": "scene_03",
+  "window": {
+    "start_us": 15000000,
+    "duration_us": 9500000
+  },
+  "layers": [
+    {
+      "layer_id": "phrase_short",
+      "member_id": "phrase_short",
+      "role": "phrase",
+      "start_us": 15000000,
+      "duration_us": 2500000,
+      "z": 12,
+      "motion_id": "short_phrase_editorial_focus_resolve",
+      "link_group": "g_linked_03",
+      "link_order": 1,
+      "hold": "persist",
+      "text": "Un solo uomo",
+      "lane": "short"
+    },
+    {
+      "layer_id": "phrase_long",
+      "member_id": "phrase_long",
+      "role": "phrase",
+      "start_us": 17500000,
+      "duration_us": 6000000,
+      "z": 13,
+      "motion_id": "doc_05_selective_phrase_tracking",
+      "link_group": "g_linked_03",
+      "link_order": 2,
+      "hold": "persist",
+      "text": "Un solo uomo decide il destino della stampa americana",
+      "lane": "long"
+    }
+  ]
+}
