@@ -5,13 +5,42 @@ package testsupport
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strings"
 	"testing"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // queueTestLockKey is an arbitrary application-scoped advisory-lock key.
 // Changing it only needs to be done here: every package that shares the test
 // database takes this same lock.
 const queueTestLockKey int64 = 0x72676671 // "rgfq"
+
+// DedicatedTestDatabaseName parses a PostgreSQL DSN and accepts only an
+// explicitly test-named database. Queue integration tests TRUNCATE shared
+// tables, so checking only TEST_DATABASE_URL is not sufficient: a copy/paste
+// mistake once pointed the test container at a live worker database.
+func DedicatedTestDatabaseName(dsn string) (string, error) {
+	config, err := pgx.ParseConfig(strings.TrimSpace(dsn))
+	if err != nil {
+		return "", fmt.Errorf("parse TEST_DATABASE_URL: %w", err)
+	}
+	name := strings.ToLower(strings.TrimSpace(config.Database))
+	if name == "" || !(strings.HasPrefix(name, "test_") || strings.HasSuffix(name, "_test")) {
+		return name, fmt.Errorf("refusing PostgreSQL test database %q: its name must start with test_ or end with _test", name)
+	}
+	return name, nil
+}
+
+// RequireDedicatedTestDatabase is the fail-closed guard called before a test
+// opens a connection or runs migrations/truncates tables.
+func RequireDedicatedTestDatabase(tb testing.TB, dsn string) {
+	tb.Helper()
+	if _, err := DedicatedTestDatabaseName(dsn); err != nil {
+		tb.Fatal(err)
+	}
+}
 
 // SerializeDBTest takes an exclusive session-scoped PostgreSQL advisory lock
 // for the duration of the test.

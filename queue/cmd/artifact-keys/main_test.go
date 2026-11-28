@@ -24,6 +24,7 @@ func TestExportReferencedKeysIncludesArtifactAndTimingSidecar(t *testing.T) {
 		}
 		t.Skip("TEST_DATABASE_URL not set; skipping artifact key export test")
 	}
+	testsupport.RequireDedicatedTestDatabase(t, dsn)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		t.Fatal(err)

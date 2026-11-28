@@ -23,6 +23,7 @@ func TestApplyAgainstPostgres(t *testing.T) {
 		}
 		t.Skip("TEST_DATABASE_URL not set; skipping postgres integration test")
 	}
+	testsupport.RequireDedicatedTestDatabase(t, dsn)
 
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {

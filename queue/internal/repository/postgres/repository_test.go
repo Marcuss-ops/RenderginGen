@@ -23,6 +23,7 @@ func testDatabaseURL(tb testing.TB) string {
 	tb.Helper()
 	dsn := os.Getenv("TEST_DATABASE_URL")
 	if dsn != "" {
+		testsupport.RequireDedicatedTestDatabase(tb, dsn)
 		return dsn
 	}
 	if os.Getenv("RENDERINGGEN_REQUIRE_POSTGRES_TESTS") == "1" {

@@ -131,16 +131,16 @@ jobs:
         env:
           POSTGRES_USER: renderinggen
           POSTGRES_PASSWORD: renderinggen
-          POSTGRES_DB: renderinggen
+          POSTGRES_DB: renderinggen_test
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U renderinggen -d renderinggen"
+          --health-cmd "pg_isready -U renderinggen -d renderinggen_test"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 12
     env:
-      TEST_DATABASE_URL: postgres://renderinggen:renderinggen@127.0.0.1:5432/renderinggen?sslmode=disable
+      TEST_DATABASE_URL: postgres://renderinggen:renderinggen@127.0.0.1:5432/renderinggen_test?sslmode=disable
       RENDERINGGEN_REQUIRE_POSTGRES_TESTS: "1"
     steps:
       - uses: actions/checkout@v4

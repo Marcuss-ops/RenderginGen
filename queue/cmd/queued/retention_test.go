@@ -21,6 +21,7 @@ func retentionTestDB(t *testing.T) *sql.DB {
 	if dsn == "" {
 		t.Skip("TEST_DATABASE_URL not set; skipping render_events retention test")
 	}
+	testsupport.RequireDedicatedTestDatabase(t, dsn)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
 		t.Fatal(err)
