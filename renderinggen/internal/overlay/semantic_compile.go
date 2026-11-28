@@ -81,6 +81,9 @@ func decodeSemanticPlan(raw []byte) (semanticPlan, error) {
 // in place, so the hot path never deep-copies the decoded tree. Replay decodes
 // the raw bytes again, which is why no clone is needed for determinism.
 func compileSemanticDecoded(src *semanticPlan, opts CompileOptions) (*Plan, []Asset, Stats, []string, error) {
+	if err := expandEditorialCompositions(src); err != nil {
+		return nil, nil, Stats{}, nil, err
+	}
 	validated, err := validateSemanticPlan(src)
 	if err != nil {
 		return nil, nil, Stats{}, nil, err

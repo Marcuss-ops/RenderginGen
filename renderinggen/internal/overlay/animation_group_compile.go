@@ -22,10 +22,13 @@ import (
 )
 
 const (
-	// AnimationGroupChoreographySequenceV1 is the only choreography published
-	// in V1: member order is reading order, stagger_frames spaces entrances,
-	// and every member holds to its end_offset_ms (or the group end).
+	// AnimationGroupChoreographySequenceV1 spaces entrances in member order;
+	// every member holds to its end_offset_ms (or the group end).
 	AnimationGroupChoreographySequenceV1 = "sequence_v1"
+	// AnimationGroupChoreographyProgressiveReveal accumulates phrase members:
+	// each later phrase enters after the previous one and all phrases hold to
+	// the shared group end.
+	AnimationGroupChoreographyProgressiveReveal = "progressive_reveal"
 
 	AnimationGroupRoleImage   = "image"
 	AnimationGroupRolePhrase  = string(KindImportantPhrase)
@@ -108,6 +111,7 @@ func resolveAnimationGroup(
 	}
 	poolCache := make(map[string][]string)
 	stableSelections := make(map[string]string)
+	previousOffsetMS := int64(-1)
 	for memberIndex := range group.Members {
 		member := &group.Members[memberIndex]
 		role, item, err := claimAnimationGroupMember(group, member, memberIndex, items, claimed, claimedItems)
@@ -121,6 +125,18 @@ func resolveAnimationGroup(
 		offsetMS, endOffsetMS, err := animationGroupMemberWindow(member, role, memberIndex, durationMS, staggerMS)
 		if err != nil {
 			return err
+		}
+		if strings.TrimSpace(group.ChoreographyID) == AnimationGroupChoreographyProgressiveReveal {
+			if role != AnimationGroupRolePhrase {
+				return fmt.Errorf("progressive_reveal members must all use the %q role", AnimationGroupRolePhrase)
+			}
+			if offsetMS <= previousOffsetMS {
+				return fmt.Errorf("progressive_reveal member %q must enter after the previous phrase", member.ItemID)
+			}
+			if endOffsetMS != durationMS {
+				return fmt.Errorf("progressive_reveal member %q must hold until the group end", member.ItemID)
+			}
+			previousOffsetMS = offsetMS
 		}
 		*assignments = append(*assignments, animationGroupAssignment{
 			item:         item,
@@ -152,7 +168,7 @@ func beginAnimationGroup(src *semanticPlan, group *semanticAnimationGroup, group
 	if choreography == "" {
 		choreography = AnimationGroupChoreographySequenceV1
 	}
-	if choreography != AnimationGroupChoreographySequenceV1 {
+	if choreography != AnimationGroupChoreographySequenceV1 && choreography != AnimationGroupChoreographyProgressiveReveal {
 		return 0, 0, fmt.Errorf("unsupported choreography_id %q", choreography)
 	}
 	if group.StartMS < 0 || group.EndMS <= group.StartMS {

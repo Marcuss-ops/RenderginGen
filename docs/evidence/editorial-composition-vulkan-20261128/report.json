@@ -1,0 +1,36 @@
+{
+  "actual_frames": 60,
+  "allowed_frame_tolerance": 0,
+  "backend": "vulkan",
+  "background_rgba": [
+    10,
+    13,
+    18,
+    255
+  ],
+  "canvas": {
+    "fps": 24,
+    "height": 360,
+    "width": 640
+  },
+  "certification": "pass",
+  "chronon_cli_sha256": "df965fd9b412488c9dc4473c49ba8ac6f760fbe8657552eb85cab0f2d705e426",
+  "execution_downgrade_count": 0,
+  "expected_frames": 60,
+  "gpu_submissions": 125,
+  "plan_sha256": "548abe19ce3d80ce1f7eb5833c48741ac9accf2c7637c632f2f4b66c43be8922",
+  "raw_rgba_bytes": 55296000,
+  "raw_rgba_sha256": "06de31f36cf690ef98417eb0e7bb820f7ec3b02b885d9b3a28a8ca47094d45a0",
+  "renderinggen_source_sha256": "ff3daa12e5646c26a9d617073431e1e422cc60ad67b14a090fc648acd99e2012",
+  "schema": "editorial_composition_render_canary.v1",
+  "source_commit": "549e26bc8cbbd95e211bbafbd4f364370369ba97",
+  "visibility_sample_frames": [
+    20,
+    59
+  ],
+  "visibility_samples_foreground_pixels": {
+    "20": 172800,
+    "59": 38779
+  },
+  "visibility_threshold_pixels": 32
+}

@@ -62,6 +62,9 @@ var (
 	calloutPlacements = map[string]struct{}{
 		"": {}, "auto": {}, "left": {}, "right": {}, "above": {}, "below": {},
 	}
+	attachmentPlacements = map[string]struct{}{
+		"": {}, "auto": {}, "left": {}, "right": {}, "above": {}, "below": {}, "badge": {},
+	}
 	hex64Pattern = regexp.MustCompile(`^[0-9a-f]{64}$`)
 )
 
@@ -160,8 +163,11 @@ const (
 	CodeBackgroundZ            = "layers_background_z"
 	CodeOrphanAttachment       = "layers_orphan_attachment"
 	CodeCalloutUnanchored      = "layers_callout_unanchored"
+	CodeCalloutDuplicate       = "layers_callout_duplicate"
 	CodeCalloutAssetUnverified = "layers_callout_asset_unverified"
+	CodeCalloutMotionMissing   = "layers_callout_motion_missing"
 	CodeCalloutPlacement       = "layers_callout_placement"
+	CodeAttachmentPlacement    = "layers_attachment_placement"
 	CodeMapChainForbidden      = "layers_map_chain_forbidden"
 	CodePayloadMissing         = "layers_payload_missing"
 	CodeDuplicateDate          = "layers_duplicate_date"
@@ -232,6 +238,7 @@ func (d *Document) Admit() (*Plan, error) {
 	}
 	seen := make(map[string]struct{}, len(d.Layers))
 	roles := make(map[string]struct{}, len(d.Layers))
+	mapPins := make(map[string]struct{})
 	backgrounds := 0
 	standaloneDate := ""
 	var previousStart int64
@@ -276,6 +283,15 @@ func (d *Document) Admit() (*Plan, error) {
 			if err := requirePayload(layer); err != nil {
 				return nil, err
 			}
+			if layer.Role == RoleMap {
+				pins, err := mapPinIDs(layer.Map)
+				if err != nil {
+					return nil, &Error{Code: CodePayloadMissing, LayerID: layerID, Detail: "invalid map pin payload: " + err.Error()}
+				}
+				for pinID := range pins {
+					mapPins[pinID] = struct{}{}
+				}
+			}
 			if layer.Role == RoleMap && layer.LinkGroup != "" {
 				return nil, &Error{Code: CodeMapChainForbidden, LayerID: layerID, Detail: layer.LinkGroup}
 			}
@@ -283,14 +299,23 @@ func (d *Document) Admit() (*Plan, error) {
 			if strings.TrimSpace(layer.AnchorPinID) == "" {
 				return nil, &Error{Code: CodeCalloutUnanchored, LayerID: layerID}
 			}
-			if !verifiedAsset(layer.Asset) {
+			if !verifiedImageAsset(layer.Asset) {
 				return nil, &Error{Code: CodeCalloutAssetUnverified, LayerID: layerID}
+			}
+			if strings.TrimSpace(layer.MotionID) == "" || strings.TrimSpace(layer.MotionID) != layer.MotionID {
+				return nil, &Error{Code: CodeCalloutMotionMissing, LayerID: layerID, Detail: "a declared callout choreography is required"}
 			}
 			if _, ok := calloutPlacements[layer.Position]; !ok {
 				return nil, &Error{Code: CodeCalloutPlacement, LayerID: layerID, Detail: layer.Position}
 			}
 			if _, ok := roles[RoleMap]; !ok {
 				return nil, &Error{Code: CodeCalloutUnanchored, LayerID: layerID, Detail: "callout without a map layer"}
+			}
+			if _, ok := mapPins[layer.AnchorPinID]; !ok {
+				return nil, &Error{Code: CodeCalloutUnanchored, LayerID: layerID, Detail: "unknown pin " + layer.AnchorPinID}
+			}
+			if _, duplicate := plan.Callouts[layer.AnchorPinID]; duplicate {
+				return nil, &Error{Code: CodeCalloutDuplicate, LayerID: layerID, Detail: layer.AnchorPinID}
 			}
 			plan.Callouts[layer.AnchorPinID] = layerID
 		case RoleChapter:
@@ -309,6 +334,9 @@ func (d *Document) Admit() (*Plan, error) {
 			}
 			if strings.TrimSpace(layer.ParentLayerID) == "" {
 				return nil, &Error{Code: CodeOrphanAttachment, LayerID: layerID, Detail: "attachment without parent"}
+			}
+			if _, ok := attachmentPlacements[layer.Position]; !ok {
+				return nil, &Error{Code: CodeAttachmentPlacement, LayerID: layerID, Detail: layer.Position}
 			}
 			if _, ok := seen[layer.ParentLayerID]; !ok {
 				// The parent must appear earlier: layers are time ordered and a
@@ -352,9 +380,48 @@ func hasAttachmentDate(layers []Layer) bool {
 	return false
 }
 
+func mapPinIDs(raw json.RawMessage) (map[string]struct{}, error) {
+	var payload struct {
+		Pins []json.RawMessage `json:"pins"`
+	}
+	if err := json.Unmarshal(raw, &payload); err != nil {
+		return nil, err
+	}
+	ids := make(map[string]struct{}, len(payload.Pins))
+	for index, rawPin := range payload.Pins {
+		var pin struct {
+			ID    string `json:"id"`
+			PinID string `json:"pin_id"`
+		}
+		if err := json.Unmarshal(rawPin, &pin); err != nil {
+			return nil, fmt.Errorf("pins[%d]: %w", index, err)
+		}
+		id := pin.PinID
+		if id == "" {
+			id = pin.ID
+		}
+		if strings.TrimSpace(id) == "" || id != strings.TrimSpace(id) {
+			return nil, fmt.Errorf("pins[%d] requires a non-empty trimmed id", index)
+		}
+		if _, duplicate := ids[id]; duplicate {
+			return nil, fmt.Errorf("pins[%d] duplicates id %q", index, id)
+		}
+		ids[id] = struct{}{}
+	}
+	return ids, nil
+}
+
 func verifiedAsset(asset *AssetRef) bool {
 	if asset == nil {
 		return false
 	}
 	return strings.TrimSpace(asset.AssetID) != "" && hex64Pattern.MatchString(asset.SHA256)
+}
+
+func verifiedImageAsset(asset *AssetRef) bool {
+	if !verifiedAsset(asset) {
+		return false
+	}
+	mediaType := strings.ToLower(strings.TrimSpace(asset.MediaType))
+	return mediaType == "image" || strings.HasPrefix(mediaType, "image/")
 }

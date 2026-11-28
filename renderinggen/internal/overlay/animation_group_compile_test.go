@@ -1,7 +1,10 @@
 package overlay
 
 import (
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
+	"math"
 	"strings"
 	"testing"
 
@@ -180,6 +183,51 @@ func TestAnimationGroupStableSelectionIsOnePerRole(t *testing.T) {
 	}
 }
 
+// TestAnimationGroupSelectionHasSeededCoverageAndEntropy guards the runtime
+// selector's distribution across independent editorial identities. Selection
+// remains deterministic per identity; the fixture varies only the plan seed.
+func TestAnimationGroupSelectionHasSeededCoverageAndEntropy(t *testing.T) {
+	pool := animationGroupRolePool(AnimationGroupRolePhrase)
+	if len(pool) < 2 {
+		t.Fatalf("phrase motion pool has %d entries; statistical selection needs at least 2", len(pool))
+	}
+	const draws = 10_000
+	counts := make(map[string]int, len(pool))
+	seen := make(map[string]struct{}, draws)
+	for i := 0; i < draws; i++ {
+		seed := sha256.Sum256([]byte(fmt.Sprintf("editorial-seed-%05d", i)))
+		identity := fmt.Sprintf("%x", seed)
+		plan := &semanticPlan{PlanID: identity, VideoID: "editorial-wave"}
+		selected := animationGroupStableMotion(plan, "chapter-01", AnimationGroupRolePhrase, pool)
+		if selected == "" {
+			t.Fatalf("seed %q produced an empty selection", identity)
+		}
+		counts[selected]++
+		seen[selected] = struct{}{}
+	}
+	if len(seen) != len(pool) {
+		t.Fatalf("selector covered %d/%d motions: counts=%v", len(seen), len(pool), counts)
+	}
+	expected := float64(draws) / float64(len(pool))
+	for _, motionID := range pool {
+		frequency := counts[motionID]
+		if frequency == 0 || math.Abs(float64(frequency)-expected) > expected*0.40 {
+			t.Errorf("motion %q frequency=%d, expected %.1f ±40%%", motionID, frequency, expected)
+		}
+	}
+	// Shannon entropy normalized to [0,1] detects a selector that technically
+	// covers the pool while assigning almost every identity to one motion.
+	entropy := 0.0
+	for _, count := range counts {
+		p := float64(count) / draws
+		entropy -= p * math.Log2(p)
+	}
+	normalized := entropy / math.Log2(float64(len(pool)))
+	if normalized < 0.95 {
+		t.Fatalf("normalized selection entropy %.4f is below 0.95 (pool=%d counts=%v)", normalized, len(pool), counts)
+	}
+}
+
 func TestAnimationGroupExplicitMotionWinsForItsMember(t *testing.T) {
 	src := &semanticPlan{
 		PlanID: "explicit", VideoID: "explicit", FPSNum: 24, FPSDen: 1,
@@ -333,8 +381,8 @@ func TestAnimationGroupLegacyPlanWithoutGroupsStillCompiles(t *testing.T) {
 
 func TestRuntimeAnimationGroupCatalogPublishesRolePools(t *testing.T) {
 	catalog := CompiledRuntimeAnimationCatalog()
-	if len(catalog.GroupChoreographies) != 1 {
-		t.Fatalf("group choreographies = %d, want 1", len(catalog.GroupChoreographies))
+	if len(catalog.GroupChoreographies) != 2 {
+		t.Fatalf("group choreographies = %d, want 2", len(catalog.GroupChoreographies))
 	}
 	group := catalog.GroupChoreographies[0]
 	if group.ID != AnimationGroupChoreographySequenceV1 || group.Owner != "animation_group" ||
@@ -349,11 +397,15 @@ func TestRuntimeAnimationGroupCatalogPublishesRolePools(t *testing.T) {
 			t.Errorf("role pool is incomplete: %+v", role)
 		}
 	}
+	progressive := catalog.GroupChoreographies[1]
+	if progressive.ID != AnimationGroupChoreographyProgressiveReveal || len(progressive.Roles) != 1 || progressive.Roles[0].Role != AnimationGroupRolePhrase {
+		t.Fatalf("progressive reveal catalog entry = %+v", progressive)
+	}
 	var encoded strings.Builder
 	if err := WriteRuntimeAnimationCatalog(&encoded); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(encoded.String(), `"group_choreographies"`) || !strings.Contains(encoded.String(), AnimationGroupChoreographySequenceV1) {
+	if !strings.Contains(encoded.String(), `"group_choreographies"`) || !strings.Contains(encoded.String(), AnimationGroupChoreographySequenceV1) || !strings.Contains(encoded.String(), AnimationGroupChoreographyProgressiveReveal) {
 		t.Fatal("compiled catalog does not publish the group choreography")
 	}
 }
@@ -396,6 +448,85 @@ func TestAnimationGroupDerives3DMetadataFromTracks(t *testing.T) {
 	}
 	if err := resolveAnimationGroups(src); err == nil || !strings.Contains(err.Error(), "requires_3d") {
 		t.Fatalf("invalid 3D metadata should fail closed, got %v", err)
+	}
+}
+
+func TestAnimationGroupProgressiveRevealAccumulatesPhraseHold(t *testing.T) {
+	first := animationGroupMember("first", AnimationGroupRolePhrase)
+	first["offset_ms"] = 0
+	second := animationGroupMember("second", AnimationGroupRolePhrase)
+	second["offset_ms"] = 900
+	group := map[string]any{
+		"id": "summary", "start_ms": 0, "end_ms": 4000,
+		"choreography_id": AnimationGroupChoreographyProgressiveReveal,
+		"members":         []any{first, second},
+	}
+	result := compileAnimationGroupPlan(t, animationGroupPlan(
+		[]any{animationGroupPhraseItem("first"), animationGroupPhraseItem("second")},
+		[]any{group},
+	))
+	firstLayer, ok := animationGroupFindLayer(result, "first", "text")
+	if !ok {
+		t.Fatalf("first phrase layer missing: %+v", result.Plan.Layers)
+	}
+	secondLayer, ok := animationGroupFindLayer(result, "second", "text")
+	if !ok {
+		t.Fatalf("second phrase layer missing: %+v", result.Plan.Layers)
+	}
+	if firstLayer.StartFrame != 0 || secondLayer.StartFrame != 22 {
+		t.Fatalf("progressive reveal starts = (%d, %d), want (0, 22)", firstLayer.StartFrame, secondLayer.StartFrame)
+	}
+	if firstLayer.DurationFrames != 96 || secondLayer.DurationFrames != 74 {
+		t.Fatalf("progressive reveal holds = (%d, %d), want (96, 74)", firstLayer.DurationFrames, secondLayer.DurationFrames)
+	}
+}
+
+func TestAnimationGroupProgressiveRevealRejectsNonCumulativeMembers(t *testing.T) {
+	tests := []struct {
+		name    string
+		members []any
+		items   []any
+	}{
+		{
+			name: "non phrase role",
+			members: []any{
+				animationGroupMember("first", AnimationGroupRolePhrase),
+				animationGroupMember("portrait", AnimationGroupRoleImage),
+			},
+			items: []any{animationGroupPhraseItem("first"), animationGroupImageItem("portrait")},
+		},
+		{
+			name: "early exit",
+			members: []any{
+				map[string]any{"item_id": "first", "role": AnimationGroupRolePhrase, "offset_ms": 0, "end_offset_ms": 3000},
+				map[string]any{"item_id": "second", "role": AnimationGroupRolePhrase, "offset_ms": 900},
+			},
+			items: []any{animationGroupPhraseItem("first"), animationGroupPhraseItem("second")},
+		},
+		{
+			name: "simultaneous entrances",
+			members: []any{
+				map[string]any{"item_id": "first", "role": AnimationGroupRolePhrase, "offset_ms": 0},
+				map[string]any{"item_id": "second", "role": AnimationGroupRolePhrase, "offset_ms": 0},
+			},
+			items: []any{animationGroupPhraseItem("first"), animationGroupPhraseItem("second")},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			group := map[string]any{
+				"id": "summary", "start_ms": 0, "end_ms": 4000,
+				"choreography_id": AnimationGroupChoreographyProgressiveReveal,
+				"members":         test.members,
+			}
+			raw, err := json.Marshal(animationGroupPlan(test.items, []any{group}))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := CompileSemantic(raw); err == nil {
+				t.Fatal("non-cumulative progressive reveal unexpectedly compiled")
+			}
+		})
 	}
 }
 

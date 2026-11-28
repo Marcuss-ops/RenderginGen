@@ -41,9 +41,10 @@
         },
         "choreography_id": {
           "enum": [
-            "sequence_v1"
+            "sequence_v1",
+            "progressive_reveal"
           ],
-          "description": "Group choreography. Omission selects sequence_v1: members enter in array order."
+          "description": "Group choreography. sequence_v1 enters in array order; progressive_reveal accepts phrase-only members with increasing offsets and a cumulative hold to the group end."
         },
         "params": {
           "type": "object",
@@ -1319,6 +1320,63 @@
         "$ref": "#/$defs/animation_group"
       },
       "description": "Heterogeneous animation groups. Each group owns one shared timeline and one motion per role across phrases, images, captions and metric/date cards. Members must not carry their own motion."
+    },
+    "editorial_compositions": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["schema_version", "composition_id", "scene_id", "window", "members"],
+        "properties": {
+          "schema_version": {"const": "editorial_composition.v1"},
+          "composition_id": {"type": "string", "minLength": 1},
+          "scene_id": {"type": "string", "minLength": 1},
+          "window": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["start_us", "duration_us"],
+            "properties": {
+              "start_us": {"type": "integer", "minimum": 0},
+              "duration_us": {"type": "integer", "minimum": 1}
+            }
+          },
+          "members": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["member_id", "kind", "start_us", "duration_us", "reveal", "points"],
+              "properties": {
+                "member_id": {"type": "string", "minLength": 1},
+                "kind": {"const": "summary"},
+                "start_us": {"type": "integer", "minimum": 0},
+                "duration_us": {"type": "integer", "minimum": 1},
+                "z": {"type": "integer"},
+                "reveal": {"const": "progressive"},
+                "points": {
+                  "type": "array",
+                  "minItems": 2,
+                  "maxItems": 3,
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["text", "start_us", "duration_us"],
+                    "properties": {
+                      "text": {"type": "string", "minLength": 1},
+                      "start_us": {"type": "integer", "minimum": 0},
+                      "duration_us": {"type": "integer", "minimum": 1}
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "Planner-certified editorial_composition.v1 sidecars. This worker currently lowers progressive summary members through the progressive_reveal phrase choreography."
     },
     "scene_camera": {
       "$ref": "#/$defs/scene_camera",

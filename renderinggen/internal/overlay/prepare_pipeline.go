@@ -44,6 +44,9 @@ func ResolveSemanticForPrepare(raw []byte, opts CompileOptions) (*PreparedResolv
 	if err != nil {
 		return nil, err
 	}
+	if err := expandEditorialCompositions(&src); err != nil {
+		return nil, err
+	}
 	validated, err := validateSemanticPlan(&src)
 	if err != nil {
 		return nil, err

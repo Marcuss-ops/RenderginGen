@@ -28,36 +28,45 @@ type RuntimeAnimationGroupRole struct {
 }
 
 func runtimeAnimationGroupChoreographies() []RuntimeAnimationGroupChoreography {
-	roles := []string{
+	sequenceRoles := []string{
 		AnimationGroupRoleImage,
 		AnimationGroupRolePhrase,
 		AnimationGroupRoleCaption,
 		AnimationGroupRoleDate,
 		AnimationGroupRoleMetric,
 	}
-	choreography := RuntimeAnimationGroupChoreography{
+	sequence := RuntimeAnimationGroupChoreography{
 		ID:             AnimationGroupChoreographySequenceV1,
 		Description:    "One group owns a shared timeline: members enter in array order, stagger_frames spaces their entrances, and each role keeps one stable motion selection for the whole group.",
 		Owner:          "animation_group",
 		Selection:      "stable_random_per_role",
 		MinimumMembers: animationGroupMinimumMembers,
 		MaximumMembers: animationGroupMaximumMembers,
-		Roles:          make([]RuntimeAnimationGroupRole, 0, len(roles)),
+		Roles:          make([]RuntimeAnimationGroupRole, 0, len(sequenceRoles)),
 	}
-	for _, role := range roles {
+	progressive := RuntimeAnimationGroupChoreography{
+		ID:             AnimationGroupChoreographyProgressiveReveal,
+		Description:    "Phrase members enter in strictly increasing order and accumulate; every phrase remains visible until the shared group end.",
+		Owner:          "animation_group",
+		Selection:      "stable_random_per_role",
+		MinimumMembers: animationGroupMinimumMembers,
+		MaximumMembers: animationGroupMaximumMembers,
+		Roles:          make([]RuntimeAnimationGroupRole, 0, 1),
+	}
+	appendRole := func(choreography *RuntimeAnimationGroupChoreography, role string) {
 		pool := animationGroupRolePool(role)
 		target, _ := animationGroupRoleTarget(role)
 		requires3D, requiresCamera := animationGroupPoolCapabilities(pool)
 		choreography.Roles = append(choreography.Roles, RuntimeAnimationGroupRole{
-			Role:           role,
-			MotionTarget:   target,
-			MotionCount:    len(pool),
-			MotionIDs:      append([]string(nil), pool...),
-			Requires3D:     requires3D,
-			RequiresCamera: requiresCamera,
+			Role: role, MotionTarget: target, MotionCount: len(pool),
+			MotionIDs: append([]string(nil), pool...), Requires3D: requires3D, RequiresCamera: requiresCamera,
 		})
 	}
-	return []RuntimeAnimationGroupChoreography{choreography}
+	for _, role := range sequenceRoles {
+		appendRole(&sequence, role)
+	}
+	appendRole(&progressive, AnimationGroupRolePhrase)
+	return []RuntimeAnimationGroupChoreography{sequence, progressive}
 }
 
 func animationGroupPoolCapabilities(pool []string) (bool, bool) {

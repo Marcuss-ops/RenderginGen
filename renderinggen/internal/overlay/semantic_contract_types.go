@@ -54,6 +54,9 @@ type semanticPlan struct {
 	MapCompositionID string                   `json:"map_composition_id,omitempty"`
 	Items            []semanticItem           `json:"items"`
 	AnimationGroups  []semanticAnimationGroup `json:"animation_groups,omitempty"`
+	// EditorialCompositions carries planner-owned contracts for compositions
+	// whose source timing must be lowered through the normal semantic pipeline.
+	EditorialCompositions []json.RawMessage `json:"editorial_compositions,omitempty"`
 	// assetSizes carries the probed pixel size of every materialized image this
 	// compile must lay out. nil means the blind compile (no I/O yet): cards that
 	// await their source aspect keep their transient markers and a later

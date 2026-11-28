@@ -172,9 +172,40 @@ func TestEditorialLayersAdmissionIsFailClosed(t *testing.T) {
 			t.Fatalf("code = %q, want %q (%v)", codeOf(err), CodeCalloutUnanchored, err)
 		}
 	})
+	t.Run("callout references an unknown pin", func(t *testing.T) {
+		document := base("map_photo_callout.layers.json")
+		document.Layers[1].AnchorPinID = "paris"
+		if _, err := document.Admit(); codeOf(err) != CodeCalloutUnanchored {
+			t.Fatalf("code = %q, want %q (%v)", codeOf(err), CodeCalloutUnanchored, err)
+		}
+	})
+	t.Run("duplicate callout for one pin", func(t *testing.T) {
+		document := base("map_photo_callout.layers.json")
+		duplicate := document.Layers[1]
+		duplicate.LayerID = "map_01#pin:milano:duplicate"
+		duplicate.Z++
+		document.Layers = append(document.Layers, duplicate)
+		if _, err := document.Admit(); codeOf(err) != CodeCalloutDuplicate {
+			t.Fatalf("code = %q, want %q (%v)", codeOf(err), CodeCalloutDuplicate, err)
+		}
+	})
 	t.Run("callout with unverified asset", func(t *testing.T) {
 		document := base("map_photo_callout.layers.json")
 		document.Layers[1].Asset.SHA256 = ""
+		if _, err := document.Admit(); codeOf(err) != CodeCalloutAssetUnverified {
+			t.Fatalf("code = %q, want %q (%v)", codeOf(err), CodeCalloutAssetUnverified, err)
+		}
+	})
+	t.Run("callout without declared choreography", func(t *testing.T) {
+		document := base("map_photo_callout.layers.json")
+		document.Layers[1].MotionID = " "
+		if _, err := document.Admit(); codeOf(err) != CodeCalloutMotionMissing {
+			t.Fatalf("code = %q, want %q (%v)", codeOf(err), CodeCalloutMotionMissing, err)
+		}
+	})
+	t.Run("callout asset must be an image", func(t *testing.T) {
+		document := base("map_photo_callout.layers.json")
+		document.Layers[1].Asset.MediaType = "video/mp4"
 		if _, err := document.Admit(); codeOf(err) != CodeCalloutAssetUnverified {
 			t.Fatalf("code = %q, want %q (%v)", codeOf(err), CodeCalloutAssetUnverified, err)
 		}
